@@ -68,7 +68,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (e.target === e.currentTarget) handleClose(false);
           }}
         >
-          <div className="w-full max-w-sm sm:max-w-md bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] p-6 sm:p-7 pb-[max(1.5rem,env(safe-area-inset-bottom,1.5rem))] shadow-[0_24px_60px_rgba(0,0,0,0.18)] text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-200 select-none">
+          <div className="w-full max-w-sm sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] p-6 sm:p-7 pb-[max(1.5rem,env(safe-area-inset-bottom,1.5rem))]  text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-200 select-none">
             {/* Apple Drag Handle Pill for Mobile */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
 
@@ -76,7 +76,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
             <div
               className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 ${
                 options.isDestructive
-                  ? 'bg-rose-50 text-rose-600 border border-rose-200/60'
+                  ? 'bg-danger-soft text-danger border border-danger-line/60'
                   : 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20'
               }`}
             >
@@ -99,7 +99,7 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
               <button
                 type="button"
                 onClick={() => handleClose(false)}
-                className="w-full sm:flex-1 h-11 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] text-sm font-medium transition-all duration-150 border border-[#e5e5ea] cursor-pointer"
+                className="w-full sm:flex-1 h-11 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] text-sm font-normal transition-all duration-150 border border-[#e5e5ea] cursor-pointer"
               >
                 {options.cancelText || 'Cancel'}
               </button>
@@ -107,10 +107,10 @@ export const ConfirmProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 type="button"
                 autoFocus
                 onClick={() => handleClose(true)}
-                className={`w-full sm:flex-1 h-11 px-5 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-all duration-150 cursor-pointer shadow-[0_2px_8px_rgba(0,0,0,0.12)] ${
+                className={`w-full sm:flex-1 h-11 px-5 rounded-full text-white text-sm font-semibold active:scale-[0.98] transition-all duration-150 cursor-pointer  ${
                   options.isDestructive
-                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20'
-                    : 'bg-[#0066cc] hover:bg-[#0071e3] shadow-[#0066cc]/25'
+                    ? 'bg-danger hover:bg-danger '
+                    : 'bg-[#0066cc] hover:bg-[#0071e3] '
                 }`}
               >
                 {options.confirmText || 'Confirm'}

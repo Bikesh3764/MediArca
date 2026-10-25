@@ -117,7 +117,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
-        <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+        <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
           {/* Brand & Header */}
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
@@ -138,8 +138,8 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 activeRole === 'PATIENT'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Patient
@@ -152,8 +152,8 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 activeRole === 'DOCTOR'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Doctor
@@ -161,7 +161,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -197,7 +197,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           {/* Email / Password Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 {activeRole === 'DOCTOR' ? 'Doctor Email' : 'Email Address'}
               </label>
               <input
@@ -206,12 +206,12 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={activeRole === 'DOCTOR' ? 'dr.name@mediarca.com' : 'name@example.com'}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Password
               </label>
               <div className="relative">
@@ -221,9 +221,9 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
-                <button
+                <button aria-label={showPassword ? 'Hide password' : 'Show password'}
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -237,7 +237,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -253,21 +253,21 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
 
           {/* Demo Access */}
           <div className="mt-6 pt-5 border-t border-[#e5e5ea]">
-            <div className="text-xs font-medium text-[#1d1d1f] mb-2.5 tracking-tight">
-              Demo Access
+            <div className="text-xs font-normal text-[#1d1d1f] mb-2.5 tracking-tight">
+              Try a demo
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => handleQuickLogin('john.doe@gmail.com', 'patient123', '/patient/appointments', 'PATIENT')}
-                className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98]"
+                className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-normal transition-all text-center cursor-pointer active:scale-[0.98]"
               >
                 Demo Patient
               </button>
               <button
                 type="button"
                 onClick={() => handleQuickLogin('dr.sarah@mediarca.com', 'doctor123', '/doctor/dashboard', 'DOCTOR')}
-                className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-medium transition-all text-center cursor-pointer active:scale-[0.98]"
+                className="h-9 px-3 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] text-xs font-normal transition-all text-center cursor-pointer active:scale-[0.98]"
               >
                 Demo Doctor
               </button>
@@ -275,11 +275,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
 
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#86868b]">
               <span>Staff portals:</span>
-              <Link to="/receptionist/login" className="text-[#0066cc] hover:underline font-medium">
+              <Link to="/receptionist/login" className="text-[#0066cc] hover:underline font-normal">
                 Reception Desk
               </Link>
               <span>•</span>
-              <Link to="/clinic/login" className="text-[#0066cc] hover:underline font-medium">
+              <Link to="/clinic/login" className="text-[#0066cc] hover:underline font-normal">
                 Clinic Portal
               </Link>
             </div>

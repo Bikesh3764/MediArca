@@ -36,15 +36,15 @@ export const WeekdayDisplay: React.FC<WeekdayDisplayProps> = ({
           )}
           {showTodayBadge && (
             isOnLeaveToday ? (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
+              <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-danger-soft text-danger border border-danger-line">
                 Leave
               </span>
             ) : sitsToday ? (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-success-soft text-success border border-success-line">
                 Today
               </span>
             ) : (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+              <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                 Off
               </span>
             )
@@ -63,7 +63,7 @@ export const WeekdayDisplay: React.FC<WeekdayDisplayProps> = ({
               title={`${WEEKDAY_NAMES[d]}: ${isSitting ? 'Practicing' : 'Off'}`}
               className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold transition-all ${
                 isSitting
-                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                  ? 'bg-[#1d1d1f] text-white '
                   : 'bg-transparent text-[#86868b]/60'
               } ${isToday ? 'ring-2 ring-[#0066cc] ring-offset-1 ring-offset-[#f5f5f7]' : ''}`}
             >

@@ -61,6 +61,25 @@ export function getRetryDelayMs(attempt: number, baseDelay = 300): number {
   return Math.min(exponential + jitter, 2000);
 }
 
+/**
+ * "Slow connection" signal for the UI: when any request is still waiting after a few
+ * seconds (e.g. the server is waking up), fire `mediarca:slow` (+1 / -1) so a small
+ * notice can say so instead of leaving people looking at a spinner.
+ */
+export const SLOW_REQUEST_NOTICE_MS = 4000;
+function startSlowNotice(): () => void {
+  if (typeof window === 'undefined') return () => {};
+  let shown = false;
+  const timer = setTimeout(() => {
+    shown = true;
+    window.dispatchEvent(new CustomEvent('mediarca:slow', { detail: 1 }));
+  }, SLOW_REQUEST_NOTICE_MS);
+  return () => {
+    clearTimeout(timer);
+    if (shown) window.dispatchEvent(new CustomEvent('mediarca:slow', { detail: -1 }));
+  };
+}
+
 export async function safeFetch(
   input: RequestInfo | URL,
   options: SafeFetchOptions = {}
@@ -80,7 +99,9 @@ export async function safeFetch(
   const effectiveMaxRetries = isSafeMethod && retryOnTransient ? Math.max(0, maxRetries) : 0;
 
   let attempt = 0;
+  const stopSlowNotice = startSlowNotice();
 
+  try {
   while (true) {
     attempt++;
     let timeoutId: any = null;
@@ -158,5 +179,8 @@ export async function safeFetch(
 
       throw normalizedError;
     }
+  }
+  } finally {
+    stopSlowNotice();
   }
 }

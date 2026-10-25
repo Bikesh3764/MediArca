@@ -40,7 +40,7 @@ export const Home: React.FC = () => {
           </h1>
 
           {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
-          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto backdrop-blur-md bg-white/95 p-2 sm:p-2.5 rounded-[24px] sm:rounded-full border border-black/[0.1] shadow-[0_10px_36px_rgba(0,0,0,0.12)] flex flex-col sm:flex-row items-center gap-2">
+          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto backdrop-blur-md bg-white/95 p-2 sm:p-2.5 rounded-2xl sm:rounded-full border border-black/[0.1]  flex flex-col sm:flex-row items-center gap-2">
             <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
@@ -89,7 +89,7 @@ export const Home: React.FC = () => {
             <button
               type="button"
               onClick={handleHeroSearch}
-              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
+              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 "
             >
               <Search className="w-4 h-4" />
               <span>Search</span>
@@ -108,7 +108,7 @@ export const Home: React.FC = () => {
               onClick={() => handleSectionSwitch('clinics')}
               className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'clinics'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                  ? 'bg-white text-[#1d1d1f] '
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >
@@ -119,7 +119,7 @@ export const Home: React.FC = () => {
               onClick={() => handleSectionSwitch('doctors')}
               className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
                 activeSection === 'doctors'
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                  ? 'bg-white text-[#1d1d1f] '
                   : 'text-[#86868b] hover:text-[#1d1d1f]'
               }`}
             >

@@ -31,7 +31,7 @@ export const AffiliationsTab: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-                  <span className="font-medium">{feedbackSuccess}</span>
+                  <span className="font-normal">{feedbackSuccess}</span>
                 </div>
                 <button aria-label="Close"
                   onClick={() => setFeedbackSuccess(null)}
@@ -43,14 +43,14 @@ export const AffiliationsTab: React.FC = () => {
             )}
 
             {feedbackError && (
-              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-danger-soft border border-danger-line/80 text-danger text-xs flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-                  <span className="font-medium">{feedbackError}</span>
+                  <AlertCircle className="w-4 h-4 text-danger flex-shrink-0" />
+                  <span className="font-normal">{feedbackError}</span>
                 </div>
                 <button aria-label="Close"
                   onClick={() => setFeedbackError(null)}
-                  className="text-rose-700 hover:text-rose-900 cursor-pointer"
+                  className="text-danger hover:text-danger cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -59,22 +59,22 @@ export const AffiliationsTab: React.FC = () => {
 
             {/* Clean 3-Column Metrics Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <span className="text-xs text-[#86868b] font-medium block">Affiliated Clinics</span>
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
+                <span className="text-xs text-[#86868b] font-normal block">Affiliated Clinics</span>
                 <h3 className="text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {affiliations?.clinics.length || 0}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <span className="text-xs text-[#86868b] font-medium block">Assigned Desk Staff</span>
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
+                <span className="text-xs text-[#86868b] font-normal block">Assigned Desk Staff</span>
                 <h3 className="text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {affiliations?.receptionists.length || 0}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-                <span className="text-xs text-[#86868b] font-medium block">Total Clinic Earnings</span>
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
+                <span className="text-xs text-[#86868b] font-normal block">Total Clinic Earnings</span>
                 <h3 className="text-[28px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
                   ₹{(
                     affiliations?.clinics.reduce(
@@ -88,7 +88,7 @@ export const AffiliationsTab: React.FC = () => {
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                 <div className="mb-4">
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
                     Incoming Clinic Invitations ({affiliations.incomingRequests.length})
@@ -115,7 +115,7 @@ export const AffiliationsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleRespondClinicAffiliation(req.affiliationId, 'ACCEPT')}
-                          className="flex-1 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          className="flex-1 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>Accept</span>
@@ -123,7 +123,7 @@ export const AffiliationsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleRespondClinicAffiliation(req.affiliationId, 'REJECT')}
-                          className="flex-1 h-9 px-4 rounded-full bg-white hover:bg-rose-50 text-rose-600 border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          className="flex-1 h-9 px-4 rounded-full bg-white hover:bg-danger-soft text-danger border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                           <span>Decline</span>
@@ -137,7 +137,7 @@ export const AffiliationsTab: React.FC = () => {
 
             {/* Pending Outgoing Clinic Requests */}
             {affiliations?.outgoingRequests && affiliations.outgoingRequests.length > 0 && (
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
                     Pending Clinic Approvals ({affiliations.outgoingRequests.length})
@@ -153,7 +153,7 @@ export const AffiliationsTab: React.FC = () => {
                         <h4 className="font-semibold text-[14px] text-[#1d1d1f]">{req.clinicName}</h4>
                         <p className="text-xs text-[#86868b] mt-0.5">{req.address}{req.city ? `, ${req.city}` : ''}</p>
                       </div>
-                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
+                      <span className="text-xs font-normal px-2.5 py-1 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
                         Pending
                       </span>
                     </div>
@@ -163,7 +163,7 @@ export const AffiliationsTab: React.FC = () => {
             )}
 
             {/* Section 1: Affiliated Clinics */}
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
                 <div className="flex items-center gap-2">
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
@@ -182,7 +182,7 @@ export const AffiliationsTab: React.FC = () => {
                     setClinicCityFilter('All');
                     setIsAffiliateModalOpen(true);
                   }}
-                  className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Affiliate New Clinic</span>
@@ -207,7 +207,7 @@ export const AffiliationsTab: React.FC = () => {
                         setClinicCityFilter('All');
                         setIsAffiliateModalOpen(true);
                       }}
-                      className="h-9 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                      className="h-9 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Find & Affiliate Clinic</span>
@@ -238,7 +238,7 @@ export const AffiliationsTab: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveClinic(clinic.clinicId, clinic.clinicName)}
-                            className="text-[#86868b] hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer"
+                            className="text-[#86868b] hover:text-danger hover:bg-danger-soft p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer"
                             title="Detach from Clinic"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -248,19 +248,19 @@ export const AffiliationsTab: React.FC = () => {
                         {/* Clean Stats Row */}
                         <div className="grid grid-cols-3 gap-2 mt-4 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
                           <div>
-                            <span className="text-[11px] font-medium text-[#86868b] block">Fee</span>
+                            <span className="text-[11px] font-normal text-[#86868b] block">Fee</span>
                             <span className="text-sm font-semibold text-[#1d1d1f] mt-0.5 block">
                               ₹{clinic.consultationFee ?? user?.doctorProfile?.consultationFee ?? 500}
                             </span>
                           </div>
                           <div className="border-x border-[#e5e5ea]">
-                            <span className="text-[11px] font-medium text-[#86868b] block">Bookings</span>
+                            <span className="text-[11px] font-normal text-[#86868b] block">Bookings</span>
                             <span className="text-sm font-semibold text-[#1d1d1f] mt-0.5 block">
                               {clinic.bookingCount || 0}
                             </span>
                           </div>
                           <div>
-                            <span className="text-[11px] font-medium text-[#86868b] block">Revenue</span>
+                            <span className="text-[11px] font-normal text-[#86868b] block">Revenue</span>
                             <span className="text-sm font-semibold text-[#0066cc] mt-0.5 block">
                               ₹{(clinic.revenue ?? 0).toLocaleString('en-IN')}
                             </span>
@@ -269,8 +269,8 @@ export const AffiliationsTab: React.FC = () => {
 
                         {/* Shifts Status */}
                         <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#86868b]">
-                          <span className="font-medium">Practice Shifts</span>
-                          <span className="font-medium text-[#1d1d1f] truncate max-w-[220px]">
+                          <span className="font-normal">Practice Shifts</span>
+                          <span className="font-normal text-[#1d1d1f] truncate max-w-[220px]">
                             {clinic.slots && clinic.slots.length > 0
                               ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'}`
                               : 'Default schedule'}
@@ -291,7 +291,7 @@ export const AffiliationsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => navigate(`/doctor/schedule?clinic=${clinic.clinicId}`)}
-                          className="flex-1 min-w-[80px] h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          className="flex-1 min-w-[80px] h-9 px-3 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                         >
                           <Clock className="w-3.5 h-3.5" />
                           <span>Shifts</span>
@@ -299,7 +299,7 @@ export const AffiliationsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setScheduleLeaveModalClinic({ clinicId: clinic.clinicId, clinicName: clinic.clinicName })}
-                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                           title="Doctor Schedule & Leave"
                         >
                           <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
@@ -317,7 +317,7 @@ export const AffiliationsTab: React.FC = () => {
                             });
                             setIsStandeeModalOpen(true);
                           }}
-                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] shadow-2xs cursor-pointer"
+                          className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]  cursor-pointer"
                           title="Clinic QR Code"
                         >
                           <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
@@ -331,7 +331,7 @@ export const AffiliationsTab: React.FC = () => {
             </div>
 
             {/* Section 2: Authorized Clinic Desk Staff */}
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
               <div className="flex items-center gap-2 mb-5">
                 <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
                   Authorized Desk Staff
@@ -351,7 +351,7 @@ export const AffiliationsTab: React.FC = () => {
                 <EmptyState
                   icon={Users}
                   title="No Desk Staff Assigned"
-                  description="Your affiliated clinics haven't assigned receptionists to your desk yet. Front-desk staff manage patient arrivals and fee collection."
+                  description="No receptionist assigned yet."
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -366,7 +366,7 @@ export const AffiliationsTab: React.FC = () => {
                             {rec.fullName}
                           </h4>
                           {rec.clinicName && (
-                            <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] truncate max-w-[160px]">
+                            <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] truncate max-w-[160px]">
                               {rec.clinicName}
                             </span>
                           )}
@@ -376,7 +376,7 @@ export const AffiliationsTab: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleRemoveReceptionist(rec.receptionistId, rec.fullName)}
-                        className="h-8 px-3 rounded-full text-xs font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-[#e5e5ea] hover:border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+                        className="h-8 px-3 rounded-full text-xs font-normal text-[#86868b] hover:text-danger hover:bg-danger-soft border border-[#e5e5ea] hover:border-danger-line transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0"
                         title="Unlink Receptionist"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

@@ -29,7 +29,7 @@ export const AddStaffModal: React.FC = () => {
             if (e.target === e.currentTarget && !provisioning) setShowRecModal(false);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
@@ -45,7 +45,7 @@ export const AddStaffModal: React.FC = () => {
 
             <form onSubmit={handleProvisionReceptionist} className="space-y-4 pt-5">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
                 <input
@@ -55,13 +55,13 @@ export const AddStaffModal: React.FC = () => {
                   value={recFullName}
                   onChange={(e) => setRecFullName(e.target.value)}
                   placeholder="Full name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Login Email
                   </label>
                   <input
@@ -71,11 +71,11 @@ export const AddStaffModal: React.FC = () => {
                     value={recEmail}
                     onChange={(e) => setRecEmail(e.target.value)}
                     placeholder="desk@clinic.com"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Temporary Password
                   </label>
                   <input
@@ -86,16 +86,16 @@ export const AddStaffModal: React.FC = () => {
                     onChange={(e) => setRecPassword(e.target.value)}
                     placeholder="Min. 8 characters"
                     minLength={8}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none">
                     <span className="text-[13px] font-semibold text-[#1d1d1f]">+91</span>
                   </div>
@@ -117,7 +117,7 @@ export const AddStaffModal: React.FC = () => {
 
               {/* Doctor Assignments */}
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-2 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-2 tracking-tight">
                   Assign Doctors
                 </label>
                 {doctors.length === 0 ? (
@@ -148,7 +148,7 @@ export const AddStaffModal: React.FC = () => {
                             <div
                               className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all duration-150 ${
                                 isSelected
-                                  ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-xs'
+                                  ? 'bg-[#0066cc] border-[#0066cc] text-white '
                                   : 'border-[#d2d2d7] bg-white'
                               }`}
                             >
@@ -159,7 +159,7 @@ export const AddStaffModal: React.FC = () => {
                               <div className="text-[11px] text-[#86868b]">{doc.specialty}</div>
                             </div>
                           </div>
-                          <span className="text-xs text-[#86868b] font-medium">₹{doc.consultationFee}</span>
+                          <span className="text-xs text-[#86868b] font-normal">₹{doc.consultationFee}</span>
                         </div>
                       );
                     })}
@@ -172,14 +172,14 @@ export const AddStaffModal: React.FC = () => {
                   type="button"
                   disabled={provisioning}
                   onClick={() => setShowRecModal(false)}
-                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-normal transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={provisioning}
-                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer disabled:opacity-50"
+                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal  transition-all cursor-pointer disabled:opacity-50"
                 >
                   {provisioning ? 'Adding...' : 'Add Receptionist'}
                 </button>

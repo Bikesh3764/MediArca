@@ -83,18 +83,10 @@ export const DoctorDashboard: React.FC = () => {
                   setWalkinError(null);
                   setShowAddModal(true);
                 }}
-                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer"
+                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal flex items-center gap-1.5 transition-all  cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Walk-in</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fetchQueue()}
-                className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-[#86868b]" />
-                <span>Refresh</span>
+                <span>Walk-in</span>
               </button>
             </>
           ) : (
@@ -107,36 +99,28 @@ export const DoctorDashboard: React.FC = () => {
                   setClinicCityFilter('All');
                   setIsAffiliateModalOpen(true);
                 }}
-                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium flex items-center gap-1.5 transition-all shadow-[0_2px_8px_rgba(0,102,204,0.2)] cursor-pointer"
+                className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal flex items-center gap-1.5 transition-all  cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Affiliate Clinic</span>
+                <span>Add Clinic</span>
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/doctor/schedule')}
-                className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                <span>Shifts & Fees</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => fetchAffiliations()}
-                className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-[#86868b]" />
-                <span>Refresh</span>
+                <span>Shifts</span>
               </button>
             </>
           )}
           <button
             type="button"
             onClick={() => setIsReportModalOpen(true)}
-            className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer "
           >
             <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span>Reports & PDF</span>
+            <span>Reports</span>
           </button>
         </div>
       }
@@ -192,7 +176,7 @@ export const DoctorDashboard: React.FC = () => {
               if (e.target === e.currentTarget) setIsAffiliateModalOpen(false);
             }}
           >
-            <div className="relative w-full max-w-2xl bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_60px_rgba(0,0,0,0.16)] overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]">
+            <div className="relative w-full max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea]  overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh]">
               <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mt-3 -mb-1" />
               {/* Modal Header */}
               <div className="p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-white">
@@ -223,12 +207,12 @@ export const DoctorDashboard: React.FC = () => {
                 </div>
               )}
               {feedbackError && (
-                <div className="mx-6 mt-4 p-3 rounded-xl bg-rose-50/70 border border-rose-200/80 text-rose-700 text-xs flex items-center justify-between">
+                <div className="mx-6 mt-4 p-3 rounded-xl bg-danger-soft/70 border border-danger-line/80 text-danger text-xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-danger shrink-0" />
                     <span>{feedbackError}</span>
                   </div>
-                  <button aria-label="Close" onClick={() => setFeedbackError(null)} className="text-rose-700 hover:text-rose-900">
+                  <button aria-label="Close" onClick={() => setFeedbackError(null)} className="text-danger hover:text-danger">
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -243,7 +227,7 @@ export const DoctorDashboard: React.FC = () => {
                     value={clinicSearchQuery}
                     onChange={(e) => setClinicSearchQuery(e.target.value)}
                     placeholder="Search clinic by name, address, or area..."
-                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
+                    className="w-full h-11 pl-10 pr-9 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     autoFocus
                   />
                   {clinicSearchQuery && (
@@ -261,7 +245,7 @@ export const DoctorDashboard: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
                   {availableStates.length > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-medium text-[#86868b]">State:</span>
+                      <span className="text-xs font-normal text-[#86868b]">State:</span>
                       <div className="relative">
                         <select
                           value={clinicStateFilter}
@@ -285,7 +269,7 @@ export const DoctorDashboard: React.FC = () => {
 
                   {(availableCities.length > 0 || clinicStateFilter !== 'All') && (
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-medium text-[#86868b]">City:</span>
+                      <span className="text-xs font-normal text-[#86868b]">City:</span>
                       <div className="relative">
                         <select
                           value={clinicCityFilter}
@@ -348,7 +332,7 @@ export const DoctorDashboard: React.FC = () => {
                     return (
                       <div
                         key={c.id}
-                        className="p-4 rounded-[20px] bg-white border border-[#e5e5ea] hover:border-[#d2d2d7] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        className="p-4 rounded-2xl bg-white border border-[#e5e5ea] hover:border-[#d2d2d7] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -357,7 +341,7 @@ export const DoctorDashboard: React.FC = () => {
                             </h4>
                             <span
                               title="Verified Healthcare Facility"
-                              className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]"
+                              className="inline-flex items-center gap-1 text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]"
                             >
                               <CheckCircle2 className="w-3 h-3 text-[#0066cc]" />
                               Verified
@@ -394,7 +378,7 @@ export const DoctorDashboard: React.FC = () => {
                               Affiliated
                             </span>
                           ) : isPending ? (
-                            <span className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5">
+                            <span className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5">
                               <Clock3 className="w-3.5 h-3.5" />
                               Request Pending
                             </span>
@@ -435,7 +419,7 @@ export const DoctorDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsAffiliateModalOpen(false)}
-                  className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
                 >
                   Close
                 </button>

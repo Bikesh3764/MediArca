@@ -68,7 +68,7 @@ export const MobileTabBar: React.FC = () => {
         />
       </div>
       <span
-        className={`text-[10px] mt-0.5 tracking-tight truncate max-w-full font-medium ${
+        className={`text-[11px] mt-0.5 tracking-tight truncate max-w-full font-normal ${
           isActive ? 'font-semibold text-[#0066cc]' : ''
         }`}
       >

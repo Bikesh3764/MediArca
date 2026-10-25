@@ -76,19 +76,19 @@ export const ManageSchedule: React.FC = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'dashboard',
-      label: 'Live Queue',
+      label: 'Queue',
       icon: LayoutDashboard,
       path: '/doctor/dashboard',
     },
     {
       id: 'affiliations',
-      label: 'Clinics & Staff',
+      label: 'Clinics',
       icon: Building2,
       path: '/doctor/dashboard?tab=affiliations',
     },
     {
       id: 'schedule',
-      label: 'Shifts & Fees',
+      label: 'Shifts',
       icon: Calendar,
       path: '/doctor/schedule',
       active: true,
@@ -274,7 +274,7 @@ export const ManageSchedule: React.FC = () => {
 
   const handleRemoveSlot = (index: number) => {
     if (slots.length <= 1) {
-      setError('You must configure at least one checking shift for this clinic.');
+      setError('Add at least one shift.');
       return;
     }
     setSlots((prev) => {
@@ -356,13 +356,13 @@ export const ManageSchedule: React.FC = () => {
     setSuccessMsg(null);
 
     if (workingDays.length === 0) {
-      setError('Please select at least one practicing day for this clinic facility.');
+      setError('Pick at least one day.');
       setSaving(false);
       return;
     }
 
     if (isNaN(Number(consultationFee)) || Number(consultationFee) < 0) {
-      setError('Please enter a valid consultation fee in ₹ INR (must be 0 or greater).');
+      setError('Enter a fee of ₹0 or more.');
       setSaving(false);
       return;
     }
@@ -457,7 +457,7 @@ export const ManageSchedule: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-          className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+          className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back</span>
@@ -466,24 +466,24 @@ export const ManageSchedule: React.FC = () => {
     >
       <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {loadingClinics ? (
-          <div className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-8" />
+          <div className="h-64 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-8" />
         ) : (
           <>
             {clinics.length === 0 && (
-              <div className="p-5 rounded-[24px] bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 ">
                 <div>
                   <p className="font-semibold text-[14px] flex items-center gap-2 text-[#1d1d1f]">
                     <AlertTriangle className="w-4 h-4 text-[#0066cc]" />
                     Clinic Affiliation Required for Online Bookings
                   </p>
                   <p className="text-[#86868b] mt-1 leading-relaxed">
-                    Online patient bookings and live queue tokens require affiliation with at least one verified clinic partner.
+                    Add a clinic to start taking bookings.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
-                  className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
+                  className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
                 >
                   Affiliate with a Clinic
                 </button>
@@ -494,14 +494,14 @@ export const ManageSchedule: React.FC = () => {
               {successMsg && (
                 <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2.5 animate-fadeIn">
                   <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-                  <span className="font-medium">{successMsg}</span>
+                  <span className="font-normal">{successMsg}</span>
                 </div>
               )}
 
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200/80 text-rose-700 text-xs flex items-center gap-2.5 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
-                  <span className="font-medium">{error}</span>
+                <div className="p-3.5 rounded-xl bg-danger-soft border border-danger-line/80 text-danger text-xs flex items-center gap-2.5 animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-danger" />
+                  <span className="font-normal">{error}</span>
                 </div>
               )}
 
@@ -517,7 +517,7 @@ export const ManageSchedule: React.FC = () => {
                       <select
                         value={selectedClinicId}
                         onChange={(e) => handleClinicChange(e.target.value)}
-                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm font-medium text-[#1d1d1f] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
+                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm font-normal text-[#1d1d1f] bg-white  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
                       >
                         {clinics.map((c) => (
                           <option key={c.clinicId} value={c.clinicId}>
@@ -528,7 +528,7 @@ export const ManageSchedule: React.FC = () => {
                       <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   ) : (
-                    <span className="text-xs font-medium text-[#1d1d1f] bg-white px-3.5 py-1.5 rounded-full border border-[#e5e5ea]">
+                    <span className="text-xs font-normal text-[#1d1d1f] bg-white px-3.5 py-1.5 rounded-full border border-[#e5e5ea]">
                       {selectedClinic ? selectedClinic.clinicName : 'Independent Practice'}
                     </span>
                   )}
@@ -538,12 +538,12 @@ export const ManageSchedule: React.FC = () => {
                   <div className="pt-3 border-t border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#86868b]">
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
-                      <span className="text-[#1d1d1f] font-medium">
+                      <span className="text-[#1d1d1f] font-normal">
                         {selectedClinic.address}{selectedClinic.city ? `, ${selectedClinic.city}` : ''}
                       </span>
                     </div>
                     {selectedClinic.phone && (
-                      <div className="flex items-center gap-1.5 font-medium">
+                      <div className="flex items-center gap-1.5 font-normal">
                         <Phone className="w-3 h-3 text-[#86868b]" />
                         <span>{selectedClinic.phone}</span>
                       </div>
@@ -575,21 +575,21 @@ export const ManageSchedule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('MON_SAT')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Sat
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('WEEKDAYS')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Fri
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('ALL')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         All Days
                       </button>
@@ -607,7 +607,7 @@ export const ManageSchedule: React.FC = () => {
                           onClick={() => toggleWorkingDay(day)}
                           className={`h-11 rounded-full border text-center transition-all cursor-pointer flex items-center justify-center text-xs font-semibold active:scale-95 ${
                             isSelected
-                              ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-sm'
+                              ? 'bg-[#0066cc] border-[#0066cc] text-white '
                               : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed]'
                           }`}
                         >
@@ -625,7 +625,7 @@ export const ManageSchedule: React.FC = () => {
                 {/* 2. Header & Capacity Summary Card */}
                 <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
-                    <span className="text-xs font-medium text-[#86868b] block mb-0.5">
+                    <span className="text-xs font-normal text-[#86868b] block mb-0.5">
                       {selectedClinic ? `${selectedClinic.clinicName} Capacity` : 'Daily Capacity'}
                     </span>
                     <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
@@ -639,7 +639,7 @@ export const ManageSchedule: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleAddSlot}
-                    className="h-10 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="h-10 px-4 rounded-full bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5 text-[#0066cc]" />
                     <span>Add Shift</span>
@@ -651,7 +651,7 @@ export const ManageSchedule: React.FC = () => {
                   {slots.map((slot, idx) => (
                     <div
                       key={slot.id || idx}
-                      className="p-4 sm:p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 transition-all duration-150 shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 transition-all duration-150 "
                     >
                       {/* Shift Header */}
                       <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#e5e5ea]">
@@ -672,7 +672,7 @@ export const ManageSchedule: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveSlot(idx)}
-                            className="text-[#86868b] hover:text-rose-600 p-2 rounded-full hover:bg-rose-50 transition-colors cursor-pointer flex-shrink-0"
+                            className="text-[#86868b] hover:text-danger p-2 rounded-full hover:bg-danger-soft transition-colors cursor-pointer flex-shrink-0"
                             title="Remove this shift"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -683,7 +683,7 @@ export const ManageSchedule: React.FC = () => {
                       {/* 4 Interactive Inputs */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                             Start Time
                           </label>
                           <input
@@ -691,12 +691,12 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.startTime}
                             onChange={(e) => handleSlotChange(idx, 'startTime', e.target.value)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                             End Time
                           </label>
                           <input
@@ -704,12 +704,12 @@ export const ManageSchedule: React.FC = () => {
                             required
                             value={slot.endTime}
                             onChange={(e) => handleSlotChange(idx, 'endTime', e.target.value)}
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                             Avg Consultation (mins)
                           </label>
                           <input
@@ -726,12 +726,12 @@ export const ManageSchedule: React.FC = () => {
                               )
                             }
                             placeholder="20"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                          <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                             Max Patients
                           </label>
                           <input
@@ -748,7 +748,7 @@ export const ManageSchedule: React.FC = () => {
                               )
                             }
                             placeholder="25"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                           />
                         </div>
                       </div>
@@ -759,10 +759,10 @@ export const ManageSchedule: React.FC = () => {
                 {/* 4. Consultation Fee in Indian Rupees (₹ INR) */}
                 <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4">
                   <div className="max-w-sm">
-                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                    <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                       Consultation Fee (₹ INR){selectedClinic ? ` at ${selectedClinic.clinicName}` : ''}
                     </label>
-                    <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                    <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                       <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[14px] font-semibold text-[#1d1d1f]">
                         ₹
                       </span>
@@ -774,14 +774,14 @@ export const ManageSchedule: React.FC = () => {
                         value={consultationFee}
                         onChange={(e) => setConsultationFee(Number(e.target.value))}
                         placeholder="500"
-                        className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm font-medium text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
+                        className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm font-normal text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* 5. Leaves & Out-of-Office Section */}
-                <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+                <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 ">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-[#ff3b30]/10 flex items-center justify-center text-[#ff3b30] shrink-0">
@@ -792,7 +792,7 @@ export const ManageSchedule: React.FC = () => {
                           Out-of-Office & Leaves
                         </h3>
                         <p className="text-xs text-[#86868b] mt-0.5">
-                          Put yourself on leave for today or schedule an upcoming absence window
+                          Take today off or plan time away
                         </p>
                       </div>
                     </div>
@@ -843,7 +843,7 @@ export const ManageSchedule: React.FC = () => {
                       disabled={saving}
                       className={`h-8 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-60 ${
                         isOnLeaveToday
-                          ? 'bg-[#34c759] hover:bg-[#30b753] text-white shadow-xs'
+                          ? 'bg-[#34c759] hover:bg-[#30b753] text-white '
                           : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
                       }`}
                     >
@@ -867,7 +867,7 @@ export const ManageSchedule: React.FC = () => {
                   <button
                     type="submit"
                     disabled={saving}
-                    className="w-full sm:w-auto h-11 px-8 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                    className="w-full sm:w-auto h-11 px-8 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                   >
                     {saving
                       ? 'Saving Schedule...'

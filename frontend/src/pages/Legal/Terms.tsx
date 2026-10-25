@@ -15,7 +15,7 @@ export const Terms: React.FC = () => {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
+        <div className="bg-white rounded-2xl p-6 sm:p-10 border border-[#e5e5ea]  space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-[#1d1d1f]">
               1. Platform Scope
@@ -67,7 +67,7 @@ export const Terms: React.FC = () => {
             </h2>
             <p>
               If you have any questions regarding these terms, please contact us at{' '}
-              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium underline">
+              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-normal underline">
                 contact@mediarca.in
               </a>.
             </p>

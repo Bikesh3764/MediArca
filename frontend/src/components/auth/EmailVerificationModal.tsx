@@ -174,7 +174,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200"
     >
-      <div className="relative w-full max-w-[450px] bg-white/95 backdrop-blur-2xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+      <div className="relative w-full max-w-[450px] bg-white/95 backdrop-blur-2xl rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-center animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
         {/* Apple Sheet Drag Handle Indicator (Mobile Only) */}
         <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
 
@@ -198,16 +198,16 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
           </h3>
           <p className="mt-1.5 text-xs text-[#86868b]">
             {isAlreadyVerified ? (
-              <span>Your account is already active. Sign in with your password to continue.</span>
+              <span>Your account is active. Sign in to continue.</span>
             ) : (
-              <>Enter the 6-digit code sent to <span className="font-medium text-[#1d1d1f]">{email}</span></>
+              <>Enter the 6-digit code sent to <span className="font-normal text-[#1d1d1f]">{email}</span></>
             )}
           </p>
         </div>
 
         {/* Error message */}
         {error && !isAlreadyVerified && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 text-left">
+          <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2 text-left">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
@@ -229,14 +229,14 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                 <span>Ready to Sign In</span>
               </div>
               <p className="text-[#86868b] leading-relaxed">
-                This email address is already verified on MediArca. Please sign in directly with your password.
+                This email is already verified. Sign in with your password.
               </p>
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none"
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
             >
               Sign In with Password
             </button>
@@ -258,7 +258,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                   value={digit}
                   onChange={(e) => handleDigitChange(idx, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(idx, e)}
-                  className="w-10 sm:w-11 h-11 sm:h-12 text-center text-base sm:text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-10 sm:w-11 h-11 sm:h-12 text-center text-base sm:text-lg font-semibold rounded-xl border border-[#d2d2d7] bg-white text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               ))}
             </div>
@@ -266,7 +266,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             <button
               type="submit"
               disabled={submitting || fullOtp.length !== 6}
-              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
@@ -287,7 +287,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
               type="button"
               onClick={handleResend}
               disabled={countdown > 0 || resending}
-              className={`inline-flex items-center gap-1.5 font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 font-normal transition-colors ${
                 countdown > 0 || resending
                   ? 'text-[#86868b] cursor-not-allowed'
                   : 'text-[#0066cc] hover:text-[#0071e3] cursor-pointer'

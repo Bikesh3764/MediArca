@@ -75,7 +75,7 @@ export const FAQ: React.FC = () => {
             return (
               <div
                 key={faq.id}
-                className="bg-white rounded-[20px] border border-[#e5e5ea] overflow-hidden shadow-2xs transition-all"
+                className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden  transition-all"
               >
                 <button
                   type="button"
@@ -105,11 +105,11 @@ export const FAQ: React.FC = () => {
         </div>
 
         {/* Contact Help Link */}
-        <div className="p-6 rounded-[20px] bg-white border border-[#e5e5ea] text-center space-y-2">
+        <div className="p-6 rounded-2xl bg-white border border-[#e5e5ea] text-center space-y-2">
           <p className="text-sm font-semibold text-[#1d1d1f]">Still have a question?</p>
           <p className="text-xs text-[#6e6e73]">
             Feel free to write to us anytime at{' '}
-            <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium hover:underline">
+            <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-normal hover:underline">
               contact@mediarca.in
             </a>
           </p>

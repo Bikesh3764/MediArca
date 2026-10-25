@@ -24,7 +24,7 @@ export const DoctorsTab: React.FC = () => {
                   <div>
                     <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Practitioner Verification Queue</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-                      Doctors must be verified by admin before appearing in patient searches.
+                      Doctors appear in search after approval.
                     </p>
                   </div>
                   <span className="text-xs text-[#86868b]">
@@ -64,9 +64,9 @@ export const DoctorsTab: React.FC = () => {
                           key={st}
                           type="button"
                           onClick={() => setDoctorStatusFilter(st)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                          className={`px-3 py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
                             doctorStatusFilter === st
-                              ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                              ? 'bg-white text-[#1d1d1f]  font-semibold'
                               : 'text-[#86868b] hover:text-[#1d1d1f]'
                           }`}
                         >
@@ -130,7 +130,7 @@ export const DoctorsTab: React.FC = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 font-medium text-[#1d1d1f]">{doc.specialty}</td>
+                          <td className="py-3.5 px-3 font-normal text-[#1d1d1f]">{doc.specialty}</td>
                           <td className="py-3.5 px-3 text-[#86868b]">
                             {doc.checkingStartTime
                               ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}`
@@ -158,7 +158,7 @@ export const DoctorsTab: React.FC = () => {
                                     size="sm"
                                     disabled={actionId === doc.id}
                                     onClick={() => handleVerify(doc.id, 'REJECTED')}
-                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                    className="text-danger hover:text-danger hover:border-danger-line text-xs"
                                   >
                                     {actionId === doc.id ? 'Updating...' : 'Reject'}
                                   </AppleButton>
@@ -180,7 +180,7 @@ export const DoctorsTab: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'SUSPENDED')}
-                                  className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                  className="text-danger hover:text-danger hover:border-danger-line text-xs"
                                 >
                                   {actionId === doc.id ? 'Suspending...' : 'Suspend'}
                                 </AppleButton>
@@ -192,7 +192,7 @@ export const DoctorsTab: React.FC = () => {
                                   size="sm"
                                   disabled={actionId === doc.id}
                                   onClick={() => handleVerify(doc.id, 'VERIFIED')}
-                                  className="text-xs font-medium"
+                                  className="text-xs font-normal"
                                 >
                                   {actionId === doc.id ? 'Activating...' : 'Re-activate'}
                                 </AppleButton>

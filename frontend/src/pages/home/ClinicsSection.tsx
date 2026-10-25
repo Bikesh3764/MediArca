@@ -26,10 +26,10 @@ export const ClinicsSection: React.FC = () => {
             {selectedClinic ? (
               <div className="space-y-8 animate-fadeIn">
                 {/* Selected Clinic Header Card */}
-                <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0 shadow-xs flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0  flex items-center justify-center">
                         <img
                           src={selectedClinic.avatarUrl ? getFileUrl(selectedClinic.avatarUrl) : clinicLobbyBg}
                           alt={selectedClinic.clinicName}
@@ -59,7 +59,7 @@ export const ClinicsSection: React.FC = () => {
                               <span className="font-normal">{formatDisplayPhone(selectedClinic.phone)}</span>
                             </a>
                           )}
-                          <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                          <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-normal border border-[#e5e5ea]">
                             {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
                           </span>
                         </div>
@@ -86,7 +86,7 @@ export const ClinicsSection: React.FC = () => {
                   </div>
 
                   {clinicPracticingDoctors.length === 0 ? (
-                    <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                    <div className="bg-white rounded-2xl border border-[#e5e5ea] p-12 text-center max-w-md mx-auto ">
                       <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
                         No doctors listed
                       </h4>
@@ -111,7 +111,7 @@ export const ClinicsSection: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                           >
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
@@ -133,7 +133,7 @@ export const ClinicsSection: React.FC = () => {
                               <div
                                 className={`doc-fallback-banner w-full h-full ${
                                   doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                                } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
+                                } items-center justify-center font-semibold text-[44px] text-[#c7c7cc] bg-[#f5f5f7] select-none`}
                               >
                                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                               </div>
@@ -153,16 +153,16 @@ export const ClinicsSection: React.FC = () => {
                                       {doctor.user.fullName}
                                     </h3>
                                     <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
-                                      <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                      <span className="font-normal text-[#0066cc]">{doctor.specialty}</span>
                                       {cleanDegrees && (
                                         <>
                                           <span className="text-[#c7c7cc] select-none">•</span>
-                                          <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                          <span className="font-normal text-[#48484a]">{cleanDegrees}</span>
                                         </>
                                       )}
                                     </div>
                                   </div>
-                                  <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
+                                  <span className="text-[11px] font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
                                     {doctor.experienceYears} yrs exp
                                   </span>
                                 </div>
@@ -171,7 +171,7 @@ export const ClinicsSection: React.FC = () => {
                                 <div className="mt-3.5 space-y-2 text-xs">
                                   <div className="flex items-center gap-2 min-w-0">
                                     <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                    <span className="truncate text-[#48484a] font-medium tracking-tight">
+                                    <span className="truncate text-[#48484a] font-normal tracking-tight">
                                       {slots.length > 0
                                         ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                         : doctor.checkingStartTime
@@ -179,7 +179,7 @@ export const ClinicsSection: React.FC = () => {
                                         : 'Consultation hours'}
                                     </span>
                                     {slots.length > 1 && (
-                                      <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
+                                      <span className="text-[11px] font-normal text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
                                         +{slots.length - 1} slots
                                       </span>
                                     )}
@@ -198,8 +198,8 @@ export const ClinicsSection: React.FC = () => {
 
                                 {docItem.hasReceptionist === false ? (
                                   <span
-                                    className="h-8 px-3.5 rounded-full text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
-                                    title="Online booking is closed because no receptionist is currently assigned for this doctor at this facility."
+                                    className="h-8 px-3.5 rounded-full text-[11px] font-normal text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
+                                    title="Online booking is closed at this clinic for now."
                                   >
                                     No Desk Staff
                                   </span>
@@ -207,7 +207,7 @@ export const ClinicsSection: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => navigate(getDoctorBookPath(doctor.id, selectedClinic.id, slots[0]?.id))}
-                                    className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
+                                    className="h-8 min-w-[78px] px-5 rounded-full text-xs font-normal text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                                   >
                                     Book
                                   </button>
@@ -230,7 +230,7 @@ export const ClinicsSection: React.FC = () => {
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
-                        className="h-72 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-4"
+                        className="h-72 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-4"
                       />
                     ))}
                   </div>
@@ -238,7 +238,7 @@ export const ClinicsSection: React.FC = () => {
                   <EmptyState
                     icon={Building2}
                     title="No clinics found"
-                    description="No clinical facilities matched your search or location filters."
+                    description="No clinics match your search."
                     actionText="Reset Filters"
                     onAction={resetClinicFilters}
                   />
@@ -254,7 +254,7 @@ export const ClinicsSection: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => handleSelectClinic(clinic)}
-                          className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
                           <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -298,7 +298,7 @@ export const ClinicsSection: React.FC = () => {
 
                             {/* Apple HIG Card Footer */}
                             <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
-                              <span className="text-xs font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
+                              <span className="text-xs font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
                                 {docCount === 1 ? '1 Specialist' : `${docCount} Specialists`}
                               </span>
                               <button
@@ -307,7 +307,7 @@ export const ClinicsSection: React.FC = () => {
                                   e.stopPropagation();
                                   handleSelectClinic(clinic);
                                 }}
-                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
+                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none "
                               >
                                 View Doctors
                               </button>

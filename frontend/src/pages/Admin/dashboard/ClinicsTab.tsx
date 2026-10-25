@@ -23,7 +23,7 @@ export const ClinicsTab: React.FC = () => {
                   <div>
                     <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Clinic Facility Verification Queue</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-                      Clinics must be verified by MediArca administration before appearing in patient searches or doctor affiliation lists.
+                      Clinics appear in search after approval.
                     </p>
                   </div>
                   <span className="text-xs text-[#86868b]">
@@ -63,9 +63,9 @@ export const ClinicsTab: React.FC = () => {
                           key={st}
                           type="button"
                           onClick={() => setClinicStatusFilter(st)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
+                          className={`px-3 py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
                             clinicStatusFilter === st
-                              ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                              ? 'bg-white text-[#1d1d1f]  font-semibold'
                               : 'text-[#86868b] hover:text-[#1d1d1f]'
                           }`}
                         >
@@ -112,19 +112,19 @@ export const ClinicsTab: React.FC = () => {
                                 <div className="text-[#86868b]">
                                   {c.user?.fullName} • {c.user?.email}
                                 </div>
-                                {c.phone && <div className="text-[10px] text-[#86868b]">{c.phone}</div>}
+                                {c.phone && <div className="text-[11px] text-[#86868b]">{c.phone}</div>}
                               </div>
                             </td>
                             <td className="py-3.5 px-3 text-[#1d1d1f]">
                               <div>{c.address}</div>
-                              <div className="text-[#86868b] text-[10px]">{c.city}</div>
+                              <div className="text-[#86868b] text-[11px]">{c.city}</div>
                             </td>
                             <td className="py-3.5 px-3">
                               <div className="flex flex-col gap-0.5">
-                                <span className="text-[#1d1d1f] font-medium">
+                                <span className="text-[#1d1d1f] font-normal">
                                   {c._count?.doctors ?? c.doctorsCount ?? 0} Affiliated Doctor(s)
                                 </span>
-                                <span className="text-[10px] text-[#86868b]">
+                                <span className="text-[11px] text-[#86868b]">
                                   {c._count?.receptionists ?? c.receptionistsCount ?? 0} Receptionist(s) • {c._count?.appointments ?? c.appointmentsCount ?? 0} Bookings
                                 </span>
                               </div>
@@ -150,7 +150,7 @@ export const ClinicsTab: React.FC = () => {
                                       size="sm"
                                       disabled={clinicActionId === c.id}
                                       onClick={() => handleVerifyClinic(c.id, 'REJECTED')}
-                                      className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                      className="text-danger hover:text-danger hover:border-danger-line text-xs"
                                     >
                                       {clinicActionId === c.id ? 'Updating...' : 'Reject'}
                                     </AppleButton>
@@ -172,7 +172,7 @@ export const ClinicsTab: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'SUSPENDED')}
-                                    className="text-rose-600 hover:text-rose-700 hover:border-rose-300 text-xs"
+                                    className="text-danger hover:text-danger hover:border-danger-line text-xs"
                                   >
                                     {clinicActionId === c.id ? 'Suspending...' : 'Suspend'}
                                   </AppleButton>
@@ -184,7 +184,7 @@ export const ClinicsTab: React.FC = () => {
                                     size="sm"
                                     disabled={clinicActionId === c.id}
                                     onClick={() => handleVerifyClinic(c.id, 'VERIFIED')}
-                                    className="text-xs font-medium"
+                                    className="text-xs font-normal"
                                   >
                                     {clinicActionId === c.id ? 'Activating...' : 'Re-activate'}
                                   </AppleButton>

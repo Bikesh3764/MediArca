@@ -23,7 +23,7 @@ export const RescheduleModal: React.FC = () => {
             if (e.target === e.currentTarget) setRescheduleTarget(null);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7  space-y-5 max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
               <div>
@@ -47,7 +47,7 @@ export const RescheduleModal: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Current Date</span>
-                <span className="font-medium text-[#1d1d1f]">
+                <span className="font-normal text-[#1d1d1f]">
                   {rescheduleTarget.currentDate}
                   {rescheduleTarget.currentQueueNumber ? ` (Token #${rescheduleTarget.currentQueueNumber})` : ''}
                 </span>
@@ -55,7 +55,7 @@ export const RescheduleModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 New Appointment Date
               </label>
               <input
@@ -63,7 +63,7 @@ export const RescheduleModal: React.FC = () => {
                 min={getLocalDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f]  focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"
               />
               <div className="flex gap-2 mt-2">
                 <button
@@ -73,7 +73,7 @@ export const RescheduleModal: React.FC = () => {
                     d.setDate(d.getDate() + 1);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-xs font-normal bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
                   Tomorrow
                 </button>
@@ -84,7 +84,7 @@ export const RescheduleModal: React.FC = () => {
                     d.setDate(d.getDate() + 2);
                     setRescheduleDate(getLocalDateString(d));
                   }}
-                  className="px-3 py-1 rounded-full text-xs font-medium bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-full text-xs font-normal bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer"
                 >
                   In 2 Days
                 </button>
@@ -93,14 +93,14 @@ export const RescheduleModal: React.FC = () => {
 
             {availableShifts.length > 1 && (
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Consultation Shift
                 </label>
                 <div className="relative">
                   <select
                     value={rescheduleSlotId}
                     onChange={(e) => setRescheduleSlotId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f]  focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
                   >
                     <option value="">Standard Shift / Any</option>
                     {availableShifts.map((s: any, idx: number) => (
@@ -115,7 +115,7 @@ export const RescheduleModal: React.FC = () => {
             )}
 
             {rescheduleError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+              <div className="p-3 rounded-xl bg-danger-soft border border-danger-line text-xs text-danger flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{rescheduleError}</span>
               </div>
@@ -126,7 +126,7 @@ export const RescheduleModal: React.FC = () => {
                 type="button"
                 onClick={() => setRescheduleTarget(null)}
                 disabled={rescheduling}
-                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -134,7 +134,7 @@ export const RescheduleModal: React.FC = () => {
                 type="button"
                 onClick={handleConfirmReschedule}
                 disabled={rescheduling}
-                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all cursor-pointer disabled:opacity-60"
+                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all cursor-pointer disabled:opacity-60"
               >
                 {rescheduling ? 'Shifting...' : 'Confirm Shift'}
               </button>

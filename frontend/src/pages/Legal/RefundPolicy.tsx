@@ -16,9 +16,9 @@ export const RefundPolicy: React.FC = () => {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
+        <div className="bg-white rounded-2xl p-6 sm:p-10 border border-[#e5e5ea]  space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
           {/* Neutral Highlight */}
-          <div className="p-4 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] text-[#1d1d1f] flex items-start gap-3">
+          <div className="p-4 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] text-[#1d1d1f] flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-sm">Zero Upfront Online Payments</p>
@@ -70,7 +70,7 @@ export const RefundPolicy: React.FC = () => {
             </h2>
             <p>
               If you have any questions regarding your appointment or billing policy, write to us at{' '}
-              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium underline">
+              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-normal underline">
                 contact@mediarca.in
               </a>.
             </p>

@@ -44,7 +44,7 @@ export const QueueTab: React.FC = () => {
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
                     Live Patient Queue
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                     {queueAppointments.length}
                   </span>
                 </div>
@@ -58,7 +58,7 @@ export const QueueTab: React.FC = () => {
                           setQueueDoctorId(e.target.value);
                           setQueueShiftFilter('ALL');
                         }}
-                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       >
                         {linkedDoctors.map((doc) => (
                           <option key={doc.doctorId} value={doc.doctorId}>
@@ -75,7 +75,7 @@ export const QueueTab: React.FC = () => {
                     <select
                       value={queueShiftFilter}
                       onChange={(e) => setQueueShiftFilter(e.target.value)}
-                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       title="Filter queue by clinical shift"
                     >
                       <option value="ALL">All Shifts</option>
@@ -93,13 +93,13 @@ export const QueueTab: React.FC = () => {
                       type="date"
                       value={queueDate}
                       onChange={(e) => setQueueDate(e.target.value)}
-                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
+                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
                     />
                     {queueDate !== getLocalDateString() && (
                       <button
                         type="button"
                         onClick={() => setQueueDate(getLocalDateString())}
-                        className="h-10 px-3.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                        className="h-10 px-3.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-normal text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
                       >
                         Today
                       </button>
@@ -165,8 +165,8 @@ export const QueueTab: React.FC = () => {
                         onClick={() => setStatusFilter(tab.id)}
                         className={`h-8 px-3.5 rounded-full text-xs transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
                           isActive
-                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                            : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                         }`}
                       >
                         <span>{tab.label}</span>
@@ -206,10 +206,10 @@ export const QueueTab: React.FC = () => {
                 const isToday = queueDate === getLocalDateString();
                 if (isToday && doc.isOnLeaveToday) {
                   return (
-                    <div className="mb-4 p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center justify-between gap-3 animate-fadeIn">
+                    <div className="mb-4 p-3.5 rounded-2xl bg-danger-soft border border-danger-line text-xs text-danger flex items-center justify-between gap-3 animate-fadeIn">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <CalendarX className="w-4 h-4 text-rose-600 shrink-0" />
-                        <span className="font-semibold text-rose-900">
+                        <CalendarX className="w-4 h-4 text-danger shrink-0" />
+                        <span className="font-semibold text-danger">
                           {cleanDoctorName(doc.fullName)} is marked on leave today{doc.todayLeave?.reason ? ` (${doc.todayLeave.reason})` : ''}.
                         </span>
                       </div>
@@ -221,7 +221,7 @@ export const QueueTab: React.FC = () => {
                             doctorName: cleanDoctorName(doc.fullName),
                           })
                         }
-                        className="h-7 px-3 rounded-full bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                        className="h-7 px-3 rounded-full bg-white hover:bg-danger-soft text-danger border border-danger-line font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
                       >
                         Schedule
                       </button>
@@ -232,9 +232,9 @@ export const QueueTab: React.FC = () => {
                 const docDays = doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
                 if (!docDays.includes(dayCode)) {
                   return (
-                    <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between gap-3 animate-fadeIn">
+                    <div className="mb-4 p-3 rounded-2xl bg-warning-soft border border-warning-line text-xs text-warning flex items-center justify-between gap-3 animate-fadeIn">
                       <div className="flex items-center gap-2">
-                        <CalendarOff className="w-4 h-4 text-amber-600 shrink-0" />
+                        <CalendarOff className="w-4 h-4 text-warning shrink-0" />
                         <span>
                           {cleanDoctorName(doc.fullName)} does not usually sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
                         </span>
@@ -247,7 +247,7 @@ export const QueueTab: React.FC = () => {
                             doctorName: cleanDoctorName(doc.fullName),
                           })
                         }
-                        className="h-7 px-2.5 rounded-full bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
+                        className="h-7 px-2.5 rounded-full bg-white hover:bg-warning-soft text-warning border border-warning-line font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
                       >
                         Days
                       </button>
@@ -262,10 +262,10 @@ export const QueueTab: React.FC = () => {
                 <EmptyState
                   icon={Users}
                   title="No Doctors Assigned"
-                  description="Ask your clinic administrator to assign practitioners to your reception desk."
+                  description="Ask your clinic to assign doctors to you."
                 />
               ) : queueLoading && !hasLoadedInitialQueue ? (
-                <div className="py-14 text-center text-xs text-[#86868b]">Loading live queue...</div>
+                <div className="py-14 text-center text-xs text-[#86868b]">Loading…</div>
               ) : queueAppointments.length === 0 ? (
                 <EmptyState
                   icon={Clock}
@@ -301,7 +301,7 @@ export const QueueTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setQueueSearch('')}
-                          className="text-xs text-[#0066cc] font-medium hover:underline cursor-pointer"
+                          className="text-xs text-[#0066cc] font-normal hover:underline cursor-pointer"
                         >
                           Clear Search
                         </button>
@@ -345,7 +345,7 @@ export const QueueTab: React.FC = () => {
                         </div>
                         <p className="text-sm font-semibold text-[#1d1d1f]">No Completed Consultations</p>
                         <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          No patient visits have been marked completed yet for this date{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                          No completed visits yet{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
                         </p>
                       </div>
                     );
@@ -427,27 +427,27 @@ export const QueueTab: React.FC = () => {
                       const cancelledCount = shiftAppts.filter((a) => a.status === 'CANCELLED' || a.status === 'EXPIRED').length;
 
                       return (
-                        <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white shadow-xs">
+                        <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white ">
                           {/* Apple Shift Section Header */}
                           <div className="px-4 sm:px-5 py-3 bg-[#f5f5f7] border-b border-[#e5e5ea] flex items-center justify-between gap-3 flex-wrap">
                             <div className="flex items-center gap-2.5">
-                              <span className="text-xs font-bold text-[#1d1d1f] uppercase tracking-wider">
+                              <span className="text-[13px] font-semibold text-[#1d1d1f]">
                                 {shiftName}
                               </span>
-                              <span className="text-[11px] font-medium text-[#86868b] px-2.5 py-0.5 rounded-full bg-white border border-[#e5e5ea]">
+                              <span className="text-[11px] font-normal text-[#86868b] px-2.5 py-0.5 rounded-full bg-white border border-[#e5e5ea]">
                                 {shiftAppts.length} {shiftAppts.length === 1 ? 'patient' : 'patients'}
                               </span>
                             </div>
 
                             <div className="flex items-center gap-2 text-xs text-[#86868b] flex-wrap">
                               {inCabinCount > 0 && (
-                                <span className="inline-flex items-center gap-1 font-medium text-[#0066cc]">
+                                <span className="inline-flex items-center gap-1 font-normal text-[#0066cc]">
                                   <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] animate-pulse" />
                                   {inCabinCount} in cabin
                                 </span>
                               )}
                               {waitingCount > 0 && (
-                                <span className="font-medium text-[#1d1d1f]">
+                                <span className="font-normal text-[#1d1d1f]">
                                   {waitingCount} waiting
                                 </span>
                               )}
@@ -487,7 +487,7 @@ export const QueueTab: React.FC = () => {
                             <div
                               className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-[15px] shrink-0 transition-all ${
                                 appt.status === 'IN_CONSULTATION'
-                                  ? 'bg-[#1d1d1f] text-white shadow-xs'
+                                  ? 'bg-[#1d1d1f] text-white '
                                   : appt.status === 'COMPLETED'
                                   ? 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
                                   : isCancelledOrExpired
@@ -514,13 +514,13 @@ export const QueueTab: React.FC = () => {
                                   const doc = linkedDoctors.find((d) => d.doctorId === (appt.doctorId || selectedDoctorId));
                                   if (!doc?.fullName) return null;
                                   return (
-                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                                       {cleanDoctorName(doc.fullName)}
                                     </span>
                                   );
                                 })()}
                                 <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${
                                     appt.status === 'IN_CONSULTATION'
                                       ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
                                       : appt.status === 'WAITING'
@@ -546,7 +546,7 @@ export const QueueTab: React.FC = () => {
                                   <>
                                     <span>•</span>
                                     <span>
-                                      Est. <span className="text-[#1d1d1f] font-medium">{appt.estimatedTime}</span>
+                                      Est. <span className="text-[#1d1d1f] font-normal">{appt.estimatedTime}</span>
                                     </span>
                                   </>
                                 )}
@@ -572,7 +572,7 @@ export const QueueTab: React.FC = () => {
                                 type="button"
                                 disabled={togglingCheckinId === appt.id}
                                 onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                                className={`h-8 px-3 rounded-full text-xs font-medium inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                className={`h-8 px-3 rounded-full text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                                   appt.isCheckedIn
                                     ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
                                     : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
@@ -584,7 +584,7 @@ export const QueueTab: React.FC = () => {
                                     appt.isCheckedIn ? 'bg-[#0066cc]' : 'bg-[#86868b]'
                                   }`}
                                 />
-                                <span>{appt.isCheckedIn ? 'At Clinic' : 'Mark Arrived'}</span>
+                                <span>{appt.isCheckedIn ? 'Arrived' : 'Mark arrived'}</span>
                               </button>
                             )}
 
@@ -594,20 +594,20 @@ export const QueueTab: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all active:scale-[0.98] cursor-pointer"
+                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-[0.98] cursor-pointer"
                                 >
                                   Call In
                                 </button>
                               )}
 
                               {appt.status === 'WAITING' && appt.isCheckedIn && isDoctorAway && isTodayQueue && (
-                                <span className="h-8 px-3 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-medium inline-flex items-center">
+                                <span className="h-8 px-3 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-normal inline-flex items-center">
                                   Doctor Away
                                 </span>
                               )}
 
                               {appt.status === 'IN_CONSULTATION' && (
-                                <span className="h-8 px-3 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-medium inline-flex items-center">
+                                <span className="h-8 px-3 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-normal inline-flex items-center">
                                   In Cabin
                                 </span>
                               )}
@@ -633,10 +633,10 @@ export const QueueTab: React.FC = () => {
                                     setRescheduleSlotId(appt.slotId || '');
                                     setRescheduleError(null);
                                   }}
-                                  className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
+                                  className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
                                   title="Reschedule to another date"
                                 >
-                                  Shift
+                                  Move
                                 </button>
                               )}
 
@@ -645,7 +645,7 @@ export const QueueTab: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="h-8 px-3 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 text-xs font-medium border border-[#e5e5ea] transition-all cursor-pointer"
+                                  className="h-8 px-3 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
                                 >
                                   Cancel
                                 </button>

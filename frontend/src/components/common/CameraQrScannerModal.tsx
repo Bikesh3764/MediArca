@@ -187,7 +187,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
     >
-      <div className="relative w-full max-w-[440px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden p-6 sm:p-7 text-center">
+      <div className="relative w-full max-w-[440px] bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden p-6 sm:p-7 text-center">
         {/* Close Button */}
         <button aria-label="Close"
           type="button"
@@ -206,7 +206,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
             Scan Clinic QR Code
           </h2>
           <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
-            Point your device camera at the front desk QR code to confirm arrival.
+            Scan the QR code at the front desk.
           </p>
         </div>
 
@@ -220,7 +220,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
             </div>
             <div className="p-3 bg-white rounded-xl border border-[#e5e5ea] text-left">
               <p className="text-[11px] text-[#48484a] leading-relaxed">
-                Please allow camera access in your browser settings to scan the QR code, or notify the front desk to confirm arrival.
+                Allow camera access to scan, or tell the front desk you’ve arrived.
               </p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 
             {/* Viewfinder overlay */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-              <div className="w-48 h-48 border-2 border-[#0066cc] rounded-xl relative shadow-[0_0_20px_rgba(0,102,204,0.3)]">
+              <div className="w-48 h-48 border-2 border-[#0066cc] rounded-xl relative ">
                 <div className="w-full h-0.5 bg-[#0066cc] shadow-[0_0_8px_#0066cc] absolute top-0 left-0 animate-pulse transition-all" />
               </div>
             </div>

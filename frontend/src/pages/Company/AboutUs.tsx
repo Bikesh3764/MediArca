@@ -17,7 +17,7 @@ export const AboutUs: React.FC = () => {
         </div>
 
         {/* Core Principles */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-8">
+        <div className="bg-white rounded-2xl p-6 sm:p-10 border border-[#e5e5ea]  space-y-8">
           <div>
             <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
               What We Do
@@ -28,21 +28,21 @@ export const AboutUs: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
-            <div className="p-5 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
+            <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
               <h3 className="text-sm font-semibold text-[#1d1d1f]">Live Queue Tokens</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
                 Receive an official queue number and track your live turn directly from your phone as patients are called.
               </p>
             </div>
 
-            <div className="p-5 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
+            <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
               <h3 className="text-sm font-semibold text-[#1d1d1f]">Zero Advance Fees</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
                 Booking a token is completely free on MediArca. You pay the doctor's consultation fee directly at the clinic desk.
               </p>
             </div>
 
-            <div className="p-5 rounded-[18px] bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
+            <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
               <h3 className="text-sm font-semibold text-[#1d1d1f]">Cabin Presence Status</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
                 Know when the doctor is in-cabin or stepped out, so you never wait blindly in an empty lobby.
@@ -53,14 +53,14 @@ export const AboutUs: React.FC = () => {
 
         {/* Who It Helps */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-xs space-y-2.5">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-2.5">
             <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For Patients</h3>
             <p className="text-xs sm:text-sm text-[#6e6e73] leading-relaxed">
               Find verified doctors across specialties, book a token without paying anything upfront, and reach the clinic comfortably when your turn approaches.
             </p>
           </div>
 
-          <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-xs space-y-2.5">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-2.5">
             <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For Clinics & Doctors</h3>
             <p className="text-xs sm:text-sm text-[#6e6e73] leading-relaxed">
               Manage physical walk-ins and digital bookings in a single unified queue. Reduce crowded waiting rooms and keep daily OPD running smoothly.

@@ -20,7 +20,7 @@ export const ApproveStaffModal: React.FC = () => {
             if (e.target === e.currentTarget && processingRecId === null) setApprovingRec(null);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
@@ -46,16 +46,16 @@ export const ApproveStaffModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1 tracking-tight">
                   Assign Doctors Managed by this Receptionist
                 </label>
                 <p className="text-xs text-[#86868b] mb-3 leading-relaxed">
-                  This receptionist will only be able to view schedules, book walk-ins, and manage queues for selected practitioners.
+                  They can only manage queues for the doctors you pick.
                 </p>
 
                 {doctors.filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE').length === 0 ? (
                   <div className="p-4 rounded-xl bg-[#f5f5f7] text-[#86868b] text-xs border border-[#e5e5ea]">
-                    No active affiliated doctors at this clinic yet. You can approve now and assign doctors later.
+                    No doctors yet. You can approve now and assign doctors later.
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
@@ -106,7 +106,7 @@ export const ApproveStaffModal: React.FC = () => {
                 type="button"
                 disabled={processingRecId !== null}
                 onClick={() => setApprovingRec(null)}
-                className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
               >
                 Cancel
               </button>

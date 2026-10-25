@@ -44,7 +44,7 @@ export const WalkinModal: React.FC = () => {
             }
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] relative text-left">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  relative text-left">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <button aria-label="Close"
               type="button"
@@ -65,8 +65,8 @@ export const WalkinModal: React.FC = () => {
             </div>
 
             {walkinError && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50/70 border border-rose-200/80 text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <div className="mb-4 p-3 rounded-xl bg-danger-soft/70 border border-danger-line/80 text-danger text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-danger flex-shrink-0" />
                 <span>{walkinError}</span>
               </div>
             )}
@@ -80,7 +80,7 @@ export const WalkinModal: React.FC = () => {
 
             <form onSubmit={handleCreateWalkin} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Patient Full Name
                 </label>
                 <input
@@ -89,13 +89,13 @@ export const WalkinModal: React.FC = () => {
                   placeholder="Enter patient's full name"
                   value={walkinName}
                   onChange={(e) => setWalkinName(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Age
                   </label>
                   <input
@@ -103,18 +103,18 @@ export const WalkinModal: React.FC = () => {
                     placeholder="Years"
                     value={walkinAge}
                     onChange={(e) => setWalkinAge(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Gender
                   </label>
                   <div className="relative">
                     <select
                       value={walkinGender}
                       onChange={(e) => setWalkinGender(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="Not Specified">Not Specified</option>
                       <option value="Male">Male</option>
@@ -127,10 +127,10 @@ export const WalkinModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none">
                     <span className="text-[13px] font-semibold text-[#1d1d1f]">+91</span>
                   </div>
@@ -147,14 +147,14 @@ export const WalkinModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Consultation Date
                 </label>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setWalkinDate(getLocalDateString())}
-                    className={`h-9 px-3.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                    className={`h-9 px-3.5 rounded-xl text-xs font-normal border transition-all cursor-pointer ${
                       walkinDate === getLocalDateString()
                         ? 'bg-[#0066cc] text-white border-[#0066cc]'
                         : 'bg-white text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]'
@@ -165,7 +165,7 @@ export const WalkinModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setWalkinDate(getTomorrowDateString())}
-                    className={`h-9 px-3.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                    className={`h-9 px-3.5 rounded-xl text-xs font-normal border transition-all cursor-pointer ${
                       walkinDate === getTomorrowDateString()
                         ? 'bg-[#0066cc] text-white border-[#0066cc]'
                         : 'bg-white text-[#1d1d1f] border-[#d2d2d7] hover:bg-[#f5f5f7]'
@@ -178,7 +178,7 @@ export const WalkinModal: React.FC = () => {
                     min={getLocalDateString()}
                     value={walkinDate}
                     onChange={(e) => setWalkinDate(e.target.value)}
-                    className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
+                    className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   />
                 </div>
               </div>
@@ -186,7 +186,7 @@ export const WalkinModal: React.FC = () => {
               {/* Clinic Affiliation Venue Selector */}
               {affiliations?.clinics && affiliations.clinics.length > 1 && (
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Clinic Venue
                   </label>
                   <div className="relative">
@@ -197,7 +197,7 @@ export const WalkinModal: React.FC = () => {
                         setWalkinClinicId(e.target.value);
                         setWalkinSlotId('');
                       }}
-                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="">Select Clinic Venue</option>
                       {affiliations.clinics.map((c) => (
@@ -213,19 +213,19 @@ export const WalkinModal: React.FC = () => {
 
               {affiliations && affiliations.clinics.length === 0 && (
                 <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
-                  <span>No active clinic affiliations found. Please affiliate with a verified clinic to issue walk-in queue tokens.</span>
+                  <span>Add a clinic to create walk-in tokens.</span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Checking Shift
                 </label>
                 <div className="relative">
                   <select
                     value={walkinSlotId}
                     onChange={(e) => setWalkinSlotId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     <option value="">Current / Default Shift</option>
                     {(
@@ -243,7 +243,7 @@ export const WalkinModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Reason for Visit
                 </label>
                 <input
@@ -251,7 +251,7 @@ export const WalkinModal: React.FC = () => {
                   placeholder="Fever, cough, general consultation"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -259,7 +259,7 @@ export const WalkinModal: React.FC = () => {
                 <button
                   type="submit"
                   disabled={walkinSubmitting}
-                  className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.99] text-white text-[14px] font-semibold tracking-tight shadow-[0_2px_8px_rgba(0,102,204,0.22)] transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.99] text-white text-[14px] font-semibold tracking-tight  transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
                   {walkinSubmitting ? 'Issuing Ticket...' : 'Queue Walk-in Patient'}

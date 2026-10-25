@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
+import { SubNav } from '../../components/layout/SubNav';
 import { useNavigate } from 'react-router-dom';
 import { api, Appointment, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -143,7 +144,7 @@ export const MyAppointments: React.FC = () => {
   const handleCancel = async (id: string) => {
     const ok = await confirm({
       title: 'Cancel Queue Token?',
-      message: 'Are you sure you want to cancel this appointment queue token? This action cannot be undone.',
+      message: 'Cancel this token? This can’t be undone.',
       confirmText: 'Yes, Cancel',
       isDestructive: true,
     });
@@ -223,12 +224,7 @@ export const MyAppointments: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
-      {/* Sleek Apple Header */}
-      <div className="bg-white border-b border-[#e5e5ea]/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Appointments</h1>
-        </div>
-      </div>
+      <SubNav title="Appointments" width="4xl" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Check-In Feedback Banner */}
@@ -237,16 +233,16 @@ export const MyAppointments: React.FC = () => {
             className={`p-3.5 rounded-2xl border text-xs flex items-center justify-between ${
               checkinMessage.type === 'success'
                 ? 'bg-white border-[#e5e5ea] text-[#1d1d1f]'
-                : 'bg-rose-50/80 border-rose-200/80 text-rose-700'
+                : 'bg-danger-soft/80 border-danger-line/80 text-danger'
             }`}
           >
             <div className="flex items-center gap-2">
               {checkinMessage.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <AlertCircle className="w-4 h-4 text-danger shrink-0" />
               )}
-              <span className="font-medium">{checkinMessage.text}</span>
+              <span className="font-normal">{checkinMessage.text}</span>
             </div>
             <button aria-label="Close"
               onClick={() => setCheckinMessage(null)}
@@ -265,8 +261,8 @@ export const MyAppointments: React.FC = () => {
               onClick={() => handleTabChange('upcoming')}
               className={`h-9 px-5 rounded-full text-[13px] active:scale-[0.96] transition-all duration-150 cursor-pointer ${
                 activeTab === 'upcoming'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Upcoming ({upcomingList.length})
@@ -276,8 +272,8 @@ export const MyAppointments: React.FC = () => {
               onClick={() => handleTabChange('past')}
               className={`h-9 px-5 rounded-full text-[13px] active:scale-[0.96] transition-all duration-150 cursor-pointer ${
                 activeTab === 'past'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Past {hasLoadedPast ? `(${pastAppointments.length}${hasMorePast ? '+' : ''})` : ''}
@@ -289,7 +285,7 @@ export const MyAppointments: React.FC = () => {
         {loadingUpcoming ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-64 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse"></div>
+              <div key={i} className="h-64 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse"></div>
             ))}
           </div>
         ) : activeTab === 'upcoming' ? (
@@ -330,14 +326,14 @@ export const MyAppointments: React.FC = () => {
         ) : loadingPast ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="h-48 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse"></div>
+              <div key={i} className="h-48 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse"></div>
             ))}
           </div>
         ) : pastAppointments.length === 0 ? (
           <EmptyState
             icon={Clock}
             title="No past appointments"
-            description="Completed consultations and past queue visits will appear here."
+            description="Past visits will show up here."
           />
         ) : (
           <div className="space-y-6">
@@ -355,12 +351,12 @@ export const MyAppointments: React.FC = () => {
                   type="button"
                   onClick={handleLoadMorePast}
                   disabled={loadingMorePast}
-                  className="h-11 px-6 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] font-medium text-sm transition-all duration-150 active:scale-[0.98] shadow-xs inline-flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="h-11 px-6 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] font-normal text-sm transition-all duration-150 active:scale-[0.98]  inline-flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loadingMorePast ? (
                     <>
                       <div className="w-4 h-4 border-2 border-[#1d1d1f] border-t-transparent rounded-full animate-spin" />
-                      <span>Loading...</span>
+                      <span>Loading…</span>
                     </>
                   ) : (
                     <>

@@ -330,7 +330,7 @@ export const useReceptionistDashboardState = () => {
   const handleRejectPendingAppointment = async (apptId: string) => {
     const ok = await confirm({
       title: 'Decline Booking Request?',
-      message: 'Are you sure you want to decline this booking request? The patient will be notified.',
+      message: 'Decline this booking? The patient will be told.',
       confirmText: 'Decline Request',
       isDestructive: true,
     });
@@ -494,11 +494,11 @@ export const useReceptionistDashboardState = () => {
 
     if (bookingFor === 'other') {
       if (!patientName.trim()) {
-        setError('Patient full name is required when booking for a dependent or family member.');
+        setError('Enter the patient’s name.');
         return;
       }
       if (!patientAge.trim()) {
-        setError('Patient age is required when booking for a dependent or family member.');
+        setError('Enter the patient’s age.');
         return;
       }
     }
@@ -512,12 +512,12 @@ export const useReceptionistDashboardState = () => {
     }
 
     if (isSelectedShiftEnded) {
-      setError('Selected checking shift has already ended for today. Please pick an upcoming shift or future date.');
+      setError('This shift has ended. Pick another shift or day.');
       return;
     }
 
     if (isSelectedShiftFull) {
-      setError('Selected checking shift has reached its maximum patient capacity. Please choose another shift or date.');
+      setError('This shift is full. Pick another shift or day.');
       return;
     }
 
@@ -612,7 +612,7 @@ export const useReceptionistDashboardState = () => {
           return;
         }
         if (!targetAppt.isCheckedIn) {
-          toast.warning('Patient has not checked in at the clinic yet. Please mark arrival first.');
+          toast.warning('Mark the patient as arrived first.');
           return;
         }
       }
@@ -657,7 +657,7 @@ export const useReceptionistDashboardState = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'queue',
-      label: 'Live Queue',
+      label: 'Queue',
       icon: Clock,
       active: activeTab === 'queue',
       onClick: () => setActiveTab('queue'),
@@ -665,7 +665,7 @@ export const useReceptionistDashboardState = () => {
     },
     {
       id: 'walkin',
-      label: 'Walk-in Booking',
+      label: 'Walk-in',
       icon: UserPlus,
       active: activeTab === 'walkin',
       onClick: () => setActiveTab('walkin'),

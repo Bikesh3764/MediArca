@@ -27,7 +27,7 @@ export const ProfileModal: React.FC = () => {
             if (e.target === e.currentTarget) setShowProfileModal(false);
           }}
         >
-          <div className="relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-left">
+          <div className="relative w-full max-w-[500px] max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 text-left">
             {/* Mobile Drag Handle */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
             <button aria-label="Close"
@@ -44,12 +44,12 @@ export const ProfileModal: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">Clinic Location & Details</h3>
-                <p className="text-xs text-[#86868b]">Set your facility address so patients can discover your clinic.</p>
+                <p className="text-xs text-[#86868b]">Add your address so patients can find you.</p>
               </div>
             </div>
 
             {profileError && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{profileError}</span>
               </div>
@@ -57,8 +57,8 @@ export const ProfileModal: React.FC = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Clinic Street Address <span className="text-rose-500">*</span>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Clinic Street Address <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -72,8 +72,8 @@ export const ProfileModal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                    State <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                    State <span className="text-danger">*</span>
                   </label>
                   <select
                     required
@@ -94,8 +94,8 @@ export const ProfileModal: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                    City <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                    City <span className="text-danger">*</span>
                   </label>
                   {profileState && getCitiesForState(profileState).length > 0 ? (
                     <select
@@ -126,7 +126,7 @@ export const ProfileModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Facility Contact Phone (Optional)
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white overflow-hidden focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
@@ -149,7 +149,7 @@ export const ProfileModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowProfileModal(false)}
-                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
                 >
                   Cancel
                 </button>

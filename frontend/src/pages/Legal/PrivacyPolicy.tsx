@@ -15,7 +15,7 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
 
         {/* Content Card */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-10 border border-[#e5e5ea] shadow-xs space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
+        <div className="bg-white rounded-2xl p-6 sm:p-10 border border-[#e5e5ea]  space-y-6 text-xs sm:text-sm text-[#48484a] leading-relaxed">
           <section className="space-y-2">
             <h2 className="text-base font-bold text-[#1d1d1f]">
               1. What Information We Collect
@@ -42,7 +42,7 @@ export const PrivacyPolicy: React.FC = () => {
               <li>Notify the clinic reception and doctor of your appointment.</li>
               <li>Send critical updates regarding queue changes or doctor shift delays.</li>
             </ul>
-            <p className="pt-1 font-medium text-[#1d1d1f]">
+            <p className="pt-1 font-normal text-[#1d1d1f]">
               We do not sell, rent, or trade your personal information to third-party marketers or advertisers.
             </p>
           </section>
@@ -71,7 +71,7 @@ export const PrivacyPolicy: React.FC = () => {
             </h2>
             <p>
               For any questions or privacy inquiries, contact us directly at{' '}
-              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-medium underline">
+              <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-normal underline">
                 contact@mediarca.in
               </a>.
             </p>

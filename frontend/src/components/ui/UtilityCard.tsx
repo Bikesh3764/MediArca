@@ -17,8 +17,8 @@ export const UtilityCard: React.FC<UtilityCardProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white rounded-[24px] border border-[#e5e5ea] p-5 sm:p-6 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.03)] ${
-        hoverEffect ? 'transition-all duration-200 hover:border-[#0066cc]/40 hover:shadow-apple-card' : ''
+      className={`bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-6  ${
+        hoverEffect ? 'transition-all duration-200 hover:border-[#0066cc]/40 ' : ''
       } ${className}`}
       {...props}
     >

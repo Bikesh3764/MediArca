@@ -215,7 +215,7 @@ export const ReceptionistAuth: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
         <div className="max-w-[450px] w-full">
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+          <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
             <div className="flex flex-col items-center text-center mb-6">
               <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
                 <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
@@ -226,7 +226,7 @@ export const ReceptionistAuth: React.FC = () => {
             </div>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>{error}</span>
               </div>
@@ -234,7 +234,7 @@ export const ReceptionistAuth: React.FC = () => {
 
             <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Temporary Password
                 </label>
                 <input
@@ -243,12 +243,12 @@ export const ReceptionistAuth: React.FC = () => {
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
                   placeholder="Enter temporary password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   New Password
                 </label>
                 <input
@@ -258,12 +258,12 @@ export const ReceptionistAuth: React.FC = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Confirm Password
                 </label>
                 <input
@@ -273,7 +273,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -281,23 +281,23 @@ export const ReceptionistAuth: React.FC = () => {
               <div className="space-y-1.5 pt-1 text-xs">
                 <div className="flex items-center gap-2">
                   <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
-                    newPassword.length >= 8 ? 'bg-emerald-500 text-white' : 'bg-[#e5e5ea] text-transparent'
+                    newPassword.length >= 8 ? 'bg-success-dot text-white' : 'bg-[#e5e5ea] text-transparent'
                   }`}>
                     <CheckCircle2 className="w-3 h-3 stroke-[3]" />
                   </div>
-                  <span className={newPassword.length >= 8 ? 'text-[#1d1d1f] font-medium' : 'text-[#86868b]'}>
+                  <span className={newPassword.length >= 8 ? 'text-[#1d1d1f] font-normal' : 'text-[#86868b]'}>
                     At least 8 characters
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
                     confirmPassword && newPassword === confirmPassword
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-success-dot text-white'
                       : 'bg-[#e5e5ea] text-transparent'
                   }`}>
                     <CheckCircle2 className="w-3 h-3 stroke-[3]" />
                   </div>
-                  <span className={confirmPassword && newPassword === confirmPassword ? 'text-[#1d1d1f] font-medium' : 'text-[#86868b]'}>
+                  <span className={confirmPassword && newPassword === confirmPassword ? 'text-[#1d1d1f] font-normal' : 'text-[#86868b]'}>
                     Passwords match
                   </span>
                 </div>
@@ -307,7 +307,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <button
                   type="submit"
                   disabled={changingPassword || newPassword.length < 8 || newPassword !== confirmPassword}
-                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {changingPassword ? (
                     <>
@@ -324,7 +324,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setMustChangePasswordState(false)}
-                  className="text-xs font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+                  className="text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
                 >
                   Back to Sign In
                 </button>
@@ -339,7 +339,7 @@ export const ReceptionistAuth: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="max-w-[450px] w-full">
-        <div className="bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_12px_40px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,0,0,0.03)] p-6 sm:p-7">
+        <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
           {/* Brand & Header */}
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
@@ -361,8 +361,8 @@ export const ReceptionistAuth: React.FC = () => {
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 authMode === 'login'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Desk Sign In
@@ -375,8 +375,8 @@ export const ReceptionistAuth: React.FC = () => {
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 authMode === 'apply'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               Apply to Clinic
@@ -384,7 +384,7 @@ export const ReceptionistAuth: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -397,7 +397,7 @@ export const ReceptionistAuth: React.FC = () => {
                   Application Submitted
                 </h3>
                 <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
-                  Your application to join <span className="font-medium text-[#1d1d1f]">{applySuccessClinic}</span> has been sent to the clinic administrator.
+                  Your application to join <span className="font-normal text-[#1d1d1f]">{applySuccessClinic}</span> has been sent to the clinic administrator.
                 </p>
               </div>
               <button
@@ -406,7 +406,7 @@ export const ReceptionistAuth: React.FC = () => {
                   setApplySuccessClinic(null);
                   setAuthMode('login');
                 }}
-                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer"
+                className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer"
               >
                 Back to Desk Sign In
               </button>
@@ -414,7 +414,7 @@ export const ReceptionistAuth: React.FC = () => {
           ) : authMode === 'apply' ? (
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
                 <input
@@ -423,12 +423,12 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyFullName}
                   onChange={(e) => setApplyFullName(e.target.value)}
                   placeholder="Your full legal name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Email Address
                 </label>
                 <input
@@ -437,15 +437,15 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyEmail}
                   onChange={(e) => setApplyEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
                   </div>
@@ -463,16 +463,16 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
                   <span>Clinic Facility</span>
-                  {clinicsLoading && <span className="text-[11px] font-normal text-[#86868b]">Loading...</span>}
+                  {clinicsLoading && <span className="text-[11px] font-normal text-[#86868b]">Loading…</span>}
                 </label>
                 <div className="relative">
                   <select
                     required
                     value={applyClinicId}
                     onChange={(e) => setApplyClinicId(e.target.value)}
-                    className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     {clinics.length === 0 ? (
                       <option value="">No verified clinics available</option>
@@ -489,7 +489,7 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Password
                 </label>
                 <input
@@ -499,7 +499,7 @@ export const ReceptionistAuth: React.FC = () => {
                   value={applyPassword}
                   onChange={(e) => setApplyPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -507,7 +507,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting || clinics.length === 0}
-                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
@@ -523,7 +523,7 @@ export const ReceptionistAuth: React.FC = () => {
           ) : (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Desk Email
                 </label>
                 <input
@@ -532,12 +532,12 @@ export const ReceptionistAuth: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="receptionist@domain.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Password
                 </label>
                 <div className="relative">
@@ -547,9 +547,9 @@ export const ReceptionistAuth: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
-                    className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 pl-3.5 pr-10 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
-                  <button
+                  <button aria-label={showPassword ? 'Hide password' : 'Show password'}
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
@@ -563,7 +563,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {submitting ? (
                     <>
@@ -582,9 +582,9 @@ export const ReceptionistAuth: React.FC = () => {
                   type="button"
                   onClick={handleDemoLogin}
                   disabled={submitting}
-                  className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+                  className="w-full h-9 px-3 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-normal text-[#1d1d1f] flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                 >
-                  <span>Demo Reception Desk Sign In</span>
+                  <span>Try demo desk</span>
                 </button>
               </div>
             </form>

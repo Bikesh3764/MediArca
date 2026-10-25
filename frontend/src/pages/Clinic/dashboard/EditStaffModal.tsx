@@ -20,7 +20,7 @@ export const EditStaffModal: React.FC = () => {
             if (e.target === e.currentTarget && !savingAssignments) setEditingRec(null);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
@@ -41,7 +41,7 @@ export const EditStaffModal: React.FC = () => {
 
             <form onSubmit={handleUpdateAssignedDoctors} className="space-y-4 pt-5">
               <p className="text-xs text-[#86868b] leading-relaxed">
-                Select which affiliated doctors this receptionist is authorized to book walk-ins and manage queues for:
+                Doctors this receptionist can manage:
               </p>
 
               {doctors.length === 0 ? (
@@ -95,7 +95,7 @@ export const EditStaffModal: React.FC = () => {
                   type="button"
                   disabled={savingAssignments}
                   onClick={() => setEditingRec(null)}
-                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
                 >
                   Cancel
                 </button>

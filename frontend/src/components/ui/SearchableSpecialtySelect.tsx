@@ -95,7 +95,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-8 px-3 rounded-full border text-xs font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer select-none ${
+          className={`h-8 px-3 rounded-full border text-xs font-normal transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer select-none ${
             value && value !== 'All'
               ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc] font-semibold'
               : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#48484a] hover:bg-[#ebebee]'
@@ -108,7 +108,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           </span>
           {counts && counts[value] !== undefined && (
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+              className={`text-[11px] px-1.5 py-0.2 rounded-full font-semibold ${
                 value && value !== 'All' ? 'bg-[#0066cc]/20 text-[#0066cc]' : 'bg-[#e5e5ea] text-[#86868b]'
               }`}
             >
@@ -127,7 +127,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-[#0066cc]/60 focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 flex items-center justify-between text-left cursor-pointer select-none"
+            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  hover:border-[#0066cc]/60 focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 flex items-center justify-between text-left cursor-pointer select-none"
           >
             <span className="truncate">{displayLabel}</span>
             <ChevronDown
@@ -140,7 +140,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           {/* If 'Other' is selected in Form mode, render write-in custom text field */}
           {allowOther && value === 'Other' && (
             <div className="mt-3">
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Specify Medical Specialty
               </label>
               <input
@@ -149,7 +149,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 value={customValue}
                 onChange={(e) => onCustomChange?.(e.target.value)}
                 placeholder="e.g. Trichology, Diabetology, Pediatric Cardiology"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
           )}
@@ -159,9 +159,9 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute z-50 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-24px)] bg-white rounded-2xl border border-[#e5e5ea] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
+          className={`absolute z-50 mt-1.5 w-72 sm:w-80 max-w-[calc(100vw-24px)] bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
             variant === 'pill' ? 'left-0 right-auto' : 'left-0 right-0 w-full'
-          }`}
+          } shadow-[0_12px_32px_rgba(0,0,0,0.12)]`}
         >
           {/* Search Header */}
           <div className="p-2.5 border-b border-[#f0f0f0] bg-[#fafafc]">
@@ -203,7 +203,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                 <div className="flex items-center gap-2">
                   <span>All Specialties</span>
                   {counts && counts['All'] !== undefined && (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
+                    <span className="text-[11px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
                       {counts['All']}
                     </span>
                   )}
@@ -248,7 +248,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
                     <div className="flex items-center gap-2 truncate">
                       <span className="truncate">{item}</span>
                       {count !== undefined && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
+                        <span className="text-[11px] px-1.5 py-0.2 rounded-full font-semibold bg-[#e5e5ea] text-[#86868b]">
                           {count}
                         </span>
                       )}

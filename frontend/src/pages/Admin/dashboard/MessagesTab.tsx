@@ -15,7 +15,7 @@ export const MessagesTab: React.FC = () => {
                   <div>
                     <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">User Contact Inquiries</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-                      Messages submitted by visitors, patients, doctors, or clinics via the Contact Us form.
+                      Messages from the Contact page.
                     </p>
                   </div>
                   <span className="text-xs text-[#86868b]">{contactMessages.length} Total</span>
@@ -25,7 +25,7 @@ export const MessagesTab: React.FC = () => {
                   <EmptyState
                     icon={MessageSquare}
                     title="No Messages Received Yet"
-                    description="Inquiries submitted by patients, practitioners, or clinic managers via the Contact Us form will appear here."
+                    description="New messages will show up here."
                   />
                 ) : (
                   <div className="space-y-4">
@@ -34,7 +34,7 @@ export const MessagesTab: React.FC = () => {
                         key={msg.id}
                         className={`p-4 sm:p-5 rounded-2xl border transition-all ${
                           msg.status === 'NEW'
-                            ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 shadow-2xs'
+                            ? 'bg-[#0066cc]/[0.02] border-[#0066cc]/30 '
                             : 'bg-white border-[#e5e5ea]'
                         }`}
                       >
@@ -47,11 +47,11 @@ export const MessagesTab: React.FC = () => {
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm text-[#1d1d1f]">{msg.fullName}</span>
                                 {msg.status === 'NEW' ? (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                                     New
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b]">
+                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b]">
                                     Read
                                   </span>
                                 )}
@@ -72,7 +72,7 @@ export const MessagesTab: React.FC = () => {
                             {msg.status === 'NEW' && (
                               <button
                                 onClick={() => handleMarkMessageRead(msg.id)}
-                                className="px-3 py-1 rounded-full text-xs font-medium border border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer transition-all"
+                                className="px-3 py-1 rounded-full text-xs font-normal border border-[#e5e5ea] bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer transition-all"
                               >
                                 Mark Read
                               </button>
@@ -86,7 +86,7 @@ export const MessagesTab: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => handleDeleteContactMessage(msg.id)}
-                              className="p-1.5 rounded-full text-[#86868b] hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
+                              className="p-1.5 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft border border-transparent hover:border-danger-line transition-all cursor-pointer"
                               title="Delete Message"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

@@ -42,7 +42,7 @@ export const HowItWorks: React.FC = () => {
           {steps.map((item, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-[24px] p-6 sm:p-7 border border-[#e5e5ea] shadow-xs flex flex-col justify-between space-y-4"
+              className="bg-white rounded-2xl p-6 sm:p-7 border border-[#e5e5ea]  flex flex-col justify-between space-y-4"
             >
               <div className="space-y-3">
                 <span className="inline-block text-xs font-semibold text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-1 rounded-full border border-[#0066cc]/20">
@@ -62,7 +62,7 @@ export const HowItWorks: React.FC = () => {
         </div>
 
         {/* What Makes It Different */}
-        <div className="bg-white rounded-[24px] p-6 sm:p-8 border border-[#e5e5ea] shadow-xs space-y-4">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-4">
           <h2 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
             Important Things to Know
           </h2>

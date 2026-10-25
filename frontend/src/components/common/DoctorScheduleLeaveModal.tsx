@@ -249,7 +249,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
       }}
     >
       <div
-        className="w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-[#e5e5ea] overflow-hidden flex flex-col max-h-[92vh] animate-scale-up"
+        className="w-full max-w-xl bg-white rounded-2xl  border border-[#e5e5ea] overflow-hidden flex flex-col max-h-[92vh] animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* MODAL HEADER */}
@@ -282,13 +282,13 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
         {error && (
           <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-[#fff1f0] border border-[#ff3b30]/20 flex items-start gap-2.5 text-xs text-[#ff3b30]">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span className="flex-1 font-medium">{error}</span>
+            <span className="flex-1 font-normal">{error}</span>
           </div>
         )}
         {successMsg && (
           <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-[#f2fbf4] border border-[#34c759]/20 flex items-start gap-2.5 text-xs text-[#34c759]">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-            <span className="flex-1 font-medium">{successMsg}</span>
+            <span className="flex-1 font-normal">{successMsg}</span>
           </div>
         )}
 
@@ -297,7 +297,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
           {loading ? (
             <div className="py-16 flex flex-col items-center justify-center text-[#86868b] space-y-3">
               <Loader2 className="w-6 h-6 animate-spin text-[#0066cc]" />
-              <p className="text-xs font-medium">Loading schedule and leaves...</p>
+              <p className="text-xs font-normal">Loading…</p>
             </div>
           ) : (
             <>
@@ -331,7 +331,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   type="button"
                   onClick={handleToggleTodayLeave}
                   disabled={savingLeave}
-                  className={`h-9 px-4 rounded-full text-xs font-medium transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
+                  className={`h-9 px-4 rounded-full text-xs font-normal transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                     config?.isOnLeaveToday
                       ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
                       : 'bg-[#ff3b30] hover:bg-[#e0352b] text-white'
@@ -370,21 +370,21 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     <button
                       type="button"
                       onClick={() => applyPreset('MON_SAT')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
+                      className="px-2.5 py-1 text-[11px] font-normal text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
                       Mon–Sat
                     </button>
                     <button
                       type="button"
                       onClick={() => applyPreset('MON_FRI')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
+                      className="px-2.5 py-1 text-[11px] font-normal text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
                       Mon–Fri
                     </button>
                     <button
                       type="button"
                       onClick={() => applyPreset('ALL')}
-                      className="px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
+                      className="px-2.5 py-1 text-[11px] font-normal text-[#1d1d1f] hover:text-[#0066cc] rounded-full transition-all cursor-pointer active:scale-95"
                     >
                       All Days
                     </button>
@@ -402,7 +402,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         onClick={() => toggleDay(dayCode)}
                         className={`h-11 rounded-full text-center transition-all cursor-pointer flex items-center justify-center border font-semibold text-xs active:scale-95 ${
                           isSelected
-                            ? 'bg-[#0066cc] border-[#0066cc] text-white shadow-sm'
+                            ? 'bg-[#0066cc] border-[#0066cc] text-white '
                             : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] border-[#e5e5ea] text-[#1d1d1f]'
                         }`}
                       >
@@ -444,7 +444,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     <button
                       type="button"
                       onClick={() => setShowRangeForm(true)}
-                      className="h-8 px-3.5 rounded-full text-xs font-medium text-[#0066cc] bg-[#0066cc]/5 hover:bg-[#0066cc]/10 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                      className="h-8 px-3.5 rounded-full text-xs font-normal text-[#0066cc] bg-[#0066cc]/5 hover:bg-[#0066cc]/10 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Add Leave</span>
@@ -470,7 +470,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     </div>
 
                     <div className="flex gap-4">
-                      <label className="flex items-center gap-2 text-xs font-medium text-[#1d1d1f] cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs font-normal text-[#1d1d1f] cursor-pointer">
                         <input
                           type="radio"
                           name="leaveType"
@@ -485,7 +485,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                         />
                         Single Day
                       </label>
-                      <label className="flex items-center gap-2 text-xs font-medium text-[#1d1d1f] cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs font-normal text-[#1d1d1f] cursor-pointer">
                         <input
                           type="radio"
                           name="leaveType"
@@ -501,7 +501,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     {leaveType === 'DATE_RANGE' && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-medium text-[#86868b] mb-1">
+                          <label className="block text-[11px] font-normal text-[#86868b] mb-1">
                             From
                           </label>
                           <input
@@ -514,7 +514,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-medium text-[#86868b] mb-1">
+                          <label className="block text-[11px] font-normal text-[#86868b] mb-1">
                             To
                           </label>
                           <input
@@ -530,7 +530,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                     )}
 
                     <div>
-                      <label className="block text-[11px] font-medium text-[#86868b] mb-1">
+                      <label className="block text-[11px] font-normal text-[#86868b] mb-1">
                         Reason (optional)
                       </label>
                       <input
@@ -584,12 +584,12 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                                     : `${leave.startDate} → ${leave.endDate}`}
                                 </span>
                                 {isTodayActive && (
-                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#ff3b30] text-white">
+                                  <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#ff3b30] text-white">
                                     Active Today
                                   </span>
                                 )}
                                 {leave.clinicName && (
-                                  <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                  <span className="px-2 py-0.5 text-[11px] font-normal rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                     {leave.clinicName}
                                   </span>
                                 )}

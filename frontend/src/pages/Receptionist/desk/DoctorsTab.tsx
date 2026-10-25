@@ -23,7 +23,7 @@ export const DoctorsTab: React.FC = () => {
                     Assigned Practitioners
                   </h3>
                 </div>
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                <span className="text-xs font-normal px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                   {linkedDoctors.length} {linkedDoctors.length === 1 ? 'Doctor' : 'Doctors'}
                 </span>
               </div>
@@ -32,7 +32,7 @@ export const DoctorsTab: React.FC = () => {
                 <EmptyState
                   icon={Users}
                   title="No Doctors Assigned Yet"
-                  description="Please ask your Clinic Administrator to assign practitioners to your reception desk."
+                  description="Ask your clinic to assign doctors to you."
                 />
               ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export const DoctorsTab: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-[#0066cc] font-medium mt-0.5">{doc.specialty}</div>
+                          <div className="text-xs text-[#0066cc] font-normal mt-0.5">{doc.specialty}</div>
                           <div className="text-xs text-[#86868b] mt-1">
                             Consultation Fee: ₹{doc.consultationFee}
                           </div>
@@ -118,7 +118,7 @@ export const DoctorsTab: React.FC = () => {
                                 doctorName: cleanDoctorName(doc.fullName),
                               })
                             }
-                            className="text-xs font-medium text-[#0066cc] hover:underline cursor-pointer"
+                            className="text-xs font-normal text-[#0066cc] hover:underline cursor-pointer"
                           >
                             Edit
                           </button>
@@ -134,7 +134,7 @@ export const DoctorsTab: React.FC = () => {
                         <div className="flex items-center justify-between gap-2 pt-1 text-xs">
                           <span className="text-[11px] text-[#86868b] truncate">
                             {doc.isOnLeaveToday ? (
-                              <span className="text-[#ff3b30] font-medium truncate">
+                              <span className="text-[#ff3b30] font-normal truncate">
                                 {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'On leave today'}
                               </span>
                             ) : (
@@ -160,7 +160,7 @@ export const DoctorsTab: React.FC = () => {
                                 setError(err?.message || 'Failed to toggle doctor leave');
                               }
                             }}
-                            className={`h-7 px-3 rounded-full text-[11px] font-medium transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
+                            className={`h-7 px-3 rounded-full text-[11px] font-normal transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
                               doc.isOnLeaveToday
                                 ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
                                 : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'

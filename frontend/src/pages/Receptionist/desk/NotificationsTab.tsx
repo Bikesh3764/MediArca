@@ -20,7 +20,7 @@ export const NotificationsTab: React.FC = () => {
                     Desk Notifications
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    Alerts for incoming online bookings and patient arrival check-ins.
+                    New bookings and arrivals.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -28,7 +28,7 @@ export const NotificationsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleMarkAllNotifsRead}
-                      className="h-8 px-3.5 rounded-full text-xs font-medium text-[#0066cc] hover:bg-[#0066cc]/5 transition-all cursor-pointer inline-flex items-center gap-1"
+                      className="h-8 px-3.5 rounded-full text-xs font-normal text-[#0066cc] hover:bg-[#0066cc]/5 transition-all cursor-pointer inline-flex items-center gap-1"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>Mark all read</span>
@@ -40,7 +40,7 @@ export const NotificationsTab: React.FC = () => {
                       onClick={() => setNotifFilter('ALL')}
                       className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                         notifFilter === 'ALL'
-                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          ? 'bg-white text-[#1d1d1f] font-semibold '
                           : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -51,7 +51,7 @@ export const NotificationsTab: React.FC = () => {
                       onClick={() => setNotifFilter('UNREAD')}
                       className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
                         notifFilter === 'UNREAD'
-                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                          ? 'bg-white text-[#1d1d1f] font-semibold '
                           : 'text-[#86868b] hover:text-[#1d1d1f]'
                       }`}
                     >
@@ -73,7 +73,7 @@ export const NotificationsTab: React.FC = () => {
                         {notifFilter === 'UNREAD' ? 'No Unread Notifications' : 'No Notifications Yet'}
                       </h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                        Booking requests and patient arrival alerts will appear here automatically.
+                        New alerts will show up here.
                       </p>
                     </div>
                   );

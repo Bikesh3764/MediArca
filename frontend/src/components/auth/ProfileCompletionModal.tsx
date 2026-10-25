@@ -249,7 +249,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
-      <div className="bg-white/95 backdrop-blur-2xl rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] max-w-[450px] w-full max-h-[92vh] sm:max-h-[95vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 relative animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+      <div className="bg-white/95 backdrop-blur-2xl rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea]  max-w-[450px] w-full max-h-[92vh] sm:max-h-[95vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 relative animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
         {/* Apple Sheet Drag Handle Indicator (Mobile Only) */}
         <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-4" />
 
@@ -267,15 +267,15 @@ export const ProfileCompletionModal: React.FC = () => {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5 font-medium animate-fadeIn">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <div className="mb-4 p-3.5 rounded-xl bg-success-soft border border-success-line text-success text-xs flex items-center gap-2.5 font-normal animate-fadeIn">
+            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
             <span>Profile setup complete! Loading your console...</span>
           </div>
         )}
@@ -283,7 +283,7 @@ export const ProfileCompletionModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Full Name */}
           <div>
-            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+            <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
               Full Name
             </label>
             <input
@@ -292,16 +292,16 @@ export const ProfileCompletionModal: React.FC = () => {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Your full legal name"
-              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+              className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
             />
           </div>
 
           {/* Mobile Number (+91 Locked) */}
           <div>
-            <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+            <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
               Mobile Number
             </label>
-            <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+            <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
               <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                 +91
               </div>
@@ -325,7 +325,7 @@ export const ProfileCompletionModal: React.FC = () => {
           {user.role === 'PATIENT' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Gender
                 </label>
                 <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl flex gap-1 select-none">
@@ -336,8 +336,8 @@ export const ProfileCompletionModal: React.FC = () => {
                       onClick={() => setGender(g)}
                       className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                         gender === g
-                          ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                          : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                          ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                          : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                       }`}
                     >
                       {g}
@@ -348,7 +348,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Date of Birth
                   </label>
                   <input
@@ -357,19 +357,19 @@ export const ProfileCompletionModal: React.FC = () => {
                     value={dateOfBirth}
                     onChange={(e) => setDateOfBirth(e.target.value)}
                     max={getLocalDateString()}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Blood Group <span className="text-[#86868b] font-normal">(Optional)</span>
                   </label>
                   <div className="relative">
                     <select
                       value={bloodGroup}
                       onChange={(e) => setBloodGroup(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
                         <option key={bg} value={bg}>
@@ -388,7 +388,7 @@ export const ProfileCompletionModal: React.FC = () => {
           {user.role === 'DOCTOR' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Medical Qualifications
                 </label>
                 <input
@@ -397,12 +397,12 @@ export const ProfileCompletionModal: React.FC = () => {
                   value={qualifications}
                   onChange={(e) => setQualifications(e.target.value)}
                   placeholder="e.g. MBBS, MD"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Medical Specialty
                 </label>
                 <SearchableSpecialtySelect
@@ -415,7 +415,7 @@ export const ProfileCompletionModal: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Years of Clinical Experience
                 </label>
                 <input
@@ -426,7 +426,7 @@ export const ProfileCompletionModal: React.FC = () => {
                   value={experienceYears}
                   onChange={(e) => setExperienceYears(e.target.value)}
                   placeholder="e.g. 8"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
             </>
@@ -436,7 +436,7 @@ export const ProfileCompletionModal: React.FC = () => {
           {user.role === 'CLINIC' && (
             <>
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Official Clinic Facility Name
                 </label>
                 <input
@@ -445,13 +445,13 @@ export const ProfileCompletionModal: React.FC = () => {
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   placeholder="e.g. City Health PolyClinic & Diagnostics"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     State / UT
                   </label>
                   <div className="relative">
@@ -459,7 +459,7 @@ export const ProfileCompletionModal: React.FC = () => {
                       required
                       value={state}
                       onChange={(e) => handleStateChange(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="">Select State</option>
                       {INDIAN_STATES.map((s) => (
@@ -473,7 +473,7 @@ export const ProfileCompletionModal: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     City / Town
                   </label>
                   <div className="relative">
@@ -482,7 +482,7 @@ export const ProfileCompletionModal: React.FC = () => {
                       disabled={!state}
                       value={isCustomCity ? '__custom__' : city}
                       onChange={(e) => handleCitySelect(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] disabled:opacity-50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
+                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] disabled:opacity-50  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
                       <option value="">Select City</option>
                       {stateCities.map((c) => (
@@ -499,7 +499,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
               {isCustomCity && (
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Enter City Name
                   </label>
                   <input
@@ -508,13 +508,13 @@ export const ProfileCompletionModal: React.FC = () => {
                     value={customCity}
                     onChange={(e) => setCustomCity(e.target.value)}
                     placeholder="Enter your town or city"
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Street Address
                 </label>
                 <div className="relative">
@@ -525,7 +525,7 @@ export const ProfileCompletionModal: React.FC = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Floor, building, street, landmark"
-                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
               </div>
@@ -537,7 +537,7 @@ export const ProfileCompletionModal: React.FC = () => {
             <button
               type="submit"
               disabled={submitting || success}
-              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

@@ -131,27 +131,27 @@ export const useAdminDashboardState = () => {
   const getDateBadge = (dateStr: string) => {
     if (dateStr === todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
           Today
         </span>
       );
     }
     if (dateStr === tomorrowStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
           Tomorrow
         </span>
       );
     }
     if (dateStr < todayStr) {
       return (
-        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+        <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
           Past
         </span>
       );
     }
     return (
-      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
         Upcoming
       </span>
     );
@@ -182,8 +182,8 @@ export const useAdminDashboardState = () => {
         );
       case 'CANCELLED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <XCircle className="w-3 h-3 text-rose-500" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger border border-danger-line">
+            <XCircle className="w-3 h-3 text-danger" />
             Cancelled
           </span>
         );
@@ -203,7 +203,7 @@ export const useAdminDashboardState = () => {
         );
       default:
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#f5f5f7] text-[#1d1d1f]">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f]">
             {status}
           </span>
         );
@@ -445,7 +445,7 @@ export const useAdminDashboardState = () => {
         );
       case 'SUSPENDED':
         return (
-          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 px-2.5 py-1 rounded-full text-xs font-semibold border border-rose-200">
+          <span className="inline-flex items-center gap-1 bg-danger-soft text-danger px-2.5 py-1 rounded-full text-xs font-semibold border border-danger-line">
             <Ban className="w-3.5 h-3.5" />
             Suspended
           </span>
@@ -504,7 +504,7 @@ export const useAdminDashboardState = () => {
   const handleDeleteContactMessage = async (id: string) => {
     const ok = await confirm({
       title: 'Delete Contact Inquiry?',
-      message: 'Are you sure you want to permanently delete this contact inquiry? This cannot be undone.',
+      message: 'Delete this message? This can’t be undone.',
       confirmText: 'Delete Inquiry',
       isDestructive: true,
     });

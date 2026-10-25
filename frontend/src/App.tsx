@@ -36,6 +36,7 @@ const ClinicCheckIn = lazy(() => import('./pages/Patient/ClinicCheckIn').then(m 
 
 // Global Network & Document Title Utilities
 import { OfflineBanner } from './components/common/OfflineBanner';
+import { ConnectionNotice } from './components/common/ConnectionNotice';
 import { DocumentTitleSync } from './components/common/DocumentTitleSync';
 
 // Company & Informational Pages
@@ -130,6 +131,7 @@ function AppShell() {
     <div className="flex flex-col min-h-screen">
       <DocumentTitleSync />
       <OfflineBanner />
+      <ConnectionNotice />
       {!isPortalRoute && <GlobalNav />}
       <ProfileCompletionModal />
       <main

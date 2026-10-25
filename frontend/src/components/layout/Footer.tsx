@@ -21,7 +21,7 @@ export const Footer: React.FC = () => {
 
             {/* Simple, clear tagline */}
             <p className="text-sm text-[#48484a] leading-relaxed max-w-sm">
-              Book doctor appointments, track your live clinic queue token, and skip waiting room delays. No advance payment required.
+              Book a clinic visit, track your token live, and skip the waiting room. No advance payment.
             </p>
 
             {/* Direct Contact Channels */}
@@ -29,7 +29,7 @@ export const Footer: React.FC = () => {
               <p className="text-xs text-[#86868b] font-normal">Support & Inquiries</p>
               <a
                 href="mailto:contact@mediarca.in"
-                className="inline-flex items-center gap-2 font-medium text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
+                className="inline-flex items-center gap-2 font-normal text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
               >
                 <Mail className="w-4 h-4 text-[#0066cc] shrink-0" />
                 <span>contact@mediarca.in</span>
@@ -154,28 +154,28 @@ export const Footer: React.FC = () => {
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
               <Link
                 to="/patient/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
                 Patient Portal
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/doctor/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
                 Doctor Console
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/clinic/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
                 Clinic Management
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/receptionist/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-medium"
+                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
                 Reception Desk
               </Link>
@@ -186,7 +186,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Disclaimer & Copyright Bar */}
         <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">
           <p className="text-xs leading-relaxed text-[#86868b]">
-            <strong>Medical Disclaimer:</strong> MediArca is an outpatient queue management platform designed to optimize appointment flow and reduce waiting room delays. MediArca is not an emergency medical service. In the event of a medical emergency, please call 112 / 108 immediately or visit the nearest hospital casualty department.
+            <strong>Medical Disclaimer:</strong> MediArca manages clinic queues and is not an emergency service. In an emergency, call 112 / 108 or go to the nearest hospital.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">

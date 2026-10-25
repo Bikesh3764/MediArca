@@ -174,7 +174,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
   // Export as CSV
   const handleExportCsv = () => {
     if (!reportData || !reportData.appointments.length) {
-      setError('No clinical appointments found for the selected reporting period.');
+      setError('No visits in this period.');
       return;
     }
 
@@ -309,7 +309,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
     >
-      <div className="relative w-full max-w-5xl h-[94vh] flex flex-col bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden print:border-none print:shadow-none print:h-auto print:max-h-none print:p-0 print:m-0 print:overflow-visible">
+      <div className="relative w-full max-w-5xl h-[94vh] flex flex-col bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden print:border-none  print:h-auto print:max-h-none print:p-0 print:m-0 print:overflow-visible">
         {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#f0f0f2] bg-white shrink-0 print:border-b-2 print:border-[#1d1d1f] print:pb-4">
           <div className="flex items-center gap-3">
@@ -335,7 +335,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               onClick={handleExportCsv}
               disabled={loading || !reportData || reportData.appointments.length === 0}
               title="Download raw spreadsheet data (.csv)"
-              className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-medium text-[#1d1d1f] border border-[#e5e5ea] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+              className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
               <Download className="w-3.5 h-3.5 text-[#86868b]" />
               <span className="hidden sm:inline">Export CSV</span>
@@ -346,7 +346,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               onClick={handlePrint}
               disabled={loading || !reportData}
               title="Print or Save official PDF Report"
-              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-xs font-semibold text-white transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-[0_2px_8px_rgba(0,102,204,0.2)] disabled:opacity-40"
+              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-xs font-semibold text-white transition-all duration-150 flex items-center gap-1.5 cursor-pointer  disabled:opacity-40"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print / Save PDF</span>
@@ -366,13 +366,13 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
         <div className="px-6 py-3.5 bg-[#f5f5f7]/70 border-b border-[#e5e5ea] print:hidden shrink-0 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Quick Period Presets */}
-            <div className="inline-flex p-1 rounded-full bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-medium max-w-full overflow-x-auto no-scrollbar">
+            <div className="inline-flex p-1 rounded-full bg-[#e8e8ed] border border-[#e5e5ea] text-xs font-normal max-w-full overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => handlePresetChange('3_MONTHS')}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   datePreset === '3_MONTHS'
-                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    ? 'bg-white text-[#1d1d1f] font-semibold '
                     : 'text-[#86868b] hover:text-[#1d1d1f]'
                 }`}
               >
@@ -383,7 +383,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 onClick={() => handlePresetChange('1_MONTH')}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   datePreset === '1_MONTH'
-                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    ? 'bg-white text-[#1d1d1f] font-semibold '
                     : 'text-[#86868b] hover:text-[#1d1d1f]'
                 }`}
               >
@@ -394,7 +394,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 onClick={() => handlePresetChange('THIS_MONTH')}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   datePreset === 'THIS_MONTH'
-                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    ? 'bg-white text-[#1d1d1f] font-semibold '
                     : 'text-[#86868b] hover:text-[#1d1d1f]'
                 }`}
               >
@@ -405,7 +405,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 onClick={() => handlePresetChange('7_DAYS')}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   datePreset === '7_DAYS'
-                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    ? 'bg-white text-[#1d1d1f] font-semibold '
                     : 'text-[#86868b] hover:text-[#1d1d1f]'
                 }`}
               >
@@ -416,7 +416,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 onClick={() => handlePresetChange('CUSTOM')}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   datePreset === 'CUSTOM'
-                    ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+                    ? 'bg-white text-[#1d1d1f] font-semibold '
                     : 'text-[#86868b] hover:text-[#1d1d1f]'
                 }`}
               >
@@ -460,7 +460,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={selectedDoctorId}
                   onChange={(e) => setSelectedDoctorId(e.target.value)}
-                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="all">All Affiliated Practitioners</option>
                   {availableDoctors.map((doc, idx) => {
@@ -483,7 +483,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={selectedClinicId}
                   onChange={(e) => setSelectedClinicId(e.target.value)}
-                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="all">All Affiliated Clinics</option>
                   {availableClinics.map((c, idx) => {
@@ -506,7 +506,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <select
                   value={shiftFilter}
                   onChange={(e) => setShiftFilter(e.target.value)}
-                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                  className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
                   <option value="ALL">All Shifts</option>
                   {availableShifts.map((s) => (
@@ -524,7 +524,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-medium bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
+                className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
               >
                 <option value="ALL">All Visit Statuses</option>
                 <option value="COMPLETED">Completed Consultations</option>
@@ -543,7 +543,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               type="button"
               onClick={() => fetchReport()}
               disabled={loading}
-              className="h-8 px-3 rounded-lg bg-[#1d1d1f] hover:bg-[#333336] text-white text-xs font-medium transition-all cursor-pointer ml-auto flex items-center gap-1.5"
+              className="h-8 px-3 rounded-lg bg-[#1d1d1f] hover:bg-[#333336] text-white text-xs font-normal transition-all cursor-pointer ml-auto flex items-center gap-1.5"
             >
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Filter className="w-3 h-3" />}
               <span>Apply Filters</span>
@@ -561,11 +561,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
             </div>
           ) : error ? (
             <div className="py-16 text-center">
-              <p className="text-sm font-semibold text-rose-600">{error}</p>
+              <p className="text-sm font-semibold text-danger">{error}</p>
               <button
                 type="button"
                 onClick={() => fetchReport()}
-                className="mt-3 h-8 px-4 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-medium text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer"
+                className="mt-3 h-8 px-4 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-xs font-normal text-[#1d1d1f] hover:bg-[#e8e8ed] cursor-pointer"
               >
                 Try Again
               </button>
@@ -575,7 +575,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               {/* 1. Summary Cards Strip */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 print:grid-cols-4 print:gap-3">
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#86868b]">
+                  <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
                     <Users className="w-3.5 h-3.5 text-[#0066cc]" />
                     <span>Total Bookings</span>
                   </div>
@@ -588,11 +588,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#86868b]">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                     <span>Completed</span>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-semibold text-emerald-600 mt-1.5 tracking-tight">
+                  <div className="text-2xl sm:text-3xl font-semibold text-success mt-1.5 tracking-tight">
                     {filteredSummary.completed}
                   </div>
                   <div className="text-[11px] text-[#86868b] mt-0.5">
@@ -603,8 +603,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#86868b]">
-                    <Ban className="w-3.5 h-3.5 text-rose-500" />
+                  <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
+                    <Ban className="w-3.5 h-3.5 text-danger" />
                     <span>Cancelled</span>
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] mt-1.5 tracking-tight">
@@ -616,7 +616,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[#86868b]">
+                  <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
                     <IndianRupee className="w-3.5 h-3.5 text-[#0066cc]" />
                     <span>Total Revenue</span>
                   </div>
@@ -633,7 +633,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print:grid-cols-2">
                 {/* Doctor Breakdown (for Clinic / Receptionist) OR Clinic Breakdown (for Doctor) */}
                 {reportData?.byDoctor && reportData.byDoctor.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs">
+                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-[#0066cc]" />
                       <span>Practitioner Breakdown</span>
@@ -641,7 +641,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-medium">
+                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-normal">
                             <th className="pb-2">Doctor</th>
                             <th className="pb-2 text-center">Bookings</th>
                             <th className="pb-2 text-center">Completed</th>
@@ -655,8 +655,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                                 <div className="font-semibold text-[#1d1d1f]">{d.doctorName}</div>
                                 <div className="text-[11px] text-[#86868b]">{d.specialty}</div>
                               </td>
-                              <td className="py-2.5 text-center font-medium text-[#1d1d1f]">{d.bookings}</td>
-                              <td className="py-2.5 text-center text-emerald-600 font-medium">{d.completed}</td>
+                              <td className="py-2.5 text-center font-normal text-[#1d1d1f]">{d.bookings}</td>
+                              <td className="py-2.5 text-center text-success font-normal">{d.completed}</td>
                               <td className="py-2.5 text-right font-semibold text-[#1d1d1f]">
                                 ₹{d.revenue.toLocaleString('en-IN')}
                               </td>
@@ -669,7 +669,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 )}
 
                 {reportData?.byClinic && reportData.byClinic.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs">
+                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
                       <span>Facility Breakdown</span>
@@ -677,7 +677,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-medium">
+                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-normal">
                             <th className="pb-2">Clinic</th>
                             <th className="pb-2 text-center">Bookings</th>
                             <th className="pb-2 text-center">Completed</th>
@@ -691,8 +691,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                                 <div className="font-semibold text-[#1d1d1f]">{c.clinicName}</div>
                                 <div className="text-[11px] text-[#86868b]">{c.city}</div>
                               </td>
-                              <td className="py-2.5 text-center font-medium text-[#1d1d1f]">{c.bookings}</td>
-                              <td className="py-2.5 text-center text-emerald-600 font-medium">{c.completed}</td>
+                              <td className="py-2.5 text-center font-normal text-[#1d1d1f]">{c.bookings}</td>
+                              <td className="py-2.5 text-center text-success font-normal">{c.completed}</td>
                               <td className="py-2.5 text-right font-semibold text-[#1d1d1f]">
                                 ₹{c.revenue.toLocaleString('en-IN')}
                               </td>
@@ -706,7 +706,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
                 {/* Shift Breakdown */}
                 {reportData?.byShift && reportData.byShift.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs">
+                  <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
                       <span>Shift Breakdown</span>
@@ -714,7 +714,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead>
-                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-medium">
+                          <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2 font-normal">
                             <th className="pb-2">Shift</th>
                             <th className="pb-2 text-center">Bookings</th>
                             <th className="pb-2 text-center">Completed</th>
@@ -725,8 +725,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                           {reportData.byShift.map((s) => (
                             <tr key={s.shiftName} className="hover:bg-[#f5f5f7]/60">
                               <td className="py-2.5 font-semibold text-[#1d1d1f]">{s.shiftName}</td>
-                              <td className="py-2.5 text-center font-medium text-[#1d1d1f]">{s.bookings}</td>
-                              <td className="py-2.5 text-center text-emerald-600 font-medium">{s.completed}</td>
+                              <td className="py-2.5 text-center font-normal text-[#1d1d1f]">{s.bookings}</td>
+                              <td className="py-2.5 text-center text-success font-normal">{s.completed}</td>
                               <td className="py-2.5 text-right font-semibold text-[#1d1d1f]">
                                 ₹{s.revenue.toLocaleString('en-IN')}
                               </td>
@@ -740,7 +740,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               </div>
 
               {/* 3. Detailed Itemized Consultations Register */}
-              <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] shadow-xs">
+              <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
@@ -759,7 +759,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
-                        <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2.5 font-medium">
+                        <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2.5 font-normal">
                           <th className="pb-2.5 pl-2">Token #</th>
                           <th className="pb-2.5">Date & Shift</th>
                           <th className="pb-2.5">Patient Details</th>
@@ -785,24 +785,24 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                             </td>
                             {role !== 'DOCTOR' && (
                               <td className="py-3">
-                                <div className="font-medium text-[#1d1d1f]">{appt.doctorName}</div>
+                                <div className="font-normal text-[#1d1d1f]">{appt.doctorName}</div>
                                 <div className="text-[11px] text-[#86868b]">{appt.specialty}</div>
                               </td>
                             )}
                             {role === 'DOCTOR' && (
                               <td className="py-3">
-                                <div className="font-medium text-[#1d1d1f]">{appt.clinicName}</div>
+                                <div className="font-normal text-[#1d1d1f]">{appt.clinicName}</div>
                               </td>
                             )}
                             <td className="py-3">
                               <span
-                                className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                                className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal ${
                                   appt.status === 'COMPLETED'
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    ? 'bg-success-soft text-success border border-success-line'
                                     : appt.status === 'IN_CONSULTATION'
                                     ? 'bg-[#0066cc]/10 text-[#0066cc]'
                                     : ['CANCELLED', 'REJECTED', 'EXPIRED'].includes(appt.status)
-                                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                    ? 'bg-danger-soft text-danger border border-danger-line'
                                     : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                                 }`}
                               >
@@ -813,7 +813,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                               <div className="font-semibold text-[#1d1d1f]">₹{appt.fee}</div>
                               <div className="text-[11px] text-[#86868b]">
                                 {appt.earnedRevenue > 0 ? (
-                                  <span className="text-emerald-600 font-medium">Earned ₹{appt.earnedRevenue}</span>
+                                  <span className="text-success font-normal">Earned ₹{appt.earnedRevenue}</span>
                                 ) : (
                                   'Unpaid/Cancelled'
                                 )}
@@ -834,7 +834,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <span>Computer-Generated Audit Statement</span>
                 </div>
                 <p>
-                  This official document records all consultation bookings and isolated revenues during the reporting window. Verified by MediArca clinical timestamp service.
+                  All visits and fees for this period, generated by MediArca.
                 </p>
               </div>
             </>

@@ -82,7 +82,7 @@ export const ClinicProfile: React.FC = () => {
       setCropModalOpen(true);
     };
     reader.onerror = () => {
-      setErrorMsg('Could not read the selected image file. Please try another image.');
+      setErrorMsg('Couldn’t read that image. Try another one.');
     };
     reader.readAsDataURL(rawFile);
   };
@@ -137,7 +137,7 @@ export const ClinicProfile: React.FC = () => {
       return;
     }
     if (!city.trim()) {
-      setErrorMsg('Please enter or select the city where your clinic is located.');
+      setErrorMsg('Choose your clinic’s city.');
       return;
     }
 
@@ -186,25 +186,25 @@ export const ClinicProfile: React.FC = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'doctors',
-      label: 'Affiliated Doctors',
+      label: 'Doctors',
       icon: Users,
       path: '/clinic/dashboard?tab=doctors',
     },
     {
       id: 'receptionists',
-      label: 'Desk Staff & Reception',
+      label: 'Staff',
       icon: UserCheck,
       path: '/clinic/dashboard?tab=receptionists',
     },
     {
       id: 'appointments',
-      label: 'Facility Bookings',
+      label: 'Bookings',
       icon: CalendarCheck,
       path: '/clinic/dashboard?tab=appointments',
     },
     {
       id: 'settings',
-      label: 'Clinic Settings',
+      label: 'Settings',
       icon: Settings,
       path: '/clinic/profile',
       active: true,
@@ -222,7 +222,7 @@ export const ClinicProfile: React.FC = () => {
         <div className="flex items-center gap-2">
           <Link
             to="/clinic/dashboard"
-            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all cursor-pointer"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2  transition-all cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>Return to Dashboard</span>
@@ -232,15 +232,15 @@ export const ClinicProfile: React.FC = () => {
     >
       <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {successMsg && (
-          <div className="p-3.5 rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-medium flex items-center gap-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] animate-in fade-in duration-150">
+          <div className="p-3.5 rounded-xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-normal flex items-center gap-2.5  animate-in fade-in duration-150">
             <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2.5 animate-in fade-in duration-150">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs font-normal flex items-center gap-2.5 animate-in fade-in duration-150">
+            <AlertCircle className="w-4 h-4 text-danger shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -249,7 +249,7 @@ export const ClinicProfile: React.FC = () => {
         <UtilityCard title="Facility Photo & Brand Identity">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative group">
-              <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-center shadow-xs">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-center ">
                 {user?.avatarUrl ? (
                   <img
                     src={getFileUrl(user.avatarUrl)}
@@ -266,7 +266,7 @@ export const ClinicProfile: React.FC = () => {
                 type="button"
                 disabled={avatarLoading}
                 onClick={() => avatarInputRef.current?.click()}
-                className="absolute -bottom-1 -right-1 bg-[#0066cc] hover:bg-[#0071e3] text-white p-2 rounded-full shadow-md transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="absolute -bottom-1 -right-1 bg-[#0066cc] hover:bg-[#0071e3] text-white p-2 rounded-full  transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                 title="Change clinic logo or photo"
               >
                 <Camera className="w-3.5 h-3.5" />
@@ -292,7 +292,7 @@ export const ClinicProfile: React.FC = () => {
                   type="button"
                   disabled={avatarLoading}
                   onClick={() => avatarInputRef.current?.click()}
-                  className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all cursor-pointer disabled:opacity-50"
+                  className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2  transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Camera className="w-3.5 h-3.5 text-[#86868b]" />
                   <span>{avatarLoading ? 'Uploading...' : 'Upload Photo'}</span>
@@ -300,7 +300,7 @@ export const ClinicProfile: React.FC = () => {
               </div>
 
               {avatarOptimization && (
-                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full animate-in fade-in duration-150">
+                <div className="inline-flex items-center gap-1.5 text-xs font-normal text-[#0066cc] bg-[#0066cc]/10 px-3 py-1 rounded-full animate-in fade-in duration-150">
                   <Sparkles className="w-3.5 h-3.5 text-[#0066cc]" />
                   <span>{avatarOptimization}</span>
                 </div>
@@ -313,22 +313,22 @@ export const ClinicProfile: React.FC = () => {
         <UtilityCard title="Verification & Facility Credentials">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-              <span className="text-xs font-medium text-[#86868b]">Accreditation Status</span>
+              <span className="text-xs font-normal text-[#86868b]">Accreditation Status</span>
               <div className="flex items-center gap-1.5 pt-0.5">
                 {isVerified ? (
                   <>
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-emerald-700">Verified Clinical Facility</span>
+                    <ShieldCheck className="w-4 h-4 text-success shrink-0" />
+                    <span className="text-xs font-semibold text-success">Verified Clinical Facility</span>
                   </>
                 ) : verificationStatus === 'SUSPENDED' ? (
                   <>
-                    <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span className="text-xs font-semibold text-rose-700">Suspended</span>
+                    <ShieldAlert className="w-4 h-4 text-danger shrink-0" />
+                    <span className="text-xs font-semibold text-danger">Suspended</span>
                   </>
                 ) : (
                   <>
-                    <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span className="text-xs font-semibold text-amber-700">Pending Verification</span>
+                    <Clock className="w-4 h-4 text-warning shrink-0" />
+                    <span className="text-xs font-semibold text-warning">Pending Verification</span>
                   </>
                 )}
               </div>
@@ -336,7 +336,7 @@ export const ClinicProfile: React.FC = () => {
 
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col justify-between sm:flex-row sm:items-center gap-3">
               <div className="space-y-0.5 min-w-0">
-                <span className="text-xs font-medium text-[#86868b]">Arrival Check-In</span>
+                <span className="text-xs font-normal text-[#86868b]">Arrival Check-In</span>
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <QrCode className="w-4 h-4 text-[#0066cc] shrink-0" />
                   <span className="text-xs font-semibold text-[#1d1d1f]">Front-Desk QR Code</span>
@@ -345,7 +345,7 @@ export const ClinicProfile: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setStandeeModalOpen(true)}
-                className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer shrink-0"
+                className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal  transition-all cursor-pointer shrink-0"
               >
                 <QrCode className="w-3.5 h-3.5" />
                 <span>View QR Code</span>
@@ -359,8 +359,8 @@ export const ClinicProfile: React.FC = () => {
           <UtilityCard title="Facility Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Clinic Name <span className="text-rose-500">*</span>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Clinic Name <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -368,15 +368,15 @@ export const ClinicProfile: React.FC = () => {
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   placeholder="e.g. Metropolis Polyclinic"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Contact Phone
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
                     +91
                   </span>
@@ -393,7 +393,7 @@ export const ClinicProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Login Email
                 </label>
                 <input
@@ -409,8 +409,8 @@ export const ClinicProfile: React.FC = () => {
           <UtilityCard title="Physical Clinic Location">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Street Address <span className="text-rose-500">*</span>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  Street Address <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
@@ -418,14 +418,14 @@ export const ClinicProfile: React.FC = () => {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="e.g. Floor 3, 100 Hill Road, Bandra West"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                    State <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                    State <span className="text-danger">*</span>
                   </label>
                   <select
                     required
@@ -446,8 +446,8 @@ export const ClinicProfile: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
-                    City <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                    City <span className="text-danger">*</span>
                   </label>
                   {state && getCitiesForState(state).length > 0 ? (
                     <select
@@ -482,14 +482,14 @@ export const ClinicProfile: React.FC = () => {
           <div className="flex items-center justify-end gap-3 pt-2">
             <Link
               to="/clinic/dashboard"
-              className="h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
+              className="h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-black/[0.08] text-xs font-normal transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={saving}
-              className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+              className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal  transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>

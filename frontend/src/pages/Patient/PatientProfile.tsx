@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SubNav } from '../../components/layout/SubNav';
 import { useAuth } from '../../context/AuthContext';
 import { api, getLocalDateString } from '../../services/api';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -91,24 +92,19 @@ export const PatientProfile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
-      {/* Sleek Apple Header */}
-      <div className="bg-white border-b border-[#e5e5ea]/80">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Profile</h1>
-        </div>
-      </div>
+      <SubNav title="Profile" width="4xl" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {successMsg && (
-          <div className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-medium flex items-center gap-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+          <div className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-normal flex items-center gap-2.5 ">
             <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs font-medium flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <div className="p-3.5 rounded-2xl bg-danger-soft/80 border border-danger-line/80 text-danger text-xs font-normal flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-danger shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -118,7 +114,7 @@ export const PatientProfile: React.FC = () => {
           <UtilityCard title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
                 <input
@@ -127,15 +123,15 @@ export const PatientProfile: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Full Name"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile Number
                 </label>
-                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
+                <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                     +91
                   </div>
@@ -147,13 +143,13 @@ export const PatientProfile: React.FC = () => {
                     onChange={handlePhoneInputChange}
                     placeholder="98765 43210"
                     maxLength={10}
-                    className="w-full h-full px-3.5 text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] bg-transparent focus:outline-none font-medium tracking-wide"
+                    className="w-full h-full px-3.5 text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] bg-transparent focus:outline-none font-normal tracking-wide"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#86868b] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#86868b] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
@@ -165,7 +161,7 @@ export const PatientProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Emergency Contact <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
                 <input
@@ -173,7 +169,7 @@ export const PatientProfile: React.FC = () => {
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   placeholder="Optional contact name & number"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
             </div>
@@ -183,7 +179,7 @@ export const PatientProfile: React.FC = () => {
           <UtilityCard title="Health Details">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Date of Birth
                 </label>
                 <input
@@ -191,12 +187,12 @@ export const PatientProfile: React.FC = () => {
                   max={getLocalDateString()}
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Gender
                 </label>
                 <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full grid grid-cols-3 gap-0.5 h-11 select-none">
@@ -209,8 +205,8 @@ export const PatientProfile: React.FC = () => {
                         onClick={() => setGender(option)}
                         className={`rounded-full text-[13px] transition-all duration-150 cursor-pointer ${
                           active
-                            ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                            ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                            : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                         }`}
                       >
                         {option}
@@ -221,15 +217,15 @@ export const PatientProfile: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Blood Group
                 </label>
                 <div className="relative">
                   <select
                     value={bloodGroup}
                     onChange={(e) => setBloodGroup(e.target.value)}
-                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
-                      bloodGroup ? 'text-[#1d1d1f] font-medium' : 'text-[#a1a1a6]'
+                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
+                      bloodGroup ? 'text-[#1d1d1f] font-normal' : 'text-[#a1a1a6]'
                     }`}
                   >
                     <option value="">Select</option>
@@ -252,7 +248,7 @@ export const PatientProfile: React.FC = () => {
             <button
               type="submit"
               disabled={saving}
-              className="w-full sm:w-auto h-11 px-7 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto h-11 px-7 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

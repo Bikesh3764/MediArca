@@ -23,11 +23,11 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
   if (normalized === 'STEPPED_OUT') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] ${
+        className={`inline-flex items-center gap-1.5 font-normal rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] ${
           size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+        <span className="w-1.5 h-1.5 rounded-full bg-warning-dot shrink-0"></span>
         <span>
           Stepped Out
           {cleanReturn ? ` • Back ${cleanReturn}` : ''}
@@ -39,7 +39,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
   if (normalized === 'NOT_IN_CABIN') {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] ${
+        className={`inline-flex items-center gap-1.5 font-normal rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] ${
           size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
         } ${className}`}
       >
@@ -52,7 +52,7 @@ export const CabinStatusBadge: React.FC<CabinStatusBadgeProps> = ({
   // Default: IN_CABIN
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-medium rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] ${
+      className={`inline-flex items-center gap-1.5 font-normal rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] ${
         size === 'sm' ? 'px-2.5 py-0.5 text-[11px]' : 'px-3 py-1 text-xs'
       } ${className}`}
     >
@@ -172,17 +172,17 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
     <div className={`flex flex-col gap-2.5 ${className}`}>
       <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-[#86868b] tracking-tight">
+          <span className="text-xs font-normal text-[#86868b] tracking-tight">
             Cabin Status
           </span>
           {feedback && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[11px] font-normal text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full">
               <Check className="w-3 h-3 text-[#0066cc]" />
               {feedback}
             </span>
           )}
           {errorMsg && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            <span className="inline-flex items-center gap-1 text-[11px] font-normal text-danger bg-danger-soft px-2 py-0.5 rounded-full border border-danger-line">
               <AlertCircle className="w-3 h-3" />
               {errorMsg}
             </span>
@@ -197,8 +197,8 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             onClick={() => updateStatus('IN_CABIN')}
             className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'IN_CABIN'
-                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
             }`}
           >
             <span
@@ -215,13 +215,13 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             onClick={() => updateStatus('STEPPED_OUT', 15)}
             className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'STEPPED_OUT'
-                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                status === 'STEPPED_OUT' ? 'bg-amber-500' : 'bg-[#d2d2d7]'
+                status === 'STEPPED_OUT' ? 'bg-warning-dot' : 'bg-[#d2d2d7]'
               }`}
             />
             <span>Stepped Out</span>
@@ -233,8 +233,8 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             onClick={() => updateStatus('NOT_IN_CABIN')}
             className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'NOT_IN_CABIN'
-                ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
             }`}
           >
             <span
@@ -274,8 +274,8 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                   onClick={() => updateStatus('STEPPED_OUT', mins)}
                   className={`h-6 px-2.5 rounded-full text-[11px] transition-all active:scale-95 cursor-pointer ${
                     isSelected
-                      ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs border border-black/5'
-                      : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                      ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                      : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                   }`}
                 >
                   {label}
@@ -287,7 +287,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                 type="button"
                 disabled={loading}
                 onClick={() => updateStatus('STEPPED_OUT', null, null)}
-                className="h-6 px-2.5 rounded-full text-[11px] font-medium text-[#86868b] hover:text-[#1d1d1f] transition-all active:scale-95 cursor-pointer"
+                className="h-6 px-2.5 rounded-full text-[11px] font-normal text-[#86868b] hover:text-[#1d1d1f] transition-all active:scale-95 cursor-pointer"
               >
                 Clear
               </button>

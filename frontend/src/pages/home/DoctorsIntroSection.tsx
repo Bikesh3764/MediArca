@@ -17,7 +17,7 @@ export const DoctorsIntroSection: React.FC = () => {
     resetDoctorFilters,
   } = useHome();
   return (
-<div className="flex-1 w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2 sm:gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+<div className="flex-1 w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2 sm:gap-3 ">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -64,7 +64,7 @@ export const DoctorsIntroSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDoctorMobileFiltersOpen(!doctorMobileFiltersOpen)}
-                className="lg:hidden h-7 px-2.5 sm:px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                className="lg:hidden h-7 px-2.5 sm:px-3 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-[#86868b]" />
                 <span>Filters</span>

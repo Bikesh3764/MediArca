@@ -2,7 +2,7 @@ import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { DoctorLeave, DoctorScheduleConfig } from '../schedule';
 import { Doctor, DoctorAffiliationsData, PaginatedResult } from '../types';
-import { getHeaders, handleResponse } from '../http';
+import { cachedPublicGet, getHeaders, handleResponse } from '../http';
 import { DEMO_DOCTORS } from '../demoData';
 
 export const doctorsApi = {
@@ -34,8 +34,7 @@ export const doctorsApi = {
       if (params?.page) query.append('page', String(params.page));
       if (params?.limit) query.append('limit', String(params.limit));
 
-      const res = await safeFetch(`${API_BASE_URL}/doctors?${query.toString()}`);
-      return await handleResponse(res);
+      return await cachedPublicGet(`${API_BASE_URL}/doctors?${query.toString()}`);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
         console.warn('Dev mode: backend unavailable, using demo doctors fallback', err);

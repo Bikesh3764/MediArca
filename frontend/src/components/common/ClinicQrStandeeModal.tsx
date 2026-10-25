@@ -49,7 +49,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
     >
-      <div className="relative w-full max-w-[420px] max-h-[92vh] overflow-y-auto bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] p-6 sm:p-7 text-center print:border-none print:shadow-none print:p-0 print:max-h-none print:overflow-visible">
+      <div className="relative w-full max-w-[420px] max-h-[92vh] overflow-y-auto bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7 text-center print:border-none  print:p-0 print:max-h-none print:overflow-visible">
         {/* Close Button (Hidden on Print) */}
         <button aria-label="Close"
           type="button"
@@ -82,7 +82,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
           )}
 
           {/* QR Code Container */}
-          <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#d2d2d7] shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex items-center justify-center mb-3.5">
+          <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#d2d2d7]  flex items-center justify-center mb-3.5">
             <img
               src={qrImageUrl}
               alt={`${clinicName} Arrival QR Code`}
@@ -91,7 +91,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
             />
           </div>
 
-          <p className="text-xs font-medium text-[#1d1d1f]">
+          <p className="text-xs font-normal text-[#1d1d1f]">
             Scan with phone camera to check in
           </p>
         </div>
@@ -101,7 +101,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Print QR Code</span>

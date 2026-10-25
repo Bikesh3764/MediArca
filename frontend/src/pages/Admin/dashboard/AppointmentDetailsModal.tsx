@@ -19,7 +19,7 @@ export const AppointmentDetailsModal: React.FC = () => {
           }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8  space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
                 <div className="flex items-center gap-2.5">
@@ -50,24 +50,24 @@ export const AppointmentDetailsModal: React.FC = () => {
                       {selectedAppointment.patient?.user?.fullName || selectedAppointment.patientName || 'Walk-in Patient'}
                     </strong>
                     {selectedAppointment.isForOther && (
-                      <span className="text-[11px] text-[#86868b] font-medium">(Family Member)</span>
+                      <span className="text-[11px] text-[#86868b] font-normal">(Family Member)</span>
                     )}
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Contact Phone</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
+                    <span className="font-normal text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patientPhone || selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Email Address</span>
-                    <span className="font-medium text-[#1d1d1f] truncate block mt-0.5">
+                    <span className="font-normal text-[#1d1d1f] truncate block mt-0.5">
                       {selectedAppointment.patient?.user?.email || 'N/A'}
                     </span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Arrival Status</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">
+                    <span className="font-normal text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.isCheckedIn ? 'Checked-in at Desk' : 'Not Checked-in'}
                     </span>
                   </div>
@@ -92,7 +92,7 @@ export const AppointmentDetailsModal: React.FC = () => {
                   </div>
                   <div className="col-span-2">
                     <span className="text-[#86868b] block text-[11px]">Shift</span>
-                    <span className="text-[#1d1d1f] font-medium mt-0.5 block">{cleanSlotName(selectedAppointment.checkingWindow, 'Shift 1')}</span>
+                    <span className="text-[#1d1d1f] font-normal mt-0.5 block">{cleanSlotName(selectedAppointment.checkingWindow, 'Shift 1')}</span>
                   </div>
                 </div>
               </div>

@@ -50,7 +50,7 @@ export const AppointmentsTab: React.FC = () => {
                         )}
                       </div>
                       <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-                        Audit trail of queue tokens, consultation flows, and schedules organized by dates and clinical facilities.
+                        All bookings by date and clinic.
                       </p>
                     </div>
 
@@ -59,9 +59,9 @@ export const AppointmentsTab: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('table')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'table'
-                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                            ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="View flat table of all matching bookings"
@@ -72,9 +72,9 @@ export const AppointmentsTab: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('by-date')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-date'
-                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                            ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings chronologically by date"
@@ -85,9 +85,9 @@ export const AppointmentsTab: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setBookingViewMode('by-clinic')}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer ${
                           bookingViewMode === 'by-clinic'
-                            ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-semibold'
+                            ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
                         title="Group bookings by clinic facility"
@@ -100,41 +100,41 @@ export const AppointmentsTab: React.FC = () => {
                   {/* Summary Metric Counters Bar */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 my-5">
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">Total Shown</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Total Shown</span>
                       <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">{filteredAppointments.length}</strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">Today's Visits</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Today's Visits</span>
                       <strong className="text-lg font-semibold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => a.appointmentDate === todayStr).length}
                       </strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">Waiting</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Waiting</span>
                       <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'WAITING').length}
                       </strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">In Cabin</span>
+                      <span className="text-xs font-normal text-[#86868b] block">In Cabin</span>
                       <strong className="text-lg font-semibold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'IN_CONSULTATION').length}
                       </strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">Completed</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Completed</span>
                       <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">
                         {filteredAppointments.filter((a) => (a.status || '').toUpperCase() === 'COMPLETED').length}
                       </strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-medium text-[#86868b] block">Cancelled/Off</span>
-                      <strong className="text-lg font-semibold text-rose-600 mt-0.5 block">
+                      <span className="text-xs font-normal text-[#86868b] block">Cancelled/Off</span>
+                      <strong className="text-lg font-semibold text-danger mt-0.5 block">
                         {filteredAppointments.filter((a) => ['CANCELLED', 'EXPIRED'].includes((a.status || '').toUpperCase())).length}
                       </strong>
                     </div>
@@ -151,7 +151,7 @@ export const AppointmentsTab: React.FC = () => {
                           value={bookingSearchQuery}
                           onChange={(e) => setBookingSearchQuery(e.target.value)}
                           placeholder="Search patient, practitioner, clinic, token #..."
-                          className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                          className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                         />
                         {bookingSearchQuery && (
                           <button aria-label="Close"
@@ -171,7 +171,7 @@ export const AppointmentsTab: React.FC = () => {
                             value={bookingClinicFilter}
                             onChange={(e) => setBookingClinicFilter(e.target.value)}
                             aria-label="Filter bookings by clinic facility"
-                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-normal  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
                             <option value="ALL">All Clinics ({appointments.length})</option>
                             {clinicFilterOptions.map((c) => (
@@ -190,7 +190,7 @@ export const AppointmentsTab: React.FC = () => {
                             value={bookingStatusFilter}
                             onChange={(e) => setBookingStatusFilter(e.target.value)}
                             aria-label="Filter bookings by consultation status"
-                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
+                            className="w-full h-11 appearance-none pl-9 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] font-normal  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 cursor-pointer transition-all duration-150"
                           >
                             <option value="ALL">All Statuses</option>
                             <option value="WAITING">Waiting</option>
@@ -218,8 +218,8 @@ export const AppointmentsTab: React.FC = () => {
                             }}
                             className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
                               bookingDateFilter === 'ALL'
-                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
                             All Dates
@@ -233,8 +233,8 @@ export const AppointmentsTab: React.FC = () => {
                             }}
                             className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
                               bookingDateFilter === 'TODAY'
-                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
                             Today ({appointments.filter((a) => a.appointmentDate === todayStr).length})
@@ -248,8 +248,8 @@ export const AppointmentsTab: React.FC = () => {
                             }}
                             className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
                               bookingDateFilter === 'TOMORROW'
-                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
                             Tomorrow ({appointments.filter((a) => a.appointmentDate === tomorrowStr).length})
@@ -263,8 +263,8 @@ export const AppointmentsTab: React.FC = () => {
                             }}
                             className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
                               bookingDateFilter === 'PAST'
-                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold shadow-2xs border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                                ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
+                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
                             Past History
@@ -285,7 +285,7 @@ export const AppointmentsTab: React.FC = () => {
                             className={`text-base sm:text-xs bg-transparent focus:outline-none cursor-pointer ${
                               bookingDateFilter === 'CUSTOM'
                                 ? 'text-[#0066cc] font-semibold'
-                                : 'text-[#1d1d1f] font-medium'
+                                : 'text-[#1d1d1f] font-normal'
                             }`}
                           />
                         </div>
@@ -296,7 +296,7 @@ export const AppointmentsTab: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleResetBookingFilters}
-                          className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all cursor-pointer active:scale-95"
+                          className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold text-danger bg-danger-soft hover:bg-danger-soft border border-danger-line transition-all cursor-pointer active:scale-95"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <span>Reset Filters</span>
@@ -346,11 +346,11 @@ export const AppointmentsTab: React.FC = () => {
                                 <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                 <td className="py-3 px-3">
                                   <div>
-                                    <span className="font-medium text-[#1d1d1f]">
+                                    <span className="font-normal text-[#1d1d1f]">
                                       {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                     </span>
                                     {appt.isForOther && appt.patientName && (
-                                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                         Family
                                       </span>
                                     )}
@@ -361,7 +361,7 @@ export const AppointmentsTab: React.FC = () => {
                                 </td>
                                 <td className="py-3 px-3">
                                   <div>
-                                    <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                    <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                     <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                       {appt.doctor?.specialty || 'Specialist'}
                                     </span>
@@ -371,9 +371,9 @@ export const AppointmentsTab: React.FC = () => {
                                   <div className="flex items-start gap-1.5">
                                     <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                     <div>
-                                      <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
+                                      <span className="font-normal text-[#1d1d1f]">{clinicInfo.name}</span>
                                       {clinicInfo.city && (
-                                        <span className="text-[10px] text-[#86868b] block mt-0.5">
+                                        <span className="text-[11px] text-[#86868b] block mt-0.5">
                                           {clinicInfo.city}
                                         </span>
                                       )}
@@ -381,7 +381,7 @@ export const AppointmentsTab: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                 <td className="py-3 px-3 text-right">
                                   <button
                                     type="button"
@@ -410,7 +410,7 @@ export const AppointmentsTab: React.FC = () => {
                         return (
                           <div
                             key={dateStr}
-                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
+                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden "
                           >
                             {/* Date Group Header */}
                             <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -452,11 +452,11 @@ export const AppointmentsTab: React.FC = () => {
                                         <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                         <td className="py-3 px-3">
                                           <div>
-                                            <span className="font-medium text-[#1d1d1f]">
+                                            <span className="font-normal text-[#1d1d1f]">
                                               {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                             </span>
                                             {appt.isForOther && appt.patientName && (
-                                              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                                 Family
                                               </span>
                                             )}
@@ -467,7 +467,7 @@ export const AppointmentsTab: React.FC = () => {
                                         </td>
                                         <td className="py-3 px-3">
                                           <div>
-                                            <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                            <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                             <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                               {appt.doctor?.specialty || 'Specialist'}
                                             </span>
@@ -477,9 +477,9 @@ export const AppointmentsTab: React.FC = () => {
                                           <div className="flex items-start gap-1.5">
                                             <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                             <div>
-                                              <span className="font-medium text-[#1d1d1f]">{clinicInfo.name}</span>
+                                              <span className="font-normal text-[#1d1d1f]">{clinicInfo.name}</span>
                                               {clinicInfo.city && (
-                                                <span className="text-[10px] text-[#86868b] block mt-0.5">
+                                                <span className="text-[11px] text-[#86868b] block mt-0.5">
                                                   {clinicInfo.city}
                                                 </span>
                                               )}
@@ -487,7 +487,7 @@ export const AppointmentsTab: React.FC = () => {
                                           </div>
                                         </td>
                                         <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                        <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                        <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                         <td className="py-3 px-3 text-right">
                                           <button
                                             type="button"
@@ -521,7 +521,7 @@ export const AppointmentsTab: React.FC = () => {
                         return (
                           <div
                             key={clinicInfo.name}
-                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden shadow-2xs"
+                            className="bg-white rounded-2xl border border-[#e5e5ea] overflow-hidden "
                           >
                             {/* Clinic Group Header */}
                             <div className="px-4 py-3.5 bg-[#f5f5f7]/60 border-b border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -529,7 +529,7 @@ export const AppointmentsTab: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   <h4 className="text-sm font-semibold text-[#1d1d1f]">{clinicInfo.name}</h4>
                                   {clinicInfo.city && (
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white border border-[#e5e5ea] text-[#86868b]">
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-white border border-[#e5e5ea] text-[#86868b]">
                                       {clinicInfo.city}
                                     </span>
                                   )}
@@ -540,10 +540,10 @@ export const AppointmentsTab: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-2 self-start sm:self-center">
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white text-[#1d1d1f] border border-[#e5e5ea]">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-normal bg-white text-[#1d1d1f] border border-[#e5e5ea]">
                                   {waitingCount} Waiting
                                 </span>
-                                <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-normal bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
                                   {completedCount} Completed
                                 </span>
                               </div>
@@ -575,11 +575,11 @@ export const AppointmentsTab: React.FC = () => {
                                       <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                       <td className="py-3 px-3">
                                         <div>
-                                          <span className="font-medium text-[#1d1d1f]">
+                                          <span className="font-normal text-[#1d1d1f]">
                                             {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                           </span>
                                           {appt.isForOther && appt.patientName && (
-                                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
+                                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                                               Family
                                             </span>
                                           )}
@@ -590,14 +590,14 @@ export const AppointmentsTab: React.FC = () => {
                                       </td>
                                       <td className="py-3 px-3">
                                         <div>
-                                          <span className="font-medium text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                          <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                           <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                             {appt.doctor?.specialty || 'Specialist'}
                                           </span>
                                         </div>
                                       </td>
                                       <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                      <td className="py-3 px-3 text-[#86868b] font-medium">{appt.estimatedTime || 'N/A'}</td>
+                                      <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                       <td className="py-3 px-3 text-right">
                                         <button
                                           type="button"

@@ -237,7 +237,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-fadeIn"
     >
-      <div className="relative w-full max-w-[460px] bg-white rounded-[28px] border border-[#e5e5ea] shadow-[0_24px_64px_rgba(0,0,0,0.12),0_4px_16px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col max-h-[94vh] p-6 sm:p-7">
+      <div className="relative w-full max-w-[460px] bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden flex flex-col max-h-[94vh] p-6 sm:p-7">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
@@ -266,8 +266,8 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 selectedRatio === '1:1'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               1:1 Square
@@ -281,8 +281,8 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
               }}
               className={`flex-1 py-2 text-xs rounded-lg transition-all duration-150 cursor-pointer text-center ${
                 selectedRatio === '4:3'
-                  ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_1px_rgba(0,0,0,0.04)] border border-black/5'
-                  : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                  ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                  : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
               4:3 Portrait
@@ -305,7 +305,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
           >
             {/* Guide overlay */}
             <div className="absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-3">
-              <div className="flex justify-between items-center text-[11px] font-medium text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 w-fit">
+              <div className="flex justify-between items-center text-[11px] font-normal text-[#1d1d1f] bg-white/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-black/5 w-fit">
                 <span className="flex items-center gap-1">
                   <Move className="w-3 h-3 text-[#0066cc]" /> Drag to reposition
                 </span>
@@ -344,7 +344,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFitEntirePhoto}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-normal bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
             >
               <Maximize2 className="w-3.5 h-3.5 text-[#0066cc]" />
               Fit Photo
@@ -352,7 +352,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFocusFace}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-normal bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#e8e8ed] transition-colors cursor-pointer"
             >
               <User className="w-3.5 h-3.5 text-[#0066cc]" />
               Center Face
@@ -360,7 +360,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             <button
               type="button"
               onClick={handleFitEntirePhoto}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-[#0066cc] hover:underline cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-normal text-[#0066cc] hover:underline cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
               Reset
@@ -381,7 +381,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
                 className="w-full h-1.5 bg-[#e5e5ea] rounded-full appearance-none accent-[#0066cc] cursor-pointer"
               />
               <ZoomIn className="w-4 h-4 text-[#86868b] shrink-0" />
-              <span className="text-xs font-medium text-[#1d1d1f] w-11 text-right">
+              <span className="text-xs font-normal text-[#1d1d1f] w-11 text-right">
                 {Math.round(zoom * 100)}%
               </span>
             </div>
@@ -394,7 +394,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             type="button"
             disabled={processing}
             onClick={onClose}
-            className="flex-1 h-11 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] text-sm font-medium transition-all cursor-pointer"
+            className="flex-1 h-11 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#1d1d1f] text-sm font-normal transition-all cursor-pointer"
           >
             Cancel
           </button>
@@ -402,7 +402,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({
             type="button"
             disabled={processing}
             onClick={handleCropAndSave}
-            className="flex-1 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+            className="flex-1 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
           >
             <Check className="w-4 h-4" />
             <span>{processing ? 'Saving...' : 'Save Photo'}</span>

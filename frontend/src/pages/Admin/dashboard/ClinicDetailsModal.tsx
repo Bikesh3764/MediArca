@@ -19,7 +19,7 @@ export const ClinicDetailsModal: React.FC = () => {
           }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8  space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
                 <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">{selectedClinic.clinicName}</h3>
@@ -39,30 +39,30 @@ export const ClinicDetailsModal: React.FC = () => {
             <div className="space-y-3.5 text-xs text-[#1d1d1f]">
               <div className="grid grid-cols-2 gap-3 p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
                 <div>
-                  <span className="text-xs font-medium text-[#86868b] block">Facility Address</span>
-                  <p className="font-medium mt-0.5">{selectedClinic.address}</p>
+                  <span className="text-xs font-normal text-[#86868b] block">Facility Address</span>
+                  <p className="font-normal mt-0.5">{selectedClinic.address}</p>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-[#86868b] block">City & State</span>
-                  <p className="font-medium mt-0.5">{selectedClinic.city || 'Not Specified'}{selectedClinic.state ? `, ${selectedClinic.state}` : ''}</p>
+                  <span className="text-xs font-normal text-[#86868b] block">City & State</span>
+                  <p className="font-normal mt-0.5">{selectedClinic.city || 'Not Specified'}{selectedClinic.state ? `, ${selectedClinic.state}` : ''}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3 p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] text-center">
                 <div>
-                  <span className="text-xs font-medium text-[#86868b] block">Doctors</span>
+                  <span className="text-xs font-normal text-[#86868b] block">Doctors</span>
                   <p className="text-base font-semibold text-[#1d1d1f] mt-0.5">
                     {selectedClinic._count?.doctors ?? selectedClinic.doctorsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-[#86868b] block">Receptionists</span>
+                  <span className="text-xs font-normal text-[#86868b] block">Receptionists</span>
                   <p className="text-base font-semibold text-[#0066cc] mt-0.5">
                     {selectedClinic._count?.receptionists ?? selectedClinic.receptionistsCount ?? 0}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-[#86868b] block">Bookings</span>
+                  <span className="text-xs font-normal text-[#86868b] block">Bookings</span>
                   <p className="text-base font-semibold text-[#1d1d1f] mt-0.5">
                     {selectedClinic._count?.appointments ?? selectedClinic.appointmentsCount ?? 0}
                   </p>
@@ -102,11 +102,11 @@ export const ClinicDetailsModal: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Admin Full Name</span>
-                    <span className="font-medium mt-0.5 block">{selectedClinic.user?.fullName || 'N/A'}</span>
+                    <span className="font-normal mt-0.5 block">{selectedClinic.user?.fullName || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Direct Email</span>
-                    <span className="font-medium text-[#1d1d1f] mt-0.5 block">{selectedClinic.user?.email || 'N/A'}</span>
+                    <span className="font-normal text-[#1d1d1f] mt-0.5 block">{selectedClinic.user?.email || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Facility Phone</span>
@@ -120,7 +120,7 @@ export const ClinicDetailsModal: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between p-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]">
-                <span className="text-[#86868b] font-medium">Platform Verification State</span>
+                <span className="text-[#86868b] font-normal">Platform Verification State</span>
                 {renderStatusBadge(getPractitionerStatus(selectedClinic))}
               </div>
             </div>
@@ -139,7 +139,7 @@ export const ClinicDetailsModal: React.FC = () => {
                       const ok = await handleVerifyClinic(selectedClinic.id, 'SUSPENDED');
                       if (ok) setSelectedClinic(null);
                     }}
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                    className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
                     Suspend Verification
@@ -183,7 +183,7 @@ export const ClinicDetailsModal: React.FC = () => {
                         const ok = await handleVerifyClinic(selectedClinic.id, 'REJECTED');
                         if (ok) setSelectedClinic(null);
                       }}
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                      className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
                       Reject Application

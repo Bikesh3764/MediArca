@@ -7,7 +7,8 @@ export interface BrandLogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   imgClassName?: string;
-  theme?: 'light' | 'dark';
+  /** onDark: icon + white wordmark for the black global nav (DESIGN.md global-nav) */
+  theme?: 'light' | 'dark' | 'onDark';
   alt?: string;
 }
 
@@ -31,10 +32,23 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   const sizeClasses = SIZE_MAP[size] || SIZE_MAP.md;
   const dimensionClass = variant === 'icon' ? sizeClasses.icon : sizeClasses.full;
 
+  if (theme === 'onDark') {
+    const iconSize = { xs: 'w-4 h-4', sm: 'w-5 h-5', md: 'w-6 h-6', lg: 'w-7 h-7', xl: 'w-9 h-9' }[size] || 'w-6 h-6';
+    const textSize = { xs: 'text-[13px]', sm: 'text-[15px]', md: 'text-[17px]', lg: 'text-[21px]', xl: 'text-[28px]' }[size] || 'text-[17px]';
+    return (
+      <div className={`inline-flex items-center gap-1.5 ${className}`} aria-label={alt}>
+        <img src={mediarcaIcon} alt="" className={`${iconSize} object-contain select-none`} loading="eager" />
+        <span className={`${textSize} font-semibold tracking-tight leading-none text-white`}>
+          Medi<span className="text-[#2997ff]">Arca</span>
+        </span>
+      </div>
+    );
+  }
+
   if (theme === 'dark') {
     return (
       <div
-        className={`inline-flex items-center justify-center bg-white rounded-xl px-2 py-0.5 shadow-xs ${className}`}
+        className={`inline-flex items-center justify-center bg-white rounded-xl px-2 py-0.5  ${className}`}
       >
         <img
           src={imgSrc}

@@ -1,3 +1,5 @@
+import { safeFetch } from '../safeFetch';
+
 export const getHeaders = (isMultipart = false) => {
   const token = localStorage.getItem('mediarca_token');
   const headers: Record<string, string> = {};
@@ -55,3 +57,31 @@ export async function handleResponse<T>(res: Response): Promise<T> {
   }
   return data?.data !== undefined ? data.data : data;
 }
+
+// Short-lived memory cache for public GET lists (doctors, clinics) so moving between
+// pages is instant. Identical requests made at the same time share one network call.
+const publicGetCache = new Map<string, { at: number; data: unknown }>();
+const publicGetInFlight = new Map<string, Promise<unknown>>();
+
+export const cachedPublicGet = async <T>(url: string, ttlMs = 30000): Promise<T> => {
+  const hit = publicGetCache.get(url);
+  if (hit && Date.now() - hit.at < ttlMs) return hit.data as T;
+  const pending = publicGetInFlight.get(url);
+  if (pending) return pending as Promise<T>;
+  const request = (async () => {
+    try {
+      const res = await safeFetch(url);
+      const data = await handleResponse<T>(res);
+      publicGetCache.set(url, { at: Date.now(), data });
+      return data;
+    } finally {
+      publicGetInFlight.delete(url);
+    }
+  })();
+  publicGetInFlight.set(url, request);
+  return request;
+};
+
+export const clearPublicGetCache = (): void => {
+  publicGetCache.clear();
+};

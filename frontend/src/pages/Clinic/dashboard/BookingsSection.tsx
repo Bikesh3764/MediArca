@@ -10,7 +10,7 @@ export const BookingsSection: React.FC = () => {
     getApptStatusBadge,
   } = useClinicDashboard();
   return (
-<div id="appointments-section" className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 sm:p-8 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+<div id="appointments-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-6 sm:p-8 ">
           <div className="pb-5 border-b border-[#f0f0f2] mb-6">
             <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
               Recent Consultations at this Facility
@@ -23,7 +23,7 @@ export const BookingsSection: React.FC = () => {
             <EmptyState
               icon={Calendar}
               title="No Facility Consultations Recorded Yet"
-              description="When patients book appointments with affiliated practitioners at this clinic, they will appear here in real-time."
+              description="New bookings show up here live."
             />
           ) : (
             <>
@@ -44,7 +44,7 @@ export const BookingsSection: React.FC = () => {
                       {(() => {
                         const badge = getApptStatusBadge(appt.status);
                         return (
-                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${badge.className}`}>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal ${badge.className}`}>
                             {badge.label}
                           </span>
                         );
@@ -68,7 +68,7 @@ export const BookingsSection: React.FC = () => {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-medium">
+                  <tr className="border-b border-[#e5e5ea] text-[#86868b] font-normal">
                     <th className="pb-3 pl-2">Token #</th>
                     <th className="pb-3">Patient</th>
                     <th className="pb-3">Doctor</th>
@@ -89,7 +89,7 @@ export const BookingsSection: React.FC = () => {
                         <div className="font-semibold text-[#1d1d1f]">{appt.patientName}</div>
                         <div className="text-[11px] text-[#86868b]">{appt.patientPhone}</div>
                       </td>
-                      <td className="py-3.5 font-medium text-[#1d1d1f]">{appt.doctorName}</td>
+                      <td className="py-3.5 font-normal text-[#1d1d1f]">{appt.doctorName}</td>
                       <td className="py-3.5 text-[#86868b]">
                         <div>{appt.date}</div>
                         <div className="text-[11px]">{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
@@ -98,7 +98,7 @@ export const BookingsSection: React.FC = () => {
                         {(() => {
                           const badge = getApptStatusBadge(appt.status);
                           return (
-                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium ${badge.className}`}>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal ${badge.className}`}>
                               {badge.label}
                             </span>
                           );

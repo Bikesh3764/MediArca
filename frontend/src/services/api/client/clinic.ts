@@ -1,7 +1,7 @@
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { ClinicDashboardData, ClinicProfile, ClinicReceptionistItem, PaginatedResult } from '../types';
-import { getHeaders, handleResponse } from '../http';
+import { cachedPublicGet, getHeaders, handleResponse } from '../http';
 import { DEMO_DOCTORS } from '../demoData';
 
 export const clinicApi = {
@@ -93,8 +93,7 @@ export const clinicApi = {
       if (params?.limit) query.append('limit', String(params.limit));
       const qs = query.toString();
       const url = qs ? `${API_BASE_URL}/clinics/public?${qs}` : `${API_BASE_URL}/clinics/public`;
-      const res = await safeFetch(url, { headers: getHeaders() });
-      return await handleResponse(res);
+      return await cachedPublicGet(url);
     } catch (err) {
       if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_DEMO_FALLBACK === 'true') {
         console.warn('Dev mode: backend unavailable, using demo clinics fallback', err);

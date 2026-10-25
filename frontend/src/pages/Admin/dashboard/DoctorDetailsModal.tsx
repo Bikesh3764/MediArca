@@ -20,7 +20,7 @@ export const DoctorDetailsModal: React.FC = () => {
           }}
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
         >
-          <div className="bg-white rounded-[28px] border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8  space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
@@ -33,7 +33,7 @@ export const DoctorDetailsModal: React.FC = () => {
                 <div>
                   <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">{selectedDoctor.user.fullName}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-[#0066cc] font-medium">{selectedDoctor.specialty}</p>
+                    <p className="text-xs text-[#0066cc] font-normal">{selectedDoctor.specialty}</p>
                     {renderStatusBadge(getPractitionerStatus(selectedDoctor))}
                   </div>
                 </div>
@@ -69,14 +69,14 @@ export const DoctorDetailsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address / Base</span>
+                <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address / Base</span>
                 <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
                   {selectedDoctor.clinicAddress || 'MediArca Direct Outpatient Practice'}
                 </p>
               </div>
 
               <div>
-                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Affiliated Clinical Facilities ({selectedDoctor.clinics?.length || 0})
                 </span>
                 {selectedDoctor.clinics && selectedDoctor.clinics.length > 0 ? (
@@ -87,7 +87,7 @@ export const DoctorDetailsModal: React.FC = () => {
                         className="p-2.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between"
                       >
                         <div>
-                          <strong className="text-[#1d1d1f] block font-medium">
+                          <strong className="text-[#1d1d1f] block font-normal">
                             {cAff.clinic?.clinicName || 'Clinical Facility'}
                           </strong>
                           <span className="text-[11px] text-[#86868b] block">
@@ -95,7 +95,7 @@ export const DoctorDetailsModal: React.FC = () => {
                           </span>
                         </div>
                         {cAff.clinic?.phone && (
-                          <span className="text-[11px] text-[#86868b] font-medium">{cAff.clinic.phone}</span>
+                          <span className="text-[11px] text-[#86868b] font-normal">{cAff.clinic.phone}</span>
                         )}
                       </div>
                     ))}
@@ -108,7 +108,7 @@ export const DoctorDetailsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Professional Bio & Practice Philosophy</span>
+                <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Professional Bio & Practice Philosophy</span>
                 <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
                   {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
                 </p>
@@ -134,7 +134,7 @@ export const DoctorDetailsModal: React.FC = () => {
                       const ok = await handleVerify(selectedDoctor.id, 'SUSPENDED');
                       if (ok) setSelectedDoctor(null);
                     }}
-                    className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                    className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
                     Suspend Credentials
@@ -178,7 +178,7 @@ export const DoctorDetailsModal: React.FC = () => {
                         const ok = await handleVerify(selectedDoctor.id, 'REJECTED');
                         if (ok) setSelectedDoctor(null);
                       }}
-                      className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200"
+                      className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
                       Reject Application

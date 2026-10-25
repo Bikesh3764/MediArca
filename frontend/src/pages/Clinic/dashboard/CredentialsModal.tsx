@@ -17,7 +17,7 @@ export const CredentialsModal: React.FC = () => {
             if (e.target === e.currentTarget) setCreatedCredentials(null);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  space-y-5 max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
@@ -36,13 +36,13 @@ export const CredentialsModal: React.FC = () => {
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs space-y-1 leading-relaxed">
               <p className="font-semibold">Handover Notice</p>
               <p className="text-xs text-[#86868b]">
-                Your receptionist can log in using the credentials below via the Receptionist Portal link at the bottom of the landing page.
+                Share these details. They sign in from the Reception Desk link.
               </p>
             </div>
 
             <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 text-xs">
               <div>
-                <span className="text-xs text-[#86868b] font-medium block mb-0.5">
+                <span className="text-xs text-[#86868b] font-normal block mb-0.5">
                   Staff Member Name
                 </span>
                 <span className="text-[#1d1d1f] font-semibold text-[14px]">
@@ -51,7 +51,7 @@ export const CredentialsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-xs text-[#86868b] font-medium block mb-1">
+                <span className="text-xs text-[#86868b] font-normal block mb-1">
                   Login Email (Desk ID)
                 </span>
                 <span className="text-[#0066cc] select-all bg-white px-3 py-2 rounded-xl border border-[#e5e5ea] block font-semibold">
@@ -60,7 +60,7 @@ export const CredentialsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-xs text-[#86868b] font-medium block mb-1">
+                <span className="text-xs text-[#86868b] font-normal block mb-1">
                   Temporary Password
                 </span>
                 <span className="text-[#1d1d1f] select-all bg-white px-3 py-2 rounded-xl border border-[#e5e5ea] block font-semibold">
@@ -69,10 +69,10 @@ export const CredentialsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-xs text-[#86868b] font-medium block mb-0.5">
+                <span className="text-xs text-[#86868b] font-normal block mb-0.5">
                   Portal Login URL
                 </span>
-                <span className="text-[#0066cc] text-xs block select-all font-medium break-all">
+                <span className="text-[#0066cc] text-xs block select-all font-normal break-all">
                   {`${window.location.origin}${window.location.pathname}#/receptionist/login`}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export const CredentialsModal: React.FC = () => {
                   setCopiedCreds(true);
                   setTimeout(() => setCopiedCreds(false), 2500);
                 }}
-                className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 {copiedCreds ? (
                   <>

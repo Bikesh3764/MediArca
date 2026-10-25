@@ -24,7 +24,7 @@ export const InviteDoctorModal: React.FC = () => {
             if (e.target === e.currentTarget && !adding) setShowAddModal(false);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8 shadow-[0_24px_60px_rgba(0,0,0,0.16)] max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  max-h-[92vh] overflow-y-auto animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 duration-300">
             {/* Apple Drag Handle Pill */}
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
@@ -40,7 +40,7 @@ export const InviteDoctorModal: React.FC = () => {
 
             <form onSubmit={handleAddDoctor} className="space-y-4 pt-5">
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Doctor's Registered Email
                 </label>
                 <input
@@ -50,7 +50,7 @@ export const InviteDoctorModal: React.FC = () => {
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
                   placeholder="dr.sarah@mediarca.com"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
@@ -58,7 +58,7 @@ export const InviteDoctorModal: React.FC = () => {
               {allDoctors.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-[#86868b]">
+                    <label className="text-xs font-normal text-[#86868b]">
                       Or search from verified doctors
                     </label>
                     <span className="text-xs text-[#86868b]">{allDoctors.length} available</span>
@@ -104,11 +104,11 @@ export const InviteDoctorModal: React.FC = () => {
                               </div>
                             </div>
                             {isAlreadyAdded ? (
-                              <span className="text-[11px] text-[#86868b] px-2.5 py-1 rounded-full bg-white border border-[#e5e5ea] font-medium shrink-0">
+                              <span className="text-[11px] text-[#86868b] px-2.5 py-1 rounded-full bg-white border border-[#e5e5ea] font-normal shrink-0">
                                 Affiliated
                               </span>
                             ) : isPendingInvitation ? (
-                              <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full font-medium shrink-0">
+                              <span className="text-[11px] text-warning bg-warning-soft border border-warning-line/80 px-2.5 py-1 rounded-full font-normal shrink-0">
                                 Invited
                               </span>
                             ) : isIncomingRequest ? (
@@ -116,7 +116,7 @@ export const InviteDoctorModal: React.FC = () => {
                                 type="button"
                                 disabled={adding}
                                 onClick={() => handleQuickAdd(docEmail, d.id)}
-                                className="h-7 px-3 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer transition-all active:scale-[0.98] shrink-0"
+                                className="h-7 px-3 rounded-full bg-success hover:bg-success text-white text-xs font-semibold cursor-pointer transition-all active:scale-[0.98] shrink-0"
                               >
                                 {adding ? 'Accepting...' : 'Accept'}
                               </button>
@@ -142,14 +142,14 @@ export const InviteDoctorModal: React.FC = () => {
                   type="button"
                   disabled={adding}
                   onClick={() => setShowAddModal(false)}
-                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-medium transition-all cursor-pointer"
+                  className="h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-black/[0.08] text-xs font-normal transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={adding}
-                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-medium shadow-[0_1px_2px_rgba(0,102,204,0.25)] transition-all cursor-pointer disabled:opacity-50"
+                  className="h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal  transition-all cursor-pointer disabled:opacity-50"
                 >
                   {adding ? 'Inviting...' : 'Invite Doctor'}
                 </button>

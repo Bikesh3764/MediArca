@@ -183,7 +183,7 @@ export const useClinicDashboardState = () => {
   const handleProvisionReceptionist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!recFullName.trim() || !recEmail.trim() || !recPassword.trim()) {
-      setError('Please provide full name, email and password for the receptionist.');
+      setError('Enter name, email and password.');
       return;
     }
     if (recPassword.trim().length < 8) {
@@ -191,7 +191,7 @@ export const useClinicDashboardState = () => {
       return;
     }
     if (recPhone.trim() && !isValidIndianPhone(recPhone.trim())) {
-      setError('Please provide a valid 10-digit Indian mobile number for the receptionist.');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
 
@@ -357,7 +357,7 @@ export const useClinicDashboardState = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'doctors',
-      label: 'Affiliated Doctors',
+      label: 'Doctors',
       icon: Users,
       active: activeSection === 'doctors',
       badge: totalPendingRequests > 0 ? `${totalPendingRequests} new` : undefined,
@@ -365,7 +365,7 @@ export const useClinicDashboardState = () => {
     },
     {
       id: 'receptionists',
-      label: 'Desk Staff & Reception',
+      label: 'Staff',
       icon: UserCheck,
       active: activeSection === 'receptionists',
       badge: incomingRecCount > 0 ? `${incomingRecCount} new` : (data?.receptionists?.length || undefined),
@@ -373,7 +373,7 @@ export const useClinicDashboardState = () => {
     },
     {
       id: 'appointments',
-      label: 'Facility Bookings',
+      label: 'Bookings',
       icon: CalendarCheck,
       active: activeSection === 'appointments',
       badge: data?.totalBookings || undefined,
@@ -381,7 +381,7 @@ export const useClinicDashboardState = () => {
     },
     {
       id: 'settings',
-      label: 'Clinic Settings',
+      label: 'Settings',
       icon: Settings,
       path: '/clinic/profile',
     },
@@ -397,17 +397,17 @@ export const useClinicDashboardState = () => {
       case 'PENDING_APPROVAL':
         return {
           label: 'Pending Desk',
-          className: 'bg-amber-50 text-amber-700 border border-amber-200/80',
+          className: 'bg-warning-soft text-warning border border-warning-line/80',
         };
       case 'CANCELLED':
         return {
           label: 'Cancelled',
-          className: 'bg-rose-50 text-rose-600 border border-rose-200/80',
+          className: 'bg-danger-soft text-danger border border-danger-line/80',
         };
       case 'REJECTED':
         return {
           label: 'Declined',
-          className: 'bg-rose-50 text-rose-600 border border-rose-200/80',
+          className: 'bg-danger-soft text-danger border border-danger-line/80',
         };
       case 'EXPIRED':
         return {

@@ -147,9 +147,9 @@ export const cleanSlotName = (name?: string | null, fallback = 'Shift'): string 
   if (shiftNumMatch) {
     return `Shift ${shiftNumMatch[1]}`;
   }
+  // Keep the doctor's own name for the shift (e.g. "Morning Shift"); only drop repeated time ranges
   let cleaned = name.replace(/\s*\([^)]*\)/g, '').trim();
   cleaned = cleaned.replace(/\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*[-–to]\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?/gi, '').trim();
-  cleaned = cleaned.replace(/\s*(?:morning|afternoon|evening|night)/gi, '').trim();
   return cleaned || fallback;
 };
 

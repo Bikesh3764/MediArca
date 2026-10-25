@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
-import { AlertCircle, CheckCircle2, X, ShieldAlert, QrCode, RefreshCw, MapPin, FileText, Settings } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X, ShieldAlert, QrCode, MapPin, FileText, Settings } from 'lucide-react';
 import { ClinicalReportModal } from '../../components/common/ClinicalReportModal';
 import { cleanDoctorName } from './dashboard/helpers';
 import { useClinicDashboardState, ClinicDashboardContext } from './dashboard/state';
@@ -19,14 +19,11 @@ export const ClinicDashboard: React.FC = () => {
   const state = useClinicDashboardState();
   const {
     user,
-    data,
-    loading,
     error,
     setError,
     successMsg,
     setSuccessMsg,
     activeSection,
-    setActiveSection,
     showAddModal,
     showRecModal,
     editingRec,
@@ -42,7 +39,6 @@ export const ClinicDashboard: React.FC = () => {
     setProfileCity,
     setProfilePhone,
     setProfileError,
-    fetchClinicData,
     approvingRec,
     clinic,
     doctors,
@@ -66,35 +62,26 @@ export const ClinicDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/clinic/profile"
-            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2 transition-all cursor-pointer "
           >
             <Settings className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span>Profile & Settings</span>
+            <span>Settings</span>
           </Link>
           <button
             type="button"
             onClick={() => setShowReportModal(true)}
-            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2 transition-all cursor-pointer "
           >
             <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span>Reports & PDF</span>
+            <span>Reports</span>
           </button>
           <button
             type="button"
             onClick={() => setShowPosterModal(true)}
-            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2 transition-all cursor-pointer "
           >
             <QrCode className="w-3.5 h-3.5 text-[#0066cc]" />
             <span>QR Code</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => fetchClinicData(true)}
-            disabled={loading}
-            className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-medium flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 text-[#86868b] ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
           </button>
         </div>
       }
@@ -102,13 +89,13 @@ export const ClinicDashboard: React.FC = () => {
       <div className="space-y-6 pb-24 md:pb-16 pb-safe">
         {/* Profile Incompletion Alert (e.g. Google OAuth Clinics) */}
         {(!clinic?.address || !clinic?.city || !clinic?.state) && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-amber-300 text-[#1d1d1f] text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-warning-line text-[#1d1d1f] text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ">
             <div className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <MapPin className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
               <div>
-                <div className="font-semibold text-[#1d1d1f] text-sm">Action Needed: Set Clinic Location & Address</div>
+                <div className="font-semibold text-[#1d1d1f] text-sm">Add your city and state</div>
                 <p className="text-[#86868b] text-xs mt-0.5 leading-relaxed">
-                  Your facility address, state, and city are not set yet. Completing this ensures patients and doctors find your clinic in city-wide searches.
+                  Patients find clinics by city.
                 </p>
               </div>
             </div>
@@ -122,43 +109,43 @@ export const ClinicDashboard: React.FC = () => {
                 setProfileError(null);
                 setShowProfileModal(true);
               }}
-              className="shrink-0 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-medium text-xs transition-colors shadow-sm cursor-pointer select-none"
+              className="shrink-0 h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-normal text-xs transition-colors  cursor-pointer select-none"
             >
-              Complete Profile
+              Add location
             </button>
           </div>
         )}
 
         {/* Verification Warning if clinic not yet verified or suspended */}
         {clinic?.verificationStatus === 'SUSPENDED' && (
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-rose-800 text-xs flex items-start gap-3">
-            <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-danger-soft/70 border border-danger-line/80 text-danger text-xs flex items-start gap-3">
+            <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-rose-900">Clinic Facility License Suspended</div>
-              <p className="text-rose-700 text-xs mt-0.5 leading-relaxed">
-                Your facility license has been suspended by administration. Doctors cannot accept new affiliations or clinic bookings until license reinstatement.
+              <div className="font-semibold text-danger">Clinic suspended</div>
+              <p className="text-danger text-xs mt-0.5 leading-relaxed">
+                Bookings are paused. Contact MediArca support.
               </p>
             </div>
           </div>
         )}
         {clinic?.verificationStatus === 'REJECTED' && (
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-rose-800 text-xs flex items-start gap-3">
-            <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-danger-soft/70 border border-danger-line/80 text-danger text-xs flex items-start gap-3">
+            <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-rose-900">Clinic Registration Application Rejected</div>
-              <p className="text-rose-700 text-xs mt-0.5 leading-relaxed">
-                Your clinic registration credentials were not approved. Please contact platform administration to review your facility details.
+              <div className="font-semibold text-danger">Registration not approved</div>
+              <p className="text-danger text-xs mt-0.5 leading-relaxed">
+                Contact MediArca support to review your details.
               </p>
             </div>
           </div>
         )}
         {((clinic?.verificationStatus === 'PENDING' || clinic?.isVerified === false) && clinic?.verificationStatus !== 'SUSPENDED' && clinic?.verificationStatus !== 'REJECTED') && (
-          <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-3 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-3 ">
             <ShieldAlert className="w-4 h-4 text-[#0066cc] flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-semibold text-[#1d1d1f]">Clinic Pending Administrative Verification</div>
+              <div className="font-semibold text-[#1d1d1f]">Waiting for verification</div>
               <p className="text-[#86868b] text-xs mt-0.5 leading-relaxed">
-                Your clinic profile is pending review by MediArca administration. While unverified, your clinic will not appear in public searches and online bookings are paused. You can configure your facility profile, onboard doctors, and prepare front desk staff ahead of verification.
+                You can add doctors and staff now. Your clinic goes live once approved.
               </p>
             </div>
           </div>
@@ -166,10 +153,10 @@ export const ClinicDashboard: React.FC = () => {
 
         {/* Banner feedback */}
         {successMsg && (
-          <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+          <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between ">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
-              <span className="font-medium">{successMsg}</span>
+              <span className="font-normal">{successMsg}</span>
             </div>
             <button aria-label="Close"
               onClick={() => setSuccessMsg(null)}
@@ -181,71 +168,17 @@ export const ClinicDashboard: React.FC = () => {
         )}
 
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 text-rose-700 text-xs flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-danger-soft/70 border border-danger-line/80 text-danger text-xs flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-danger" />
               <span>{error}</span>
             </div>
-            <button aria-label="Close" onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
+            <button aria-label="Close" onClick={() => setError(null)} className="text-danger hover:text-danger">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
-
-        {/* Segmented Tab Switcher */}
-        <div className="inline-flex p-1 rounded-full bg-[#e8e8ed]/80 border border-[#e5e5ea] max-w-full overflow-x-auto no-scrollbar">
-          <button
-            type="button"
-            onClick={() => setActiveSection('doctors')}
-            className={`h-9 px-4 rounded-full text-xs font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeSection === 'doctors'
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_4px_rgba(0,0,0,0.08)] font-semibold'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
-            }`}
-          >
-            <span>Affiliated Doctors</span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-              activeSection === 'doctors' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-white/80 text-[#86868b]'
-            }`}>
-              {doctors.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('receptionists')}
-            className={`h-9 px-4 rounded-full text-xs font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeSection === 'receptionists'
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_4px_rgba(0,0,0,0.08)] font-semibold'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
-            }`}
-          >
-            <span>Desk Staff</span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-              activeSection === 'receptionists' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-white/80 text-[#86868b]'
-            }`}>
-              {data?.receptionists?.length || 0}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('appointments')}
-            className={`h-9 px-4 rounded-full text-xs font-medium transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeSection === 'appointments'
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_4px_rgba(0,0,0,0.08)] font-semibold'
-                : 'text-[#86868b] hover:text-[#1d1d1f]'
-            }`}
-          >
-            <span>Facility Bookings</span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-              activeSection === 'appointments' ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-white/80 text-[#86868b]'
-            }`}>
-              {data?.recentAppointments?.length || 0}
-            </span>
-          </button>
-        </div>
 
         {/* 2. Affiliated Doctors Section */}
         {activeSection === 'doctors' && (

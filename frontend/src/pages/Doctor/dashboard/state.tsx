@@ -182,7 +182,7 @@ export const useDoctorDashboardState = () => {
     }
 
     if (!affiliations?.clinics || affiliations.clinics.length === 0) {
-      setWalkinError('Please affiliate with an active clinic facility before adding walk-in appointments.');
+      setWalkinError('Add a clinic first.');
       return;
     }
 
@@ -335,7 +335,7 @@ export const useDoctorDashboardState = () => {
         return;
       }
       if (!target.isCheckedIn) {
-        toast.warning('Patient has not arrived at the clinic yet. Patient must check in / mark arrival before being called into consultation.');
+        toast.warning('Mark the patient as arrived first.');
         return;
       }
     }
@@ -462,7 +462,7 @@ export const useDoctorDashboardState = () => {
   const navItems: DashboardNavItem[] = [
     {
       id: 'dashboard',
-      label: 'Live Queue',
+      label: 'Queue',
       icon: LayoutDashboard,
       active: activeTab === 'queue',
       onClick: () => {
@@ -472,7 +472,7 @@ export const useDoctorDashboardState = () => {
     },
     {
       id: 'affiliations',
-      label: 'Clinics & Staff',
+      label: 'Clinics',
       icon: Building2,
       active: activeTab === 'affiliations',
       onClick: () => {
@@ -483,7 +483,7 @@ export const useDoctorDashboardState = () => {
     },
     {
       id: 'schedule',
-      label: 'Shifts & Fees',
+      label: 'Shifts',
       icon: Calendar,
       path: '/doctor/schedule',
     },

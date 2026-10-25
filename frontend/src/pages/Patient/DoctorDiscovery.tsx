@@ -498,7 +498,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
             onClick={() => handleSectionSwitch('clinics')}
             className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
               activeSection === 'clinics'
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                ? 'bg-white text-[#1d1d1f] '
                 : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
@@ -509,7 +509,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
             onClick={() => handleSectionSwitch('doctors')}
             className={`h-full flex items-center justify-center px-6 rounded-full text-xs sm:text-sm font-semibold transition-all cursor-pointer active:scale-95 ${
               activeSection === 'doctors'
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                ? 'bg-white text-[#1d1d1f] '
                 : 'text-[#86868b] hover:text-[#1d1d1f]'
             }`}
           >
@@ -520,7 +520,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         {/* Search bar beside Clinics Switch */}
         {activeSection === 'clinics' && !selectedClinic && (
           <div className="flex-1 w-full flex flex-col gap-2">
-            <div className="w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2 sm:gap-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <div className="w-full h-11 bg-white px-3.5 rounded-full border border-[#e5e5ea] flex items-center gap-2 sm:gap-3 ">
               <div className="flex items-center gap-2 flex-1 h-full min-w-0">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
@@ -575,7 +575,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               <button
                 type="button"
                 onClick={() => setClinicMobileFiltersOpen(!clinicMobileFiltersOpen)}
-                className="sm:hidden h-7 px-2.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-[11px] font-medium text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                className="sm:hidden h-7 px-2.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-[11px] font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
               >
                 <SlidersHorizontal className="w-3 h-3 text-[#86868b]" />
                 <span>Filters{(clinicSelectedState !== 'All' || clinicSelectedCity !== 'All') ? ' •' : ''}</span>
@@ -594,19 +594,19 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
             {/* Mobile Filter Expandable Drawer for Clinics */}
             {clinicMobileFiltersOpen && (
-              <div className="sm:hidden w-full bg-white rounded-2xl border border-[#e5e5ea] p-3.5 shadow-sm space-y-3 animate-fadeIn">
+              <div className="sm:hidden w-full bg-white rounded-2xl border border-[#e5e5ea] p-3.5  space-y-3 animate-fadeIn">
                 <div className="flex items-center justify-between pb-2 border-b border-[#e5e5ea]">
                   <span className="text-xs font-semibold text-[#1d1d1f]">Location Filters</span>
                   <button
                     type="button"
                     onClick={() => setClinicMobileFiltersOpen(false)}
-                    className="text-xs font-medium text-[#0066cc]"
+                    className="text-xs font-normal text-[#0066cc]"
                   >
                     Done
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-[#86868b]">Select State</label>
+                  <label className="text-[11px] font-normal text-[#86868b]">Select State</label>
                   <div className="w-full h-10">
                     <AppleFilterSelect
                       value={clinicSelectedState}
@@ -621,7 +621,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-medium text-[#86868b]">Select City</label>
+                  <label className="text-[11px] font-normal text-[#86868b]">Select City</label>
                   <div className="w-full h-10">
                     <AppleFilterSelect
                       value={clinicSelectedCity}
@@ -645,10 +645,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
           {selectedClinic ? (
             <div className="space-y-6 animate-fadeIn">
               {/* Selected Clinic Header Card */}
-              <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0 shadow-xs flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0  flex items-center justify-center">
                       <img
                         src={selectedClinic.avatarUrl ? getFileUrl(selectedClinic.avatarUrl) : clinicLobbyBg}
                         alt={selectedClinic.clinicName}
@@ -678,7 +678,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                             <span className="font-normal">{formatDisplayPhone(selectedClinic.phone)}</span>
                           </a>
                         )}
-                        <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-medium border border-[#e5e5ea]">
+                        <span className="inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-normal border border-[#e5e5ea]">
                           {clinicPracticingDoctors.length} {clinicPracticingDoctors.length === 1 ? 'Specialist' : 'Specialists'}
                         </span>
                       </div>
@@ -705,7 +705,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 </div>
 
                 {clinicPracticingDoctors.length === 0 ? (
-                  <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-12 text-center max-w-md mx-auto shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+                  <div className="bg-white rounded-2xl border border-[#e5e5ea] p-12 text-center max-w-md mx-auto ">
                     <h4 className="text-base font-semibold text-[#1d1d1f] mb-1">
                       No doctors listed
                     </h4>
@@ -730,7 +730,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       return (
                         <div
                           key={doctor.id}
-                          className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                          className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                         >
                           {/* Doctor Photo Banner */}
                           <div
@@ -752,7 +752,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                             <div
                               className={`doc-disc-clinic-fallback w-full h-full ${
                                 doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                              } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
+                              } items-center justify-center font-semibold text-[44px] text-[#c7c7cc] bg-[#f5f5f7] select-none`}
                             >
                               {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                             </div>
@@ -771,16 +771,16 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                                     {doctor.user?.fullName}
                                   </h4>
                                   <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
-                                    <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                                    <span className="font-normal text-[#0066cc]">{doctor.specialty}</span>
                                     {cleanDegrees && (
                                       <>
                                         <span className="text-[#c7c7cc] select-none">•</span>
-                                        <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                        <span className="font-normal text-[#48484a]">{cleanDegrees}</span>
                                       </>
                                     )}
                                   </div>
                                 </div>
-                                <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
+                                <span className="text-[11px] font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
                                   {doctor.experienceYears} yrs exp
                                 </span>
                               </div>
@@ -788,7 +788,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                               <div className="mt-3.5 space-y-2 text-xs">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                                  <span className="truncate text-[#48484a] font-medium tracking-tight">
+                                  <span className="truncate text-[#48484a] font-normal tracking-tight">
                                     {slots.length > 0
                                       ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                       : 'Clinical Shift'}
@@ -807,8 +807,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
                               {docItem.hasReceptionist === false ? (
                                 <span
-                                  className="h-8 px-3.5 rounded-full text-[11px] font-medium text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
-                                  title="Online booking is closed because no receptionist is currently assigned for this doctor at this facility."
+                                  className="h-8 px-3.5 rounded-full text-[11px] font-normal text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
+                                  title="Online booking is closed at this clinic for now."
                                 >
                                   No Desk Staff
                                 </span>
@@ -816,7 +816,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                                 <button
                                   type="button"
                                   onClick={() => navigate(getBookPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
-                                  className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
+                                  className="h-8 min-w-[78px] px-5 rounded-full text-xs font-normal text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                                 >
                                   Book
                                 </button>
@@ -837,7 +837,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
                       key={i}
-                      className="h-72 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-4"
+                      className="h-72 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-4"
                     />
                   ))}
                 </div>
@@ -845,7 +845,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 <EmptyState
                   icon={Building2}
                   title="No clinics found"
-                  description="No clinical facilities matched your search or location filters."
+                  description="No clinics match your search."
                   actionText="Reset Filters"
                   onAction={resetClinicFilters}
                 />
@@ -861,7 +861,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       <div
                         key={clinic.id}
                         onClick={() => handleSelectClinic(clinic)}
-                        className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                        className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                       >
                         {/* Top Facility Photography Banner */}
                         <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -902,7 +902,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                           </div>
 
                           <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
-                            <span className="text-xs font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
+                            <span className="text-xs font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
                               {docCount === 1 ? '1 Specialist' : `${docCount} Specialists`}
                             </span>
                             <button
@@ -911,7 +911,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                                 e.stopPropagation();
                                 handleSelectClinic(clinic);
                               }}
-                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)]"
+                              className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none "
                             >
                               View Doctors
                             </button>
@@ -924,7 +924,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               )}
 
               {clinicTotalPages > 1 && (
-                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-[24px] bg-white border border-[#e5e5ea]">
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-[#e5e5ea]">
                   <p className="text-xs text-[#86868b]">
                     Showing <span className="font-semibold text-[#1d1d1f]">{(clinicPage - 1) * clinicLimit + 1}</span>–<span className="font-semibold text-[#1d1d1f]">{Math.min(clinicPage * clinicLimit, clinicTotal)}</span> of <span className="font-semibold text-[#1d1d1f]">{clinicTotal}</span> clinics
                   </p>
@@ -940,7 +940,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     >
                       Previous
                     </button>
-                    <span className="px-3 text-xs font-medium text-[#48484a]">
+                    <span className="px-3 text-xs font-normal text-[#48484a]">
                       Page {clinicPage} of {clinicTotalPages}
                     </span>
                     <button
@@ -967,9 +967,9 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         <>
           {/* Mobile Filter Toggle Drawer */}
           <div className="lg:hidden">
-            <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-3.5 ">
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 h-11 px-3.5 rounded-xl bg-white border border-[#d2d2d7] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
+            <div className="flex-1 flex items-center gap-2 h-11 px-3.5 rounded-xl bg-white border border-[#d2d2d7]  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
               <Search className="w-4 h-4 text-[#86868b] shrink-0" />
               <input
                 type="text"
@@ -990,14 +990,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
               className={`h-11 px-4 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
                 hasActiveFilters || mobileFiltersOpen
-                  ? 'bg-[#0066cc] text-white border-[#0066cc] shadow-xs'
+                  ? 'bg-[#0066cc] text-white border-[#0066cc] '
                   : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filters</span>
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white text-[#0066cc] text-[10px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-white text-[#0066cc] text-[11px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -1035,7 +1035,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
               {/* Specialty Select */}
               <div>
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Medical Specialty
                 </label>
                 <SearchableSpecialtySelect
@@ -1052,7 +1052,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
               {/* Max Consultation Fee Slider */}
               <div>
-                <div className="flex items-center justify-between text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   <span>Fee Limit</span>
                   <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                 </div>
@@ -1070,13 +1070,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {/* Experience & Sort Grid */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Min Experience
                   </label>
                   <select
                     value={minExp}
                     onChange={(e) => setMinExp(Number(e.target.value))}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   >
                     <option value={0}>All Experience</option>
                     <option value={5}>5+ Years</option>
@@ -1086,13 +1086,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Sort By
                   </label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
+                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   >
                     <option value="experience">Most Experienced</option>
                     <option value="fee_low">Price: Low to High</option>
@@ -1106,7 +1106,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="w-full h-11 rounded-full text-xs font-medium text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
+                    className="w-full h-11 rounded-full text-xs font-normal text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Reset All Filters</span>
@@ -1122,14 +1122,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
         {/* LEFT SIDEBAR: Sticky Filters on Desktop */}
         <aside className="hidden lg:block w-64 xl:w-72 shrink-0 lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white rounded-[24px] border border-[#e5e5ea] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] space-y-5">
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5  space-y-5">
             <div className="flex items-center justify-between pb-3.5 border-b border-[#f0f0f2]">
               <h3 className="text-sm font-semibold text-[#1d1d1f] tracking-tight">Filters</h3>
               {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="h-6 px-2.5 rounded-full text-xs font-medium text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                  className="h-6 px-2.5 rounded-full text-xs font-normal text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                   title="Reset all filters"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -1140,10 +1140,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
             {/* Search Doctor or Clinic */}
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Search
               </label>
-              <div className="flex items-center gap-2 h-11 px-3.5 rounded-xl bg-white border border-[#d2d2d7] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
+              <div className="flex items-center gap-2 h-11 px-3.5 rounded-xl bg-white border border-[#d2d2d7]  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
                 <Search className="w-4 h-4 text-[#86868b] shrink-0" />
                 <input
                   type="text"
@@ -1187,7 +1187,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
             {/* Specialty Select */}
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Specialty
               </label>
               <SearchableSpecialtySelect
@@ -1205,7 +1205,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
             {/* Max Consultation Fee Slider */}
             <div>
-              <div className="flex items-center justify-between text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 <span>Fee Limit</span>
                 <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
               </div>
@@ -1226,7 +1226,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
             {/* Experience Segmented Control */}
             <div>
-              <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Experience
               </label>
               <div className="p-1 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] grid grid-cols-4 gap-1 select-none">
@@ -1242,8 +1242,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     onClick={() => setMinExp(item.value)}
                     className={`py-1.5 rounded-lg text-[11px] transition-all duration-150 text-center cursor-pointer ${
                       minExp === item.value
-                        ? 'bg-white text-[#1d1d1f] font-semibold shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5'
-                        : 'text-[#86868b] hover:text-[#1d1d1f] font-medium'
+                        ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
+                        : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                     }`}
                   >
                     {item.label}
@@ -1272,7 +1272,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {hasActiveFilters && (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {selectedSpecialty !== 'All' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-normal border border-[#e5e5ea] ">
                       {selectedSpecialty}
                       <button
                         type="button"
@@ -1287,7 +1287,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     </span>
                   )}
                   {selectedState !== 'All' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-normal border border-[#e5e5ea] ">
                       {selectedState}
                       <button aria-label="Close"
                         type="button"
@@ -1299,7 +1299,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     </span>
                   )}
                   {selectedCity !== 'All' && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-normal border border-[#e5e5ea] ">
                       {selectedCity}
                       <button aria-label="Close"
                         type="button"
@@ -1311,7 +1311,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     </span>
                   )}
                   {maxFee < 3000 && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-normal border border-[#e5e5ea] ">
                       ≤ ₹{maxFee}
                       <button aria-label="Close" type="button" onClick={() => setMaxFee(3000)} className="hover:opacity-75 cursor-pointer">
                         <X className="w-3 h-3 text-[#86868b]" />
@@ -1319,7 +1319,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     </span>
                   )}
                   {minExp > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-medium border border-[#e5e5ea] shadow-2xs">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-[#1d1d1f] text-xs font-normal border border-[#e5e5ea] ">
                       {minExp}+ Yrs
                       <button aria-label="Close" type="button" onClick={() => setMinExp(0)} className="hover:opacity-75 cursor-pointer">
                         <X className="w-3 h-3 text-[#86868b]" />
@@ -1335,7 +1335,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-medium text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all"
+                    className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer  transition-all"
                   >
                     <option value="experience">Most Experienced</option>
                     <option value="fee_low">Price: Low to High</option>
@@ -1351,14 +1351,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="h-72 rounded-[24px] bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
+                <div key={i} className="h-72 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
               ))}
             </div>
           ) : filteredDoctors.length === 0 ? (
             <EmptyState
               icon={Stethoscope}
               title="No doctors found"
-              description="No doctors matched your specialty, fee, or location criteria."
+              description="No doctors match your filters."
               actionText="Reset All Filters"
               onAction={resetFilters}
             />
@@ -1399,7 +1399,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 return (
                   <div
                     key={doctor.id}
-                    className="w-full bg-white rounded-[24px] border border-[#e5e5ea] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                    className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
                   >
                     {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                     <div
@@ -1422,7 +1422,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       <div
                         className={`doc-disc-fallback-banner w-full h-full ${
                           doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                        } items-center justify-center font-bold text-3xl text-white bg-[#0066cc] select-none`}
+                        } items-center justify-center font-semibold text-[44px] text-[#c7c7cc] bg-[#f5f5f7] select-none`}
                       >
                         {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                       </div>
@@ -1442,16 +1442,16 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                               {doctor.user?.fullName || 'Doctor'}
                             </h3>
                             <div className="mt-1 flex items-center gap-1.5 text-xs text-[#86868b] truncate">
-                              <span className="font-medium text-[#0066cc]">{doctor.specialty}</span>
+                              <span className="font-normal text-[#0066cc]">{doctor.specialty}</span>
                               {cleanDegrees && (
                                 <>
                                   <span className="text-[#c7c7cc] select-none">•</span>
-                                  <span className="font-medium text-[#48484a]">{cleanDegrees}</span>
+                                  <span className="font-normal text-[#48484a]">{cleanDegrees}</span>
                                 </>
                               )}
                             </div>
                           </div>
-                          <span className="text-[11px] font-medium text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
+                          <span className="text-[11px] font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-0.5 rounded-full border border-[#e5e5ea] shrink-0 whitespace-nowrap select-none">
                             {doctor.experienceYears} yrs exp
                           </span>
                         </div>
@@ -1460,7 +1460,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                         <div className="mt-3.5 space-y-2 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
                             <MapPin className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            <span className="truncate text-[#1d1d1f] font-medium" title={allCitiesTooltip || primaryClinic?.clinicName}>
+                            <span className="truncate text-[#1d1d1f] font-normal" title={allCitiesTooltip || primaryClinic?.clinicName}>
                               {hasClinics && primaryClinic ? (
                                 <>
                                   <span>{primaryClinic.clinicName}</span>
@@ -1475,7 +1475,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                               )}
                             </span>
                             {(doctor.clinics?.length ?? 0) > 1 && (
-                              <span className="text-[10px] font-medium text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
+                              <span className="text-[11px] font-normal text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full border border-[#0066cc]/15 shrink-0 select-none">
                                 +{(doctor.clinics?.length ?? 0) - 1} more
                               </span>
                             )}
@@ -1483,7 +1483,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
                           <div className="flex items-center gap-2 min-w-0">
                             <Clock className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
-                            <span className="truncate text-[#48484a] font-medium tracking-tight">
+                            <span className="truncate text-[#48484a] font-normal tracking-tight">
                               {slots.length > 0
                                 ? `${format12Hour(slots[0].startTime)} – ${format12Hour(slots[0].endTime)}`
                                 : doctor.checkingStartTime
@@ -1508,7 +1508,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                             <button
                               type="button"
                               onClick={() => navigate(getBookPath(doctor.id))}
-                              className="h-8 min-w-[78px] px-5 rounded-full text-xs font-medium text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none shadow-[0_1px_2px_rgba(0,0,0,0.06),0_2px_8px_rgba(0,102,204,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
+                              className="h-8 min-w-[78px] px-5 rounded-full text-xs font-normal text-white bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.97] transition-all duration-150 ease-out cursor-pointer select-none  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066cc]/40 inline-flex items-center justify-center"
                             >
                               Book
                             </button>
@@ -1527,7 +1527,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
           )}
 
           {doctorPagination.totalPages > 1 && (
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-[20px] bg-white border border-[#e5e5ea]">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-[#e5e5ea]">
               <p className="text-xs text-[#86868b]">
                 Showing <span className="font-semibold text-[#1d1d1f]">{(doctorPagination.page - 1) * doctorPagination.limit + 1}</span>–<span className="font-semibold text-[#1d1d1f]">{Math.min(doctorPagination.page * doctorPagination.limit, doctorPagination.total)}</span> of <span className="font-semibold text-[#1d1d1f]">{doctorPagination.total}</span> verified specialists
               </p>
@@ -1543,7 +1543,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 >
                   Previous
                 </button>
-                <span className="px-3 text-xs font-medium text-[#48484a]">
+                <span className="px-3 text-xs font-normal text-[#48484a]">
                   Page {doctorPagination.page} of {doctorPagination.totalPages}
                 </span>
                 <button
@@ -1569,8 +1569,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Doctor & Clinic Directory">
-        <span className="text-xs text-[#86868b] font-medium">
+      <SubNav title="Find care" width="wide">
+        <span className="text-xs text-[#86868b] font-normal">
           {activeSection === 'clinics'
             ? `${filteredClinics.length} Verified Clinic${filteredClinics.length === 1 ? '' : 's'}`
             : `${doctorPagination.total || doctors.length} Verified Specialist${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}`}

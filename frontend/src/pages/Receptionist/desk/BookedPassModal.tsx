@@ -16,7 +16,7 @@ export const BookedPassModal: React.FC = () => {
             if (e.target === e.currentTarget) setBookedPass(null);
           }}
         >
-          <div className="bg-white rounded-t-[28px] sm:rounded-[28px] border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7 shadow-[0_12px_40px_rgba(0,0,0,0.08)] max-h-[92vh] overflow-y-auto">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full p-6 sm:p-7 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-7  max-h-[92vh] overflow-y-auto">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex items-start justify-between pb-4 border-b border-[#f0f0f2]">
               <div>
@@ -35,7 +35,7 @@ export const BookedPassModal: React.FC = () => {
             </div>
 
             <div className="my-5 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-2.5">
-              <span className="text-xs font-medium text-[#86868b] block">Queue Token Number</span>
+              <span className="text-xs font-normal text-[#86868b] block">Queue Token Number</span>
               <div className="text-5xl font-bold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
@@ -76,7 +76,7 @@ export const BookedPassModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-medium inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print Slip</span>
@@ -84,7 +84,7 @@ export const BookedPassModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setBookedPass(null)}
-                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-medium transition-all cursor-pointer"
+                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all cursor-pointer"
               >
                 Done
               </button>

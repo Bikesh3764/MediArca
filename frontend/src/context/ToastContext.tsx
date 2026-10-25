@@ -82,20 +82,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               <div
                 key={t.id}
                 role="status"
-                className="pointer-events-auto w-full bg-[#1d1d1f]/95 text-white backdrop-blur-xl border border-white/15 px-4 py-2.5 rounded-full shadow-[0_16px_40px_rgba(0,0,0,0.28)] flex items-center justify-between gap-3 text-xs sm:text-[13px] font-medium animate-in fade-in slide-in-from-top-3 duration-200"
+                className="pointer-events-auto w-full bg-[#1d1d1f]/95 text-white backdrop-blur-xl border border-white/15 px-4 py-2.5 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.25)] flex items-center justify-between gap-3 text-xs sm:text-[13px] font-normal animate-in fade-in slide-in-from-top-3 duration-200"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   {isSuccess && (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-success-dot shrink-0" />
                   )}
                   {isError && (
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <AlertCircle className="w-4 h-4 text-danger-dot shrink-0" />
                   )}
                   {isWarning && (
-                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-warning-dot shrink-0" />
                   )}
                   {!isSuccess && !isError && !isWarning && (
-                    <Info className="w-4 h-4 text-[#0071e3] shrink-0" />
+                    <Info className="w-4 h-4 text-[#2997ff] shrink-0" />
                   )}
                   <div className="min-w-0 flex-1 truncate">
                     {t.title && (

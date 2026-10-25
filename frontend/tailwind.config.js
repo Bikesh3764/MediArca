@@ -7,6 +7,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        // DESIGN.md: one accent (Action Blue) + Apple system status colors.
+        // DEFAULT = text/solid fill, soft = tinted background, line = tinted border, dot = indicator fill.
+        primary: { DEFAULT: '#0066cc', hover: '#0071e3', soft: '#e8f1fb', line: '#b3d1f0', dot: '#0071e3' },
+        success: { DEFAULT: '#248a3d', soft: '#eaf6ed', line: '#bfe5c9', dot: '#34c759' },
+        danger: { DEFAULT: '#d70015', soft: '#fdeeed', line: '#f6c6c2', dot: '#ff3b30' },
+        warning: { DEFAULT: '#b25000', soft: '#fff4e5', line: '#ffd8a8', dot: '#ff9500' },
         brand: {
           cyan: '#0066cc',
           cyanDark: '#0071e3',
@@ -32,6 +38,8 @@ export default {
         },
       },
       borderRadius: {
+        // Cards use rounded-2xl = DESIGN.md {rounded.lg} 18px
+        '2xl': '18px',
         'apple-sm': '8px',
         'apple-md': '11px',
         'apple-lg': '18px',

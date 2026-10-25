@@ -99,7 +99,7 @@ export const DoctorDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
         <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-        <p className="text-xs text-[#86868b]">Loading doctor profile...</p>
+        <p className="text-xs text-[#86868b]">Loading…</p>
       </div>
     );
   }
@@ -107,8 +107,8 @@ export const DoctorDetail: React.FC = () => {
   if (!doctor) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-sm border border-[#e5e5ea] max-w-md mx-auto">
-          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
+        <div className="text-center p-8 bg-white rounded-2xl  border border-[#e5e5ea] max-w-md mx-auto">
+          <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
           <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
           <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
@@ -143,7 +143,7 @@ export const DoctorDetail: React.FC = () => {
         <UtilityCard>
           {/* 1. Doctor Identity */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-[#f0f0f2]">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center shadow-xs">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center ">
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
@@ -156,7 +156,7 @@ export const DoctorDetail: React.FC = () => {
                   }}
                 />
               ) : null}
-              <div className={`doc-detail-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-2xl sm:text-3xl font-bold bg-[#0066cc] text-white shadow-inner select-none`}>
+              <div className={`doc-detail-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-2xl sm:text-3xl font-bold bg-[#0066cc] text-white  select-none`}>
                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
               </div>
             </div>
@@ -178,7 +178,7 @@ export const DoctorDetail: React.FC = () => {
                 <CabinStatusBadge status={doctor.cabinStatus} expectedReturnTime={doctor.expectedReturnTime} size="sm" />
               </div>
 
-              <p className="text-xs text-[#86868b] font-medium mt-1.5">
+              <p className="text-xs text-[#86868b] font-normal mt-1.5">
                 {formatDoctorDegrees(doctor.qualifications)}
                 {doctor.experienceYears ? ` · ${doctor.experienceYears} yrs experience` : ''}
               </p>
@@ -194,7 +194,7 @@ export const DoctorDetail: React.FC = () => {
                   key={slot.id || idx}
                   className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between"
                 >
-                  <span className="text-xs font-medium text-[#1d1d1f]">
+                  <span className="text-xs font-normal text-[#1d1d1f]">
                     {cleanSlotName(slot.name)}
                   </span>
                   <span className="text-xs font-semibold text-[#0066cc]">
@@ -227,7 +227,7 @@ export const DoctorDetail: React.FC = () => {
                       onClick={() => handleSelectClinic(cd.clinicId)}
                       className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-150 ${
                         isSelected
-                          ? 'bg-white border-[#0066cc] ring-4 ring-[#0066cc]/10 shadow-xs'
+                          ? 'bg-white border-[#0066cc] ring-4 ring-[#0066cc]/10 '
                           : 'bg-[#f5f5f7]/60 border-[#e5e5ea] hover:bg-white hover:border-[#d2d2d7]'
                       }`}
                     >
@@ -283,7 +283,7 @@ export const DoctorDetail: React.FC = () => {
           ) : (
             doctor.clinics.length > 1 ? (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Clinic</label>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Clinic</label>
                 <div className="space-y-1.5">
                   {doctor.clinics.map((cd) => {
                     const isSelected = selectedClinicId === cd.clinicId;
@@ -301,7 +301,7 @@ export const DoctorDetail: React.FC = () => {
                         <span className="truncate flex items-center gap-1.5">
                           <span>{cd.clinic.clinicName}</span>
                           {cd.hasReceptionist === false && (
-                            <span className="text-[10px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea]">
+                            <span className="text-[11px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea]">
                               No Desk Staff
                             </span>
                           )}
@@ -314,11 +314,11 @@ export const DoctorDetail: React.FC = () => {
               </div>
             ) : (
               <div className="mb-4">
-                <span className="block text-xs font-medium text-[#1d1d1f] mb-1 tracking-tight">Clinic</span>
+                <span className="block text-xs font-normal text-[#1d1d1f] mb-1 tracking-tight">Clinic</span>
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-[#1d1d1f] truncate">{selectedClinic?.clinic.clinicName}</p>
                   {selectedClinic?.hasReceptionist === false && (
-                    <span className="text-[10px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0">
+                    <span className="text-[11px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0">
                       No Desk Staff
                     </span>
                   )}
@@ -333,12 +333,12 @@ export const DoctorDetail: React.FC = () => {
               {/* Date Selector */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-medium text-[#1d1d1f] tracking-tight">Date</label>
+                  <label className="text-xs font-normal text-[#1d1d1f] tracking-tight">Date</label>
                   <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => setSelectedDate(getLocalDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer border ${
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                         selectedDate === getLocalDateString()
                           ? 'bg-[#0066cc] text-white border-[#0066cc]'
                           : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -349,7 +349,7 @@ export const DoctorDetail: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedDate(getTomorrowDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer border ${
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                         selectedDate === getTomorrowDateString()
                           ? 'bg-[#0066cc] text-white border-[#0066cc]'
                           : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -364,14 +364,14 @@ export const DoctorDetail: React.FC = () => {
                   value={selectedDate}
                   min={getLocalDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.04)] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               {/* Shift Selector */}
               {activeSlots.length > 1 && (
                 <div className="mb-4">
-                  <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5 tracking-tight">Shift</label>
+                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Shift</label>
                   <div className="space-y-1.5">
                     {activeSlots.map((slot) => {
                       const slotStatus = queuePreview?.availableSlots?.find((s) => s.slot.id === slot.id);
@@ -395,9 +395,9 @@ export const DoctorDetail: React.FC = () => {
                           <span className="truncate">{cleanSlotName(slot.name)}</span>
                           <span className="text-[11px] text-[#86868b] shrink-0 ml-2">
                             {isPassed ? (
-                              <span className="text-[#86868b] font-medium">Ended</span>
+                              <span className="text-[#86868b] font-normal">Ended</span>
                             ) : isFull ? (
-                              <span className="text-amber-600 font-medium">Full</span>
+                              <span className="text-warning font-normal">Full</span>
                             ) : (
                               `${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)}`
                             )}
@@ -416,13 +416,13 @@ export const DoctorDetail: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-4">
                   <div className="flex items-baseline justify-between mb-2">
                     <div>
-                      <span className="text-[11px] text-[#86868b] block font-medium">Est. Token</span>
+                      <span className="text-[11px] text-[#86868b] block font-normal">Est. Token</span>
                       <span className="text-2xl font-bold tracking-tight text-[#0066cc]">
                         #{queuePreview.nextQueueNumber}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[11px] text-[#86868b] block font-medium">Est. Time</span>
+                      <span className="text-[11px] text-[#86868b] block font-normal">Est. Time</span>
                       <span className="text-base font-semibold text-[#1d1d1f]">
                         {queuePreview.estimatedTime}
                       </span>
@@ -449,21 +449,21 @@ export const DoctorDetail: React.FC = () => {
             </div>
             <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#86868b] leading-relaxed">
               <span className="font-semibold text-[#1d1d1f] block mb-0.5">Pay receptionist to confirm token</span>
-              Token is confirmed only after paying the fee to the receptionist (coordinate online via UPI over call, or pay at desk). Unconfirmed requests may be claimed by another patient who confirms first.
+              Pay the receptionist by UPI over a call, or at the desk, to confirm your token. Whoever pays first is confirmed first.
             </div>
           </div>
 
           {queuePreview?.hasReceptionist === false ? (
             <div className="mb-3 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-2">
               <AlertCircle className="w-3.5 h-3.5 text-[#86868b] shrink-0 mt-0.5" />
-              <span>Online booking closed: No front-desk receptionist currently assigned at this facility.</span>
+              <span>Online booking is closed at this clinic for now.</span>
             </div>
           ) : queuePreview?.isPassed ? (
             <div className="mb-3 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
               Shift ended. Pick upcoming shift or date.
             </div>
           ) : queuePreview?.isFull ? (
-            <div className="mb-3 p-3 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs">
+            <div className="mb-3 p-3 rounded-xl bg-danger-soft/80 border border-danger-line/80 text-danger text-xs">
               Shift is full. Select another slot or date.
             </div>
           ) : null}
@@ -476,7 +476,7 @@ export const DoctorDetail: React.FC = () => {
                 `/book/${doctor.id}?date=${selectedDate}${selectedSlotId ? `&slot=${selectedSlotId}` : ''}${selectedClinicId ? `&clinic=${selectedClinicId}` : ''}`
               )
             }
-            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-medium transition-all duration-150 shadow-[0_2px_8px_rgba(0,102,204,0.2),0_1px_2px_rgba(0,0,0,0.06)] flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {!doctor.clinics || doctor.clinics.length === 0
               ? 'Booking Unavailable'
@@ -495,7 +495,7 @@ export const DoctorDetail: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
-      <SubNav title={doctor.user?.fullName || 'Doctor'} subtitle={doctor.specialty}>
+      <SubNav title={doctor.user?.fullName || 'Doctor'} subtitle={doctor.specialty} width="6xl">
         <AppleButton
           variant="ghost"
           size="sm"

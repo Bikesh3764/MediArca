@@ -26,7 +26,7 @@ export interface DashboardNavItem {
 }
 
 export interface DashboardLayoutProps {
-  portalType: 'DOCTOR' | 'CLINIC' | 'RECEPTIONIST' | 'PATIENT';
+  portalType: 'DOCTOR' | 'CLINIC' | 'RECEPTIONIST' | 'PATIENT' | 'ADMIN';
   portalSubtitle?: string;
   navItems: DashboardNavItem[];
   title?: string;
@@ -87,17 +87,20 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (portalType === 'DOCTOR') {
       return user?.doctorProfile?.specialty
         ? `${user.doctorProfile.specialty}`
-        : 'Medical Specialist';
+        : 'Doctor';
     }
     if (portalType === 'CLINIC') {
       return user?.clinicProfile?.clinicName
         ? `${user.clinicProfile.clinicName}`
-        : 'Clinic Administrator';
+        : 'Clinic';
     }
     if (portalType === 'RECEPTIONIST') {
-      return 'Desk Staff Member';
+      return 'Front desk';
     }
-    return 'Verified Patient';
+    if (portalType === 'ADMIN') {
+      return 'Administrator';
+    }
+    return 'Patient';
   };
 
   const getPortalLabel = () => {
@@ -110,6 +113,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         return 'Reception Desk';
       case 'PATIENT':
         return 'Patient Portal';
+      case 'ADMIN':
+        return 'Admin';
       default:
         return 'Health Portal';
     }
@@ -121,6 +126,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       navigate('/clinic/login');
     } else if (portalType === 'RECEPTIONIST') {
       navigate('/receptionist/login');
+    } else if (portalType === 'ADMIN') {
+      navigate('/admin-login');
     } else {
       navigate('/login');
     }
@@ -142,7 +149,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
             <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
           </Link>
-          <div className="mt-1 text-xs font-medium text-[#86868b] tracking-tight">
+          <div className="mt-1 text-xs font-normal text-[#86868b] tracking-tight">
             {getPortalLabel()}
           </div>
         </div>
@@ -200,9 +207,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Navigation Section */}
         <div>
-          <p className="text-xs font-medium text-[#86868b] mb-2 px-3">
-            Menu
-          </p>
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -218,7 +222,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] transition-all active:scale-[0.99] ${
                     isItemActive
                       ? 'bg-[#0066cc]/10 text-[#0066cc] font-semibold'
-                      : 'text-[#1d1d1f] font-medium hover:bg-[#f5f5f7]'
+                      : 'text-[#1d1d1f] font-normal hover:bg-[#f5f5f7]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -284,11 +288,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <Link
               to="/"
               onClick={() => setMobileDrawerOpen(false)}
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-[#86868b] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[13px] font-normal text-[#86868b] hover:bg-[#f5f5f7] hover:text-[#1d1d1f] transition-all active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <Globe className="w-4 h-4 text-[#86868b]" />
-                <span>Main Website</span>
+                <span>Website</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-[#c7c7cc]" />
             </Link>
@@ -300,7 +304,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="p-4 border-t border-[#e5e5ea]">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-[#86868b] hover:text-rose-600 hover:bg-rose-50/70 transition-all active:scale-[0.98] cursor-pointer"
+          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-[13px] font-normal text-[#86868b] hover:text-danger hover:bg-danger-soft/70 transition-all active:scale-[0.98] cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Sign Out</span>
@@ -334,7 +338,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <BrandLogo variant="full" size="sm" imgClassName="h-6 w-auto" />
           </div>
         </div>
-        <span className="text-xs font-medium text-[#86868b] px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
+        <span className="text-xs font-normal text-[#86868b] px-2.5 py-1 rounded-full bg-[#f5f5f7] border border-[#e5e5ea]">
           {getPortalLabel()}
         </span>
       </div>
@@ -346,7 +350,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileDrawerOpen(false)}
           />
-          <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl flex flex-col z-10 animate-fadeIn">
+          <div className="relative w-4/5 max-w-xs bg-white h-full  flex flex-col z-10 animate-fadeIn">
             <div className="absolute top-4 right-4 z-20">
               <button aria-label="Close"
                 onClick={() => setMobileDrawerOpen(false)}
@@ -387,24 +391,24 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 >
                   <Bell className="w-4 h-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-danger-dot text-white text-[11px] font-bold flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
 
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-[#e5e5ea] shadow-xl z-50 overflow-hidden animate-fadeIn text-left">
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-[#e5e5ea] shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-fadeIn text-left">
                     <div className="p-3.5 border-b border-[#e5e5ea] flex items-center justify-between">
                       <span className="text-xs font-semibold text-[#1d1d1f]">Notifications</span>
                       {unreadCount > 0 && (
                         <button
                           type="button"
                           onClick={handleMarkAllRead}
-                          className="text-[11px] font-medium text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
+                          className="text-[11px] font-normal text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <CheckCheck className="w-3.5 h-3.5" />
-                          Mark all as read
+                          Mark all read
                         </button>
                       )}
                     </div>
