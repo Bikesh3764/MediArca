@@ -104,7 +104,7 @@ The master test suite additionally verifies:
 
 ## 5. Open Items (need an owner decision)
 - ~~Database region~~ **Done 2026-10-26**: API and database both moved to Singapore (the old API was actually in Oregon, USA). See `docs/operations/database-region-move.md`.
-- **Render free plan** sleeps after 15 minutes idle; first request after sleep takes ~15–30s. The GitHub keep-alive cron is best-effort.
+- **Render free plan** sleeps after 15 minutes idle. Mitigated by a Cloudflare Worker cron (every 5 min) plus the GitHub keep-alive job. Render Starter ($7/month) removes sleep entirely.
 - ~~Leftover tables~~ **Done**: `Prescription`, `MedicalRecord` and `staging_test` were not carried into the new Singapore database. They remain only in the old Seoul backup project.
 - **Email OTP** is sent from a personal Gmail account (500/day limit, spam risk).
 

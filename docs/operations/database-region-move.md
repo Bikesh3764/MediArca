@@ -8,7 +8,7 @@
 | Frontend | GitHub Pages (auto on push to `main`) | https://bikesh3764.github.io/MediArca/ |
 | Frontend | Cloudflare Pages project `mediarca` (manual upload) | https://mediarca.in, https://mediarca.pages.dev |
 | File uploads | Cloudflare R2 bucket `mediarca-vault` | public URL in `R2_PUBLIC_URL` |
-| Keep-alive | GitHub Actions `keep-alive.yml` pings `/healthz` every 10 min | best-effort, see below |
+| Keep-alive | Cloudflare Worker `mediarca-keepalive` (cron every 5 min) + GitHub Actions `keep-alive.yml` (every 10 min) | pings `/healthz` |
 
 The backend connects with a dedicated database login named `prisma` (Supabase's recommended setup for Prisma), which owns the tables and bypasses row-level security. Connection strings use the Supabase pooler host `aws-0-ap-southeast-1.pooler.supabase.com` (port 6543 for `DATABASE_URL`, 5432 for `DIRECT_URL`). Secrets live only in Render's environment settings.
 
@@ -29,7 +29,9 @@ Measured on 2026-10-25: the old backend was on Render in **Oregon (USA)** (the s
 Both can be deleted from their dashboards once the new setup has run cleanly for about a week. Anything written to the old database after the copy (2026-10-26 ~00:20 IST) is not in the new one.
 
 ## Free-plan sleep
-Render's free plan stops the server after 15 minutes without traffic; the next request waits ~30 seconds while it starts. The GitHub keep-alive job pings every 10 minutes, but GitHub often runs scheduled jobs late, so an occasional slow first load is still possible. Render's Starter plan ($7/month) removes sleeping entirely.
+Render's free plan stops the server after 15 minutes without traffic; the next request then waits ~30 seconds. Two pingers prevent this: a Cloudflare Worker (`mediarca-keepalive`, every 5 minutes, reliable) and the older GitHub Actions job (every 10 minutes, often delayed). Opening the worker's URL in a browser shows the backend's current health.
+
+Render gives each workspace 750 free hours a month and one always-awake service uses about 744, so **only one free service may stay awake**. Delete the old Oregon service (`MediArca`) once you're happy with the new one; nothing pings it any more, so until then it sleeps and uses very little.
 
 ## If you ever move again
 Recreate in the new region, copy the data the same way, update `DATABASE_URL`/`DIRECT_URL` on Render, and update the API URL in `frontend/src/services/api.ts`, `frontend/src/App.tsx`, `.github/workflows/deploy-pages.yml` and `.github/workflows/keep-alive.yml`, then rebuild and upload the Cloudflare Pages site.
