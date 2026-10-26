@@ -169,17 +169,17 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
     });
 
     if (doctor?.user?.id) {
-      let notifTitle = 'Practitioner Status Updated';
-      let notifMessage = `Your practitioner account status is now ${targetStatus}.`;
+      let notifTitle = 'Account updated';
+      let notifMessage = `Your account status is now ${String(targetStatus).toLowerCase()}.`;
       if (targetStatus === 'VERIFIED') {
-        notifTitle = 'Practitioner Profile Approved';
-        notifMessage = 'Congratulations! Your practitioner profile has been approved and verified by MediArca administration.';
+        notifTitle = 'Profile approved';
+        notifMessage = 'Your profile is verified. Patients can now find and book you.';
       } else if (targetStatus === 'SUSPENDED') {
-        notifTitle = 'Practitioner Profile Suspended';
-        notifMessage = 'Your practitioner account has been suspended by administration. Practice shifts and online bookings are temporarily disabled.';
+        notifTitle = 'Account paused';
+        notifMessage = 'Your account is paused, so patients can’t book you. Contact MediArca support for help.';
       } else if (targetStatus === 'REJECTED') {
-        notifTitle = 'Practitioner Application Declined';
-        notifMessage = 'Your practitioner verification request has been declined by MediArca administration.';
+        notifTitle = 'Profile not approved';
+        notifMessage = 'We couldn’t verify your profile. Check your details or contact MediArca support.';
       }
       createNotification(doctor.user.id, notifTitle, notifMessage, 'SYSTEM').catch(() => {});
     }
@@ -395,17 +395,17 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
     });
 
     if (clinic?.user?.id) {
-      let notifTitle = 'Clinic Facility Status Updated';
-      let notifMessage = `Your clinic profile status is now ${targetStatus}.`;
+      let notifTitle = 'Clinic updated';
+      let notifMessage = `${clinic.clinicName} status is now ${String(targetStatus).toLowerCase()}.`;
       if (targetStatus === 'VERIFIED') {
-        notifTitle = 'Clinic Facility Approved';
-        notifMessage = `Congratulations! ${clinic.clinicName} has been approved and verified by MediArca administration.`;
+        notifTitle = 'Clinic approved';
+        notifMessage = `${clinic.clinicName} is verified. You can now add doctors and receptionists.`;
       } else if (targetStatus === 'SUSPENDED') {
-        notifTitle = 'Clinic Facility Suspended';
-        notifMessage = `${clinic.clinicName} has been suspended by administration. Reception desk operations are temporarily locked.`;
+        notifTitle = 'Clinic paused';
+        notifMessage = `${clinic.clinicName} is paused, so bookings and desk work are off. Contact MediArca support for help.`;
       } else if (targetStatus === 'REJECTED') {
-        notifTitle = 'Clinic Registration Declined';
-        notifMessage = `The registration request for ${clinic.clinicName} has been declined by MediArca administration.`;
+        notifTitle = 'Clinic not approved';
+        notifMessage = `We couldn’t verify ${clinic.clinicName}. Check your details or contact MediArca support.`;
       }
       createNotification(clinic.user.id, notifTitle, notifMessage, 'SYSTEM').catch(() => {});
     }
@@ -475,8 +475,8 @@ export const submitContactMessage = async (req: any, res: Response): Promise<voi
       for (const admin of admins) {
         await createNotification(
           admin.id,
-          `New Contact Inquiry: ${cleanSubject}`,
-          `From: ${cleanName} (${email})${cleanPhone ? ` | Phone: ${cleanPhone}` : ''}\n\n${cleanMessage}`,
+          `New message: ${cleanSubject}`,
+          `From ${cleanName} (${email})${cleanPhone ? `, ${cleanPhone}` : ''}\n\n${cleanMessage}`,
           'CONTACT_INQUIRY'
         );
       }

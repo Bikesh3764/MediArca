@@ -3,6 +3,7 @@ import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, getLocalDateString, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
+import { createNotification, withDr } from '../../services/notificationService';
 
 /**
  * Get doctor's affiliated clinics and linked receptionists
@@ -265,6 +266,12 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
             data: { status: 'ACCEPTED' },
             include: { clinic: true },
           });
+          createNotification(
+            clinic.userId,
+            'Doctor joined',
+            `${withDr(req.user.fullName)} joined your clinic.`,
+            'SYSTEM'
+          ).catch(() => {});
           res.status(200).json({
             success: true,
             message: `Affiliation with ${clinic.clinicName} accepted successfully`,
@@ -284,6 +291,12 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
           data: { status: 'PENDING', requestedBy: 'DOCTOR' },
           include: { clinic: true },
         });
+        createNotification(
+          clinic.userId,
+          'Join request',
+          `${withDr(req.user.fullName)} wants to join your clinic.`,
+          'SYSTEM'
+        ).catch(() => {});
         res.status(201).json({
           success: true,
           message: `Affiliation request sent to ${clinic.clinicName}. Waiting for clinic acceptance.`,
@@ -302,6 +315,13 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
       },
       include: { clinic: true },
     });
+
+    createNotification(
+      clinic.userId,
+      'Join request',
+      `${withDr(req.user.fullName)} wants to join your clinic.`,
+      'SYSTEM'
+    ).catch(() => {});
 
     res.status(201).json({
       success: true,
@@ -401,6 +421,12 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
         where: { id: affiliation.id },
         data: { status: 'ACCEPTED' },
       });
+      createNotification(
+        affiliation.clinic.userId,
+        'Invite accepted',
+        `${withDr(req.user.fullName)} joined your clinic.`,
+        'SYSTEM'
+      ).catch(() => {});
       res.json({
         success: true,
         message: `Accepted affiliation with ${clinicName}. It is now in your active clinics roster.`,
@@ -410,6 +436,14 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
       await prisma.clinicDoctor.delete({
         where: { id: affiliation.id },
       });
+      if (affiliation.requestedBy === 'CLINIC') {
+        createNotification(
+          affiliation.clinic.userId,
+          'Invite declined',
+          `${withDr(req.user.fullName)} declined your invite.`,
+          'SYSTEM'
+        ).catch(() => {});
+      }
       res.json({
         success: true,
         message: `Rejected affiliation request from ${clinicName}.`,

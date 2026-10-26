@@ -4,7 +4,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { timeToMinutes, minutesTo12Hour, parseDoctorSlots, getLocalDateString, getIndianTimeMinutes, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 import { resolveReceptionistContact } from './helpers';
 
@@ -553,13 +553,10 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
 
     const updated = await prisma.appointment.findUnique({ where: { id } });
 
-    if (req.user?.role === 'PATIENT' && appointment.doctor?.userId) {
-      createNotification(
-        appointment.doctor.userId,
-        'Appointment Cancelled by Patient',
-        `The appointment for ${appointment.appointmentDate} (Token #${appointment.queueNumber}) was cancelled by the patient.`,
-        'APPOINTMENT'
-      ).catch(() => {});
+    const cancelDocName = withDr(appointment.doctor?.user?.fullName);
+    const cancelDate = formatVisitDate(appointment.appointmentDate);
+    if (req.user?.role === 'PATIENT') {
+      // The doctor's queue updates live; the desk is told so they can fill the slot.
       if (appointment.clinicId) {
         prisma.receptionistProfile
           .findMany({
@@ -575,10 +572,12 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
                 rec.doctors.length === 0 ||
                 rec.doctors.some((d) => d.doctorId === appointment.doctorId && d.status === 'ACTIVE');
               if (isAssigned && rec.userId) {
+                const who = appointment.patientName || appointment.patient?.user?.fullName || 'A patient';
+                const token = appointment.queueNumber > 0 ? `Token #${appointment.queueNumber}` : 'their request';
                 createNotification(
                   rec.userId,
-                  'Appointment Cancelled by Patient',
-                  `Patient cancelled Token #${appointment.queueNumber} scheduled for ${appointment.appointmentDate}.`,
+                  'Booking cancelled',
+                  `${who} cancelled ${token} for ${cancelDocName} on ${cancelDate}.`,
                   'APPOINTMENT'
                 ).catch(() => {});
               }
@@ -586,11 +585,11 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
           })
           .catch(() => {});
       }
-    } else if (req.user?.role !== 'PATIENT' && appointment.patient?.userId) {
+    } else if (appointment.patient?.userId) {
       createNotification(
         appointment.patient.userId,
-        'Appointment Cancelled',
-        `Your appointment with Dr. ${appointment.doctor?.user?.fullName || 'Practitioner'} for ${appointment.appointmentDate} was cancelled.`,
+        'Visit cancelled',
+        `The clinic cancelled your visit with ${cancelDocName} on ${cancelDate}. Call the clinic if you have questions.`,
         'APPOINTMENT'
       ).catch(() => {});
     }

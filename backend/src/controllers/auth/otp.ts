@@ -8,6 +8,7 @@ import { sendVerificationOtpEmail } from '../../utils/emailService';
 import { SecurityStoreUnavailableError } from '../../utils/securityStore';
 import { recordFailedVerificationAttemptAsync, getVerificationLockoutAsync, clearVerificationStateAsync, checkResendCooldown, recordResendAttempt } from '../../utils/otpSecurity';
 import { sanitizeUserPayload } from './helpers';
+import { createNotification, withDr } from '../../services/notificationService';
 
 export const verifyEmailOtp = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -161,6 +162,25 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       },
       include: verifyInclude,
     });
+
+    // New doctors and clinics wait for admin checks, so tell the admins.
+    if (updatedUser.role === 'DOCTOR' || updatedUser.role === 'CLINIC') {
+      const isDoctor = updatedUser.role === 'DOCTOR';
+      const who = isDoctor ? withDr(updatedUser.fullName) : (updatedUser as any).clinicProfile?.clinicName || updatedUser.fullName;
+      prisma.user
+        .findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+        .then((admins) => {
+          for (const admin of admins) {
+            createNotification(
+              admin.id,
+              isDoctor ? 'New doctor to verify' : 'New clinic to verify',
+              `${who} signed up and is waiting for approval.`,
+              'SYSTEM'
+            ).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
 
     const token = jwt.sign(
       {

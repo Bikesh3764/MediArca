@@ -43,6 +43,18 @@ export const notificationsApi = {
     return handleResponse(res);
   },
 
+  /** Marks the notifications the person has seen as read, in one request. */
+  async markNotificationsRead(ids: string[]): Promise<any> {
+    cachedNotificationsData = null;
+    lastNotificationsFetchTime = 0;
+    const res = await safeFetch(`${API_BASE_URL}/notifications/read`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ ids }),
+    });
+    return handleResponse(res);
+  },
+
   async markAllNotificationsRead(): Promise<any> {
     cachedNotificationsData = null;
     lastNotificationsFetchTime = 0;

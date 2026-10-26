@@ -13,7 +13,6 @@ import {
   Building2,
   Users,
   Bell,
-  CheckCheck,
   ChevronDown,
   Info,
   HelpCircle,
@@ -23,18 +22,7 @@ import {
 import { getFileUrl } from '../../services/api';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useNotifications } from '../../context/NotificationContext';
-
-const formatNotificationTimeAgo = (dateStr: string): string => {
-  try {
-    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-    if (diff < 60) return 'Just now';
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  } catch {
-    return '';
-  }
-};
+import { NotificationPanel } from '../notifications/NotificationPanel';
 
 export const GlobalNav: React.FC = () => {
   const { user, logout } = useAuth();
@@ -43,8 +31,7 @@ export const GlobalNav: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead: handleMarkAsRead, markAllRead: handleMarkAllRead, fetchNotifications } = useNotifications();
-  const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
+  const { unreadCount, fetchNotifications } = useNotifications();
 
   // Periodic notifications check every 25 seconds only while tab is active/visible (FIX-012)
   useVisibilityPolling(
@@ -124,116 +111,7 @@ export const GlobalNav: React.FC = () => {
         : 'text-[#86868b] hover:bg-black/[0.03] hover:text-[#1d1d1f] font-normal'
     }`;
 
-  const renderNotificationDropdown = (isMobile = false) => (
-    <>
-      <div
-        className="fixed inset-0 z-40"
-        onClick={() => setNotificationsOpen(false)}
-      />
-      <div
-        className={`${
-          isMobile
-            ? 'fixed left-3 right-3 sm:left-4 sm:right-4 top-14 max-w-sm sm:max-w-md mx-auto'
-            : 'absolute right-0 top-11 w-80 sm:w-96'
-        } bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn text-left`}
-      >
-        <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-xs text-[#1d1d1f]">Notifications</span>
-            {unreadCount > 0 && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]">
-                {unreadCount} new
-              </span>
-            )}
-          </div>
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              className="text-[11px] font-normal text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <CheckCheck className="w-3 h-3" />
-              Mark all read
-            </button>
-          )}
-        </div>
-
-        <div className="max-h-96 overflow-y-auto divide-y divide-[#f5f5f7]">
-          {notifications.length === 0 ? (
-            <div className="p-8 text-center text-[#86868b]">
-              <p className="text-xs font-normal text-[#1d1d1f]">No notifications yet</p>
-              <p className="text-[11px] text-[#86868b] mt-0.5">Updates will show up here.</p>
-            </div>
-          ) : (
-            notifications.map((notif) => {
-              const isExpanded = expandedNotificationId === notif.id;
-              return (
-                <div
-                  key={notif.id}
-                  onClick={() => {
-                    if (!notif.isRead) handleMarkAsRead(notif.id);
-                    setExpandedNotificationId((prev) => (prev === notif.id ? null : notif.id));
-                  }}
-                  className={`p-3.5 transition-all cursor-pointer flex items-start gap-3 ${
-                    notif.isRead ? 'bg-white hover:bg-[#fafafc]' : 'bg-[#0066cc]/[0.04] hover:bg-[#0066cc]/[0.08]'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <h4 className="text-xs font-semibold text-[#1d1d1f] truncate">
-                        {notif.title}
-                      </h4>
-                      <span className="text-[11px] text-[#86868b] flex-shrink-0">
-                        {formatNotificationTimeAgo(notif.createdAt)}
-                      </span>
-                    </div>
-
-                    {isExpanded ? (
-                      <div className="mt-1 space-y-2 animate-fadeIn">
-                        <p className="text-xs text-[#1d1d1f] leading-relaxed break-words font-normal">
-                          {notif.message}
-                        </p>
-                        <div className="flex items-center justify-between pt-1 border-t border-[#f0f0f2]">
-                          <span className="text-[11px] text-[#86868b]">
-                            {new Date(notif.createdAt).toLocaleString('en-IN', {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
-                          </span>
-                          {notif.type === 'APPOINTMENT' && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setNotificationsOpen(false);
-                                if (user?.role === 'PATIENT') navigate('/patient/appointments');
-                                else if (user?.role === 'DOCTOR') navigate('/doctor/dashboard');
-                                else if (user?.role === 'RECEPTIONIST') navigate('/receptionist/dashboard');
-                              }}
-                              className="text-[11px] font-semibold text-[#0066cc] hover:underline cursor-pointer"
-                            >
-                              Open →
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-[11px] text-[#86868b] leading-relaxed line-clamp-2">
-                        {notif.message}
-                      </p>
-                    )}
-                  </div>
-                  {!notif.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-[#0066cc] flex-shrink-0 mt-2" />
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </>
-  );
+  const closeNotifications = React.useCallback(() => setNotificationsOpen(false), []);
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl backdrop-saturate-150 border-b border-black/[0.06] text-[#1d1d1f] select-none shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all">
@@ -448,7 +326,9 @@ export const GlobalNav: React.FC = () => {
                   )}
                 </button>
 
-                {notificationsOpen && renderNotificationDropdown(false)}
+                {notificationsOpen && (
+                  <NotificationPanel onClose={closeNotifications} className="absolute right-0 top-11 w-96" />
+                )}
               </div>
 
               <Link
@@ -520,7 +400,9 @@ export const GlobalNav: React.FC = () => {
                   </span>
                 )}
               </button>
-              {notificationsOpen && renderNotificationDropdown(true)}
+              {notificationsOpen && (
+                <NotificationPanel onClose={closeNotifications} className="fixed left-3 right-3 top-16 max-w-md mx-auto" />
+              )}
             </div>
           )}
           <button

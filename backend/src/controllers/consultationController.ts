@@ -4,7 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots, cleanSlotName } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
-import { createNotification } from '../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../services/notificationService';
 import { invalidateDoctorQueueCache } from '../utils/queueStateCache';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -420,11 +420,11 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
     invalidateDoctorQueueCache(doctor.id, targetAppointment.appointmentDate);
 
     if (updated?.patient?.user) {
-      const doctorName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
+      const doctorName = withDr((doctor as any)?.user?.fullName || req.user.fullName);
       createNotification(
         updated.patient.user.id || (updated.patient as any).userId,
-        'Called to Consultation Cabin',
-        `It is your turn! Dr. ${doctorName} has called Queue #${updated.queueNumber} into the cabin.`,
+        "It's your turn",
+        `${doctorName} is ready for you. Please go in now. Token #${updated.queueNumber}.`,
         'QUEUE'
       ).catch(() => {});
     }
@@ -733,11 +733,11 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       select: { userId: true },
     });
     if (patProfile?.userId) {
-      const docName = (doctor as any)?.user?.fullName || req.user.fullName || 'Practitioner';
+      const docName = withDr((doctor as any)?.user?.fullName || req.user.fullName);
       createNotification(
         patProfile.userId,
-        'Consultation Completed',
-        `Your consultation with Dr. ${docName} has concluded. Collect your physical prescription and follow-up advice at the clinic desk.`,
+        'Visit complete',
+        `Your visit with ${docName} is done. Collect your physical prescription and follow-up advice at the clinic desk.`,
         'CLINICAL'
       ).catch(() => {});
     }

@@ -3,7 +3,7 @@ import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, evaluateSlotStatus, getLocalDateString, getIndianTimeMinutes, timeToMinutes, minutesTo12Hour, isValidAppointmentDate, cleanSlotName, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 
 export const determineRescheduleTarget = (
@@ -488,16 +488,15 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
       : 'Doctor';
 
     const tokenDisplay = updatedAppt.queueNumber > 0
-      ? `Queue #${updatedAppt.queueNumber}`
-      : `Provisional Token #${Math.abs(updatedAppt.queueNumber)} (Pending Approval)`;
+      ? `Your token is #${updatedAppt.queueNumber}.`
+      : 'The clinic will confirm your token.';
 
     // Dispatch notification to patient
     if (appointment.patient?.userId) {
-      const shiftedBy = req.user.role === 'PATIENT' ? '' : ' by the reception desk';
       createNotification(
         appointment.patient.userId,
-        'Appointment Rescheduled',
-        `Your visit with ${docName} has been shifted to ${newDate}${shiftedBy}. Your token is ${tokenDisplay}.`,
+        'Visit moved',
+        `Your visit with ${docName} is now on ${formatVisitDate(newDate)}. ${tokenDisplay}`,
         'APPOINTMENT'
       ).catch(() => {});
     }

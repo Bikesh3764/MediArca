@@ -6,7 +6,7 @@ import { timeToMinutes, parseDoctorSlots, evaluateSlotStatus, getLocalDateString
 import crypto from 'crypto';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { resolveReceptionistContact } from './helpers';
 
 export const bookAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -634,34 +634,27 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       }
     }
 
-    const rawDocName = doctor.user?.fullName || 'Practitioner';
-    const cleanDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+    const cleanDocName = withDr(doctor.user?.fullName);
     const isPendingBooking = newAppointment.status === 'PENDING_APPROVAL';
+    const visitWhen = `${formatVisitDate(appointmentDate)} (${chosenSlot.name})`;
 
+    // The doctor sees new bookings live on the dashboard, so only the patient and the desk are told.
     if (req.user?.id) {
       if (isPendingBooking) {
         createNotification(
           req.user.id,
-          'Appointment Request Received',
-          `Your visit request with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}) has been submitted. Pay receptionist at desk to confirm your queue token.`,
+          'Booking request sent',
+          `${cleanDocName}, ${visitWhen}. Pay at the desk or call the clinic to confirm it.`,
           'APPOINTMENT'
         ).catch(() => {});
       } else {
         createNotification(
           req.user.id,
-          'Appointment Booking Confirmed',
-          `Your visit with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}) has been confirmed. You are Queue #${newAppointment.queueNumber}.`,
+          'Booking confirmed',
+          `${cleanDocName}, ${visitWhen}. Your token is #${newAppointment.queueNumber}.`,
           'APPOINTMENT'
         ).catch(() => {});
       }
-    }
-    if (doctor?.userId) {
-      createNotification(
-        doctor.userId,
-        isPendingBooking ? 'New Appointment Request' : 'New Appointment Booking',
-        `A patient has ${isPendingBooking ? 'requested' : 'booked'} a visit for ${appointmentDate} (${chosenSlot.name}).`,
-        'APPOINTMENT'
-      ).catch(() => {});
     }
 
     // Notify clinic receptionists managing this doctor
@@ -672,7 +665,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           include: { doctors: true },
         })
         .then((receptionists) => {
-          const displayPatient = patientName?.trim() || 'A patient';
+          const displayPatient =
+            patientName?.trim() || newAppointment.patientName || newAppointment.patient?.user?.fullName || 'A patient';
           for (const rec of receptionists) {
             const isAssigned =
               rec.doctors.length === 0 ||
@@ -680,8 +674,10 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             if (isAssigned && rec.userId) {
               createNotification(
                 rec.userId,
-                isPendingBooking ? 'New Appointment Request' : 'New Appointment Booking',
-                `${displayPatient} has ${isPendingBooking ? 'requested' : 'booked'} a visit with ${cleanDocName} for ${appointmentDate} (${chosenSlot.name}).`,
+                isPendingBooking ? 'New booking request' : 'New booking',
+                isPendingBooking
+                  ? `${displayPatient} wants to see ${cleanDocName} on ${visitWhen}.`
+                  : `${displayPatient} booked ${cleanDocName} for ${visitWhen}. Token #${newAppointment.queueNumber}.`,
                 'APPOINTMENT'
               ).catch(() => {});
             }

@@ -126,8 +126,8 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
           });
           createNotification(
             doctor.userId,
-            'Affiliation Request Accepted',
-            `${clinic.clinicName} has accepted your clinic affiliation request.`,
+            'Request accepted',
+            `You've joined ${clinic.clinicName}.`,
             'SYSTEM'
           ).catch(() => {});
 
@@ -157,8 +157,8 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
 
         createNotification(
           doctor.userId,
-          'Clinic Affiliation Invitation',
-          `${clinic.clinicName} has invited you to affiliate with their clinic facility.`,
+          'Clinic invite',
+          `${clinic.clinicName} invited you to join their clinic.`,
           'SYSTEM'
         ).catch(() => {});
 
@@ -189,8 +189,8 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
 
     createNotification(
       doctor.userId,
-      'Clinic Affiliation Invitation',
-      `${clinic.clinicName} has invited you to affiliate with their clinic facility.`,
+      'Clinic invite',
+      `${clinic.clinicName} invited you to join their clinic.`,
       'SYSTEM'
     ).catch(() => {});
 
@@ -306,8 +306,8 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       if (docProf?.userId) {
         createNotification(
           docProf.userId,
-          'Affiliation Request Accepted',
-          `Your affiliation request with ${clinic.clinicName} was accepted. You are now active on their roster.`,
+          'Request accepted',
+          `You've joined ${clinic.clinicName}.`,
           'SYSTEM'
         ).catch(() => {});
       }
@@ -329,8 +329,8 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
       if (docProf?.userId) {
         createNotification(
           docProf.userId,
-          'Affiliation Request Declined',
-          `Your affiliation request with ${clinic.clinicName} was not accepted.`,
+          'Request declined',
+          `${clinic.clinicName} didn't accept your request to join.`,
           'SYSTEM'
         ).catch(() => {});
       }

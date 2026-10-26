@@ -4,7 +4,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { getLocalDateString } from '../../utils/scheduleUtils';
 import crypto from 'crypto';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 
 /**
@@ -234,21 +234,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
 
     invalidateDoctorQueueCache(updated.doctorId, updated.appointmentDate);
 
-    if (updated.doctor?.user) {
-      const docProfile = await prisma.doctorProfile.findUnique({
-        where: { id: updated.doctorId },
-        select: { userId: true },
-      });
-      if (docProfile?.userId) {
-        createNotification(
-          docProfile.userId,
-          'Patient Arrived at Clinic Desk',
-          `Queue Token #${updated.queueNumber} (${appointment.patientName || 'Patient'}) has checked in at ${clinic.clinicName}.`,
-          'QUEUE'
-        ).catch(() => {});
-      }
-    }
-
+    // The doctor's queue updates live; only the front desk gets a notification.
     if (updated.clinicId) {
       prisma.receptionistProfile
         .findMany({
@@ -264,8 +250,8 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
             if (isAssigned && rec.userId) {
               createNotification(
                 rec.userId,
-                'Patient Arrived at Clinic Desk',
-                `${patientDisplayName} (Queue #${updated.queueNumber}) has checked in on-site for Dr. ${updated.doctor?.user?.fullName || 'Doctor'}.`,
+                'Patient arrived',
+                `${patientDisplayName} (Token #${updated.queueNumber}) checked in for ${withDr(updated.doctor?.user?.fullName)}.`,
                 'QUEUE'
               ).catch(() => {});
             }
@@ -417,25 +403,7 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
 
     invalidateDoctorQueueCache(appointment.doctorId, appointment.appointmentDate);
 
-    if (newCheckedInState && updated.doctorId) {
-      prisma.doctorProfile
-        .findUnique({
-          where: { id: updated.doctorId },
-          select: { userId: true },
-        })
-        .then((doc) => {
-          if (doc?.userId) {
-            const patientDisplayName = updated.patientName || updated.patient?.user?.fullName || 'Patient';
-            createNotification(
-              doc.userId,
-              'Patient Arrived at Clinic Desk',
-              `Queue Token #${updated.queueNumber} (${patientDisplayName}) was checked in at the reception desk.`,
-              'QUEUE'
-            ).catch(() => {});
-          }
-        })
-        .catch(() => {});
-    }
+    // Desk check-ins show up live in the doctor's queue, so no notification is sent.
 
     res.json({
       success: true,

@@ -1,6 +1,34 @@
 import prisma from '../config/database';
 import { publishNotification } from '../utils/liveEvents';
 
+/*
+ * What MediArca sends (keep it to things the person needs to know or act on):
+ * - Patient: booking sent / confirmed / declined / moved / cancelled, token for a walk-in,
+ *   "It's your turn", visit complete, doctor on leave, doctor stepped out / back in.
+ * - Receptionist: new booking or request, patient checked in by QR, patient cancelled.
+ * - Doctor: account approved / suspended, clinic invites, join request answered.
+ * - Clinic: clinic approved / suspended, doctor or receptionist wants to join, invite answered.
+ * - Admin: new contact message.
+ * Never notify someone about an action they did themselves, and never send queue
+ * updates the doctor already sees live on the dashboard.
+ */
+
+/** "2026-10-27" → "Tue, 27 Oct". Leaves anything else as it is. */
+export const formatVisitDate = (ymd?: string | null): string => {
+  if (!ymd) return '';
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd).trim());
+  if (!match) return String(ymd);
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+};
+
+/** Adds "Dr." once: "Sarah Jenkins" → "Dr. Sarah Jenkins", "Dr Sarah" → "Dr. Sarah". */
+export const withDr = (name?: string | null): string => {
+  const clean = String(name || '').trim();
+  if (!clean) return 'your doctor';
+  return `Dr. ${clean.replace(/^dr\.?\s*/i, '')}`;
+};
+
 export const createNotification = async (
   userId: string,
   title: string,
@@ -35,12 +63,28 @@ export const getUserNotifications = async (userId: string, limit = 50): Promise<
   });
 };
 
+/** Counts every unread notification, not only the ones in the latest page. */
+export const countUnreadNotifications = async (userId: string): Promise<number> => {
+  return prisma.notification.count({ where: { userId, isRead: false } });
+};
+
 export const markNotificationRead = async (notificationId: string, userId: string): Promise<boolean> => {
   const result = await prisma.notification.updateMany({
     where: { id: notificationId, userId },
     data: { isRead: true },
   });
   return result.count > 0;
+};
+
+/** Marks a set of notifications as read in one call (used when they scroll into view). */
+export const markNotificationsRead = async (ids: string[], userId: string): Promise<number> => {
+  const cleanIds = ids.filter((id) => typeof id === 'string' && id.trim()).slice(0, 100);
+  if (cleanIds.length === 0) return 0;
+  const result = await prisma.notification.updateMany({
+    where: { id: { in: cleanIds }, userId, isRead: false },
+    data: { isRead: true },
+  });
+  return result.count;
 };
 
 export const markAllNotificationsRead = async (userId: string): Promise<number> => {

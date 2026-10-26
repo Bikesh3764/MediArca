@@ -164,22 +164,20 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
             ? (docUser.fullName.startsWith('Dr.') ? docUser.fullName : `Dr. ${docUser.fullName}`)
             : 'Doctor';
 
-          let notifTitle = 'Doctor Cabin Update';
-          let notifMsg = `${docName} cabin status was updated.`;
+          // "Not in cabin" is usually the end of the day, so patients aren't told about it.
+          const shouldNotify = normalizedStatus === 'STEPPED_OUT' || normalizedStatus === 'IN_CABIN';
+          let notifTitle = 'Doctor is in';
+          let notifMsg = `${docName} is now seeing patients.`;
 
           if (normalizedStatus === 'STEPPED_OUT') {
-            notifTitle = 'Doctor Stepped Out';
-            notifMsg = `${docName} has temporarily stepped out${cleanReturnTime ? ` (expected return: ${cleanReturnTime})` : ''}. Your queue spot is preserved.`;
-          } else if (normalizedStatus === 'IN_CABIN') {
-            notifTitle = 'Doctor in Cabin';
-            notifMsg = `${docName} is now in the cabin and consulting patients.`;
-          } else if (normalizedStatus === 'NOT_IN_CABIN') {
-            notifTitle = 'Doctor Cabin Update';
-            notifMsg = `${docName} has not yet arrived in the cabin.`;
+            notifTitle = 'Doctor stepped out';
+            notifMsg = cleanReturnTime
+              ? `${docName} will be back by ${cleanReturnTime}. Your place in line is safe.`
+              : `${docName} stepped out for a short while. Your place in line is safe.`;
           }
 
           const sixtySecondsAgo = new Date(Date.now() - 60 * 1000);
-          for (const pUserId of uniquePatientUserIds) {
+          for (const pUserId of shouldNotify ? uniquePatientUserIds : []) {
             try {
               let alreadyNotified = false;
               if (typeof (prisma.notification as any)?.findFirst === 'function') {

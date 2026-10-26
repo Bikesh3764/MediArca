@@ -48,8 +48,6 @@ export const useReceptionistDashboardState = () => {
     markAllRead: handleMarkAllNotifsRead,
     fetchNotifications,
   } = useNotifications();
-  const [expandedNotifId, setExpandedNotifId] = useState<string | null>(null);
-  const [notifFilter, setNotifFilter] = useState<'ALL' | 'UNREAD'>('ALL');
   // Clinic QR Standee Modal state
   const [isStandeeModalOpen, setIsStandeeModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -735,10 +733,6 @@ export const useReceptionistDashboardState = () => {
     handleMarkOneNotifRead,
     handleMarkAllNotifsRead,
     fetchNotifications,
-    expandedNotifId,
-    setExpandedNotifId,
-    notifFilter,
-    setNotifFilter,
     isStandeeModalOpen,
     setIsStandeeModalOpen,
     isReportModalOpen,

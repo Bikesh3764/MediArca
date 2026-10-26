@@ -4,7 +4,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { getLocalDateString, getIndianTimeMinutes } from '../../utils/scheduleUtils';
 import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 
 export const executeReceptionistInConsultationTransaction = async (
   prismaClient: any,
@@ -244,27 +244,27 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
 
     if (updated?.patient) {
       const patientUserId = (updated.patient as any).userId || (updated.patient.user as any)?.id;
-      const docName = updated.doctor?.user?.fullName || 'Practitioner';
+      const docName = withDr(updated.doctor?.user?.fullName);
 
       if (status === 'CANCELLED' && patientUserId) {
         createNotification(
           patientUserId,
-          'Appointment Cancelled by Reception',
-          `Your appointment with Dr. ${docName} (Token #${updated.queueNumber}) was cancelled by the clinic reception desk.`,
+          'Visit cancelled',
+          `The clinic cancelled your visit with ${docName} on ${formatVisitDate(updated.appointmentDate)}. Call the clinic if you have questions.`,
           'APPOINTMENT'
         ).catch(() => {});
       } else if (status === 'IN_CONSULTATION' && patientUserId) {
         createNotification(
           patientUserId,
-          'Called to Consultation Cabin',
-          `It is your turn! Queue #${updated.queueNumber} has been called into Dr. ${docName}'s cabin.`,
+          "It's your turn",
+          `${docName} is ready for you. Please go in now. Token #${updated.queueNumber}.`,
           'QUEUE'
         ).catch(() => {});
       } else if (status === 'COMPLETED' && patientUserId) {
         createNotification(
           patientUserId,
-          'Consultation Completed',
-          `Your consultation with Dr. ${docName} (Token #${updated.queueNumber}) has been completed.`,
+          'Visit complete',
+          `Your visit with ${docName} is done. Collect your prescription and advice at the clinic desk.`,
           'APPOINTMENT'
         ).catch(() => {});
       }

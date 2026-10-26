@@ -4,7 +4,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, getLocalDateString, getIndianTimeMinutes, timeToMinutes, minutesTo12Hour, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate } from '../../utils/scheduleUtils';
 import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 
 /**
@@ -384,12 +384,11 @@ export const approveAppointment = async (req: AuthRequest, res: Response): Promi
     }
 
     if (appointment?.patient?.userId) {
-      const rawDocName = appointment.doctor?.user?.fullName || 'Practitioner';
-      const cleanDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
+      const cleanDocName = withDr(appointment.doctor?.user?.fullName);
       createNotification(
         appointment.patient.userId,
-        'Appointment Booking Confirmed',
-        `Your visit request with ${cleanDocName} for ${appointment.appointmentDate} has been confirmed. You are Queue #${updated.queueNumber}.`,
+        'Booking confirmed',
+        `${cleanDocName}, ${formatVisitDate(appointment.appointmentDate)}. Your token is #${updated.queueNumber}.`,
         'APPOINTMENT'
       ).catch(() => {});
     }
@@ -723,12 +722,12 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
     });
 
     if (appointment?.patient?.userId) {
-      const docName = appointment.doctor?.user?.fullName || 'Practitioner';
-      const declineMsg = reason ? `Reason: ${reason}` : 'Please contact the clinic reception for more details.';
+      const docName = withDr(appointment.doctor?.user?.fullName);
+      const declineMsg = reason ? `Reason: ${String(reason).trim()}` : 'Call the clinic for details.';
       createNotification(
         appointment.patient.userId,
-        'Appointment Request Declined',
-        `Your appointment booking request with Dr. ${docName} was declined by clinic reception. ${declineMsg}`,
+        'Booking declined',
+        `The clinic couldn't take your request for ${docName} on ${formatVisitDate(appointment.appointmentDate)}. ${declineMsg}`,
         'APPOINTMENT'
       ).catch(() => {});
     }

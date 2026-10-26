@@ -3,7 +3,7 @@ import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, validateDoctorSlots, timeToMinutes, getLocalDateString, cleanSlotName, cleanWorkingDays, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate, DoctorLeave, isValidAppointmentDate, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 
 export const updateSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -915,8 +915,8 @@ export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<v
         if (appt.patient?.userId) {
           createNotification(
             appt.patient.userId,
-            'Doctor Leave Notice',
-            `Dr. ${appt.doctor?.user?.fullName || 'Practitioner'} has recorded leave for ${appt.appointmentDate}${newLeave.reason ? ` (${newLeave.reason})` : ''}. The clinic desk will assist with rescheduling your visit.`,
+            'Doctor on leave',
+            `${withDr(appt.doctor?.user?.fullName)} is on leave on ${formatVisitDate(appt.appointmentDate)}. The clinic will help you pick a new time.`,
             'APPOINTMENT'
           ).catch(() => {});
         }

@@ -6,6 +6,7 @@ import { BrandLogo } from '../ui/BrandLogo';
 import { getFileUrl } from '../../services/api';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useNotifications } from '../../context/NotificationContext';
+import { NotificationPanel } from '../notifications/NotificationPanel';
 import {
   LogOut,
   Menu,
@@ -13,7 +14,6 @@ import {
   Globe,
   ChevronRight,
   Bell,
-  CheckCheck,
 } from 'lucide-react';
 
 export interface DashboardNavItem {
@@ -61,8 +61,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   }, [mobileDrawerOpen]);
 
   // Real-time in-app notifications sync via api.getNotifications() consolidated across portals (FUNC-014)
-  const { notifications, unreadCount, markAsRead: handleMarkAsRead, markAllRead: handleMarkAllRead, fetchNotifications } = useNotifications();
+  const { unreadCount, fetchNotifications } = useNotifications();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const closeNotifications = React.useCallback(() => setNotificationsOpen(false), []);
   useVisibilityPolling(fetchNotifications, 30000, Boolean(user));
 
   const getGreeting = () => {
@@ -382,60 +383,19 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((prev) => !prev)}
-                  className="relative p-2 rounded-xl text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all cursor-pointer"
+                  className="relative w-9 h-9 inline-flex items-center justify-center rounded-full bg-white text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all active:scale-[0.98] cursor-pointer"
                   title="Notifications"
-                  aria-label="View notifications"
+                  aria-label="Notifications"
                 >
                   <Bell className="w-4 h-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-danger-dot text-white text-[11px] font-semibold flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#0066cc] text-white text-[11px] font-semibold flex items-center justify-center">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
 
-                {notificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-[#e5e5ea] shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-fadeIn text-left">
-                    <div className="p-3.5 border-b border-[#e5e5ea] flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#1d1d1f]">Notifications</span>
-                      {unreadCount > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleMarkAllRead}
-                          className="text-[11px] font-normal text-[#0066cc] hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <CheckCheck className="w-3.5 h-3.5" />
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-72 overflow-y-auto divide-y divide-[#f0f0f2]">
-                      {notifications.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-[#86868b]">
-                          No notifications yet
-                        </div>
-                      ) : (
-                        notifications.slice(0, 15).map((n) => (
-                          <div
-                            key={n.id}
-                            onClick={() => !n.isRead && handleMarkAsRead(n.id)}
-                            className={`p-3 text-xs transition-colors cursor-pointer ${
-                              n.isRead ? 'bg-white hover:bg-[#f5f5f7]' : 'bg-[#0066cc]/5 hover:bg-[#0066cc]/10'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-[#1d1d1f]">{n.title}</span>
-                              {!n.isRead && (
-                                <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0" />
-                              )}
-                            </div>
-                            <p className="text-[#48484a] text-[11px] mt-0.5 leading-relaxed">{n.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
+                {notificationsOpen && <NotificationPanel onClose={closeNotifications} />}
               </div>
 
               {headerAction}

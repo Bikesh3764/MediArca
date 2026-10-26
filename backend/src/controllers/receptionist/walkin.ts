@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { parseDoctorSlots, evaluateSlotStatus, getLocalDateString, getIndianTimeMinutes, timeToMinutes, minutesTo12Hour, isValidAppointmentDate, cleanSlotName, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate } from '../../utils/scheduleUtils';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { verifyReceptionistDoctorAccess } from '../../utils/authGuards';
-import { createNotification } from '../../services/notificationService';
+import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 
 /**
@@ -507,8 +507,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     if (newAppointment?.patient?.user) {
       createNotification(
         newAppointment.patient.userId || (newAppointment.patient as any).user?.id,
-        'Walk-in Token Booked',
-        `Queue Token #${newAppointment.queueNumber} assigned for ${newAppointment.doctor?.user?.fullName || 'Practitioner'} on ${appointmentDate}.`,
+        'Token booked',
+        `Token #${newAppointment.queueNumber} for ${withDr(newAppointment.doctor?.user?.fullName)} on ${formatVisitDate(appointmentDate)}.`,
         'QUEUE'
       ).catch(() => {});
     }

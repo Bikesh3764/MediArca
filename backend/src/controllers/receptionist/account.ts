@@ -8,6 +8,7 @@ import { parseDoctorSlots, getLocalDateString, parseDoctorWorkingDays, parseDoct
 import { formatIndianPhone, isValidIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
 import { markPasswordChanged } from '../../utils/sessionRevocation';
+import { createNotification } from '../../services/notificationService';
 
 /**
  * Get profile and linked doctors for logged-in receptionist
@@ -480,6 +481,13 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       typeof (prisma as any).$transaction === 'function'
         ? await prisma.$transaction(async (tx) => runApply(tx))
         : await runApply(prisma);
+
+    createNotification(
+      clinic.userId,
+      'Receptionist request',
+      `${String(fullName).trim()} wants to join your front desk.`,
+      'SYSTEM'
+    ).catch(() => {});
 
     res.json({
       success: true,
