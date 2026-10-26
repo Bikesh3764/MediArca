@@ -116,6 +116,7 @@ import {
   publicApiLimiter,
   contactRateLimiter,
   rateLimitMap,
+  normalizeRateLimitPath,
   pruneStaleRateLimits,
   gracefulShutdown,
   isShuttingDown,
@@ -10477,6 +10478,78 @@ Follow-up Date: 2026-10-15`;
       if (saved.key === undefined) delete process.env.BREVO_API_KEY; else process.env.BREVO_API_KEY = saved.key;
       if (saved.sender === undefined) delete process.env.BREVO_SENDER_EMAIL; else process.env.BREVO_SENDER_EMAIL = saved.sender;
     }
+  }
+
+  // ── FIX-043 / FIX-044 / FIX-045: spam and bot protection ──────────────────
+  {
+    console.log('\n--- FIX-043..045: rate-limit IP, code email caps, bot check ---');
+    const { getTrustedClientIp, getClientIp } = await import('../src/utils/clientIp');
+    const spoofed: any = { headers: { 'x-forwarded-for': '10.1.2.3' }, ip: '203.0.113.9', socket: {} };
+    assert(getTrustedClientIp(spoofed) === null && getClientIp(spoofed) === '203.0.113.9', 'FIX-043: a faked X-Forwarded-For is not used as the visitor IP');
+    const viaCf: any = { headers: { 'cf-connecting-ip': '198.51.100.7', 'x-forwarded-for': '10.1.2.3' }, ip: '172.70.1.1', socket: {} };
+    assert(getClientIp(viaCf) === '198.51.100.7', 'FIX-043: Cloudflare CF-Connecting-IP is the visitor IP');
+    const junkCf: any = { headers: { 'cf-connecting-ip': 'not-an-ip' }, ip: '203.0.113.9', socket: {} };
+    assert(getClientIp(junkCf) === '203.0.113.9', 'FIX-043: an invalid CF-Connecting-IP value is ignored');
+    const srv = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf8');
+    assert(srv.includes('getTrustedClientIp(req) || req.ip'), 'FIX-043: rate limiter keys on the trusted client IP');
+    assert(
+      normalizeRateLimitPath('/API/Auth/Resend-OTP/') === normalizeRateLimitPath('/api/auth/resend-otp'),
+      'FIX-043: case and trailing slash variants share one rate-limit bucket'
+    );
+
+    const { reserveOtpEmail, resetOtpEmailBudget, guardOtpEmail, OTP_EMAIL_LIMITS } = await import('../src/utils/otpEmailBudget');
+    resetOtpEmailBudget();
+    const t0 = 1_800_000_000_000;
+    let okCount = 0;
+    for (let i = 0; i < 8; i++) if (reserveOtpEmail('victim@example.com', `198.51.100.${i}`, t0 + i).allowed) okCount++;
+    assert(okCount === OTP_EMAIL_LIMITS.perEmailHour, 'FIX-044: one inbox gets at most 5 code emails an hour, whatever the IP');
+    const blocked = reserveOtpEmail('VICTIM@example.com ', '198.51.100.99', t0 + 10);
+    assert(!blocked.allowed && blocked.reason === 'email' && (blocked.retryAfterSeconds || 0) > 0, 'FIX-044: inbox cap ignores case/spaces and gives a retry time');
+    assert(reserveOtpEmail('victim@example.com', '198.51.100.99', t0 + 61 * 60 * 1000).allowed, 'FIX-044: inbox cap resets after an hour');
+    resetOtpEmailBudget();
+    let ipOk = 0;
+    for (let i = 0; i < 15; i++) if (reserveOtpEmail(`user${i}@example.com`, '203.0.113.50', t0 + i).allowed) ipOk++;
+    assert(ipOk === OTP_EMAIL_LIMITS.perIpHour, 'FIX-044: one visitor can trigger at most 10 code emails an hour');
+    assert(reserveOtpEmail('other@example.com', '203.0.113.51', t0 + 20).allowed, 'FIX-044: another visitor is not blocked by that cap');
+    resetOtpEmailBudget();
+    const savedCap = process.env.OTP_EMAIL_DAILY_CAP;
+    process.env.OTP_EMAIL_DAILY_CAP = '3';
+    for (let i = 0; i < 3; i++) reserveOtpEmail(`g${i}@example.com`, `192.0.2.${i}`, t0);
+    const globalHit = reserveOtpEmail('g9@example.com', '192.0.2.9', t0);
+    assert(!globalHit.allowed && globalHit.reason === 'global', 'FIX-044: site-wide daily cap stops a flood from many IPs');
+    if (savedCap === undefined) delete process.env.OTP_EMAIL_DAILY_CAP; else process.env.OTP_EMAIL_DAILY_CAP = savedCap;
+    resetOtpEmailBudget();
+    assert(guardOtpEmail('x@example.com', '1.1.1.1').allowed, 'FIX-044: test suites skip the caps');
+    const authFamily = ['register.ts', 'login.ts', 'otp.ts', 'password.ts']
+      .map((f) => fs.readFileSync(path.join(__dirname, '../src/controllers/auth', f), 'utf8'));
+    assert(authFamily.every((c) => c.includes('allowOtpEmail(req, res,')), 'FIX-044: sign-up, login, resend and reset all count against the code email caps');
+    assert(srv.includes("authRateLimiter(10, 3600, 'signup')") && srv.includes("authRateLimiter(15, 3600, 'otp-email')"), 'FIX-044: hourly per-visitor limits on sign-up and code emails');
+    assert(!authFamily[2].includes("'Account not found with this email' });\n      return;\n    }\n\n    const effectiveRole = requestedRole || user.role || null;\n    if (effectiveRole && effectiveRole !== requestedRole) {\n      const roleLockout = await getVerificationLockoutAsync(cleanEmail, effectiveRole);\n      if (roleLockout.isLocked) {\n        res.status(429).json({\n          success: false,\n          message: `Account is temporarily locked"), 'FIX-044: resend does not reveal whether an email has an account');
+
+    const { requireHuman } = await import('../src/middleware/requireHuman');
+    const savedSecret = process.env.TURNSTILE_SECRET_KEY;
+    const savedSuite = process.env.MEDIARCA_TEST_SUITE;
+    const mkRes = () => { const r: any = { statusCode: 200, body: null }; r.status = (c: number) => { r.statusCode = c; return r; }; r.json = (b: any) => { r.body = b; return r; }; return r; };
+    try {
+      delete process.env.TURNSTILE_SECRET_KEY;
+      let passedThrough = false;
+      await requireHuman({ headers: {}, body: {} } as any, mkRes(), () => { passedThrough = true; });
+      assert(passedThrough, 'FIX-045: bot check is off until TURNSTILE_SECRET_KEY is set');
+      process.env.TURNSTILE_SECRET_KEY = 'test-secret';
+      delete process.env.MEDIARCA_TEST_SUITE;
+      const r = mkRes();
+      let nextCalled = false;
+      await requireHuman({ headers: {}, body: { email: 'a@b.co' } } as any, r, () => { nextCalled = true; });
+      assert(!nextCalled && r.statusCode === 400 && r.body?.code === 'BOT_CHECK_REQUIRED', 'FIX-045: a form post without a bot-check token is refused');
+    } finally {
+      if (savedSecret === undefined) delete process.env.TURNSTILE_SECRET_KEY; else process.env.TURNSTILE_SECRET_KEY = savedSecret;
+      if (savedSuite !== undefined) process.env.MEDIARCA_TEST_SUITE = savedSuite;
+    }
+    assert(
+      /app\.post\(\s*\['\/api\/auth\/register', '\/api\/auth\/forgot-password', '\/api\/receptionists\/apply', '\/api\/receptionist\/apply'\],\s*requireHuman/.test(srv) &&
+      srv.includes("app.post(['/api/contact', '/api/contact-us'], contactHoneypot, requireHuman);"),
+      'FIX-045: bot check guards sign-up, forgot password, receptionist apply and the contact form'
+    );
   }
 
   console.log(`\n========================================`);

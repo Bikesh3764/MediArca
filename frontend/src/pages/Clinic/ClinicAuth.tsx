@@ -9,6 +9,10 @@ import { GoogleLogin } from '@react-oauth/google';
 import { isGoogleConfigured } from '../../config/auth';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 import { useToast } from '../../context/ToastContext';
+import { preloadBotCheck } from '../../services/botCheck';
+
+// Start loading the bot check as soon as this page opens
+preloadBotCheck();
 
 export const ClinicAuth: React.FC = () => {
   const { toast } = useToast();

@@ -9,6 +9,10 @@ import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../.
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 import { useToast } from '../../context/ToastContext';
 import { safeStorage } from '../../utils/safeStorage';
+import { preloadBotCheck } from '../../services/botCheck';
+
+// Start loading the bot check as soon as this page opens
+preloadBotCheck();
 
 export const ReceptionistAuth: React.FC = () => {
   const { toast } = useToast();

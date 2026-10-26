@@ -16,7 +16,8 @@ import {
 import { clearPasswordLoginState } from '../../utils/securityStore';
 import { markPasswordChanged } from '../../utils/sessionRevocation';
 import { isDemoAccountEmail } from '../../utils/demoAccounts';
-import { sanitizeUserPayload } from './helpers';
+import { getClientIp } from '../../utils/clientIp';
+import { allowOtpEmail, sanitizeUserPayload } from './helpers';
 
 const ROLES = ['PATIENT', 'DOCTOR', 'CLINIC', 'RECEPTIONIST', 'ADMIN'];
 const RESET_SENT_MESSAGE = 'If an account exists for this email, we sent a 6-digit code to it.';
@@ -69,6 +70,8 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
       res.json({ success: true, message: RESET_SENT_MESSAGE, data: { cooldownSeconds: 60 } });
       return;
     }
+
+    if (!allowOtpEmail(req, res, user.email)) return;
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     await prisma.user.update({
@@ -169,8 +172,8 @@ export const resetPasswordWithCode = async (req: Request, res: Response): Promis
     });
     markPasswordChanged(user.id, passwordChangedAt);
     await clearVerificationStateAsync(cleanEmail, requestedRole);
-    await clearPasswordLoginState(cleanEmail, requestedRole, req.ip || null);
-    await clearPasswordLoginState(cleanEmail, null, req.ip || null);
+    await clearPasswordLoginState(cleanEmail, requestedRole, getClientIp(req));
+    await clearPasswordLoginState(cleanEmail, null, getClientIp(req));
 
     res.json({ success: true, message: 'Password updated. Sign in with your new password.' });
   } catch (error: any) {

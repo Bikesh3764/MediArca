@@ -8,7 +8,8 @@ import { getJwtSecret } from '../../middleware/authMiddleware';
 import { sendVerificationOtpEmail } from '../../utils/emailService';
 import { checkPasswordLoginLockout, recordFailedPasswordLogin, clearPasswordLoginState, SecurityStoreUnavailableError } from '../../utils/securityStore';
 import { getVerificationLockoutAsync, checkResendCooldown, recordResendAttempt } from '../../utils/otpSecurity';
-import { googleClient, sanitizeUserPayload } from './helpers';
+import { getTrustedClientIp } from '../../utils/clientIp';
+import { allowOtpEmail, googleClient, sanitizeUserPayload } from './helpers';
 import { isDemoAccountEmail, isDemoLockEnabled } from '../../utils/demoAccounts';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -21,7 +22,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
-    const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
+    // Cloudflare's CF-Connecting-IP first: X-Forwarded-For can be faked by the client (FIX-043)
+    const clientIp = getTrustedClientIp(req) || req.ip || req.socket?.remoteAddress || 'unknown';
 
     const cleanLoginEmail = email.toLowerCase().trim();
     const requestedRole = typeof role === 'string' && role.trim() ? role.toUpperCase().trim() : null;
@@ -302,6 +304,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         });
         return;
       }
+
+      if (!allowOtpEmail(req, res, user.email)) return;
 
       const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);

@@ -1,3 +1,4 @@
+import { withBotCheck } from '../../botCheck';
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { ContactMessageItem, Doctor } from '../types';
@@ -88,11 +89,12 @@ export const adminApi = {
     phone?: string;
     subject: string;
     message: string;
+    website?: string;
   }): Promise<{ success: boolean; message: string }> {
     const res = await safeFetch(`${API_BASE_URL}/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(await withBotCheck(data)),
     });
     return handleResponse(res);
   },

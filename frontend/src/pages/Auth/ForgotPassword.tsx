@@ -4,6 +4,10 @@ import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { api } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { preloadBotCheck } from '../../services/botCheck';
+
+// Start loading the bot check as soon as this page opens
+preloadBotCheck();
 
 type Role = 'PATIENT' | 'DOCTOR' | 'CLINIC' | 'RECEPTIONIST' | 'ADMIN';
 

@@ -80,6 +80,8 @@ import { loadRecentPasswordChanges } from './utils/sessionRevocation';
 import { publicResponseCache, invalidatePublicCacheOnWrite } from './middleware/publicResponseCache';
 import { streamLiveEvents, publishOnQueueWrite, closeAllLiveStreams } from './utils/liveEvents';
 import { requestLogger, receiveClientError } from './middleware/requestLogger';
+import { getTrustedClientIp } from './utils/clientIp';
+import { requireHuman } from './middleware/requireHuman';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -297,7 +299,10 @@ export const normalizeRateLimitPath = (rawPath: string, baseUrl?: string): strin
   if (publicPrefixMatch) {
     return publicPrefixMatch[1].toLowerCase();
   }
+  // Lowercase and drop trailing slashes so /API/Auth/Login/ shares a bucket with /api/auth/login
   return clean
+    .toLowerCase()
+    .replace(/\/+$/, '')
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\/|$)/gi, '/:id')
     .replace(/\/\d+(?=\/|$)/g, '/:id');
 };
@@ -315,7 +320,8 @@ export const authRateLimiter = (
   return (req: Request, res: Response, next: NextFunction): void => {
     // Secure client IP extraction: Rely on Express-computed req.ip which respects 'trust proxy'
     // Avoid manual x-forwarded-for parsing that is susceptible to spoofing
-    const ip = req.ip || req.socket?.remoteAddress || 'client';
+    // Cloudflare's CF-Connecting-IP first: X-Forwarded-For can be faked by the client (FIX-043)
+    const ip = getTrustedClientIp(req) || req.ip || req.socket?.remoteAddress || 'client';
 
     // User-scoped client differentiation prevents false-positive 429s on shared clinic Wi-Fi.
     // If req.user is not yet attached (e.g. public catalog routes mounted before auth),
@@ -440,10 +446,17 @@ app.use(
   ['/api/auth/login', '/api/auth/register', '/api/auth/google', '/api/receptionists/apply', '/api/receptionist/apply'],
   authRateLimiter(40, 60)
 );
+// New accounts: 10 an hour per visitor across sign-up and receptionist applications (FIX-044)
+app.use(
+  ['/api/auth/register', '/api/receptionists/apply', '/api/receptionist/apply'],
+  authRateLimiter(10, 3600, 'signup')
+);
 
 // Mount dedicated rate limiting on OTP verification & resend endpoints (FIX-005)
 app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
 app.use(['/api/auth/resend-otp', '/api/auth/forgot-password'], authRateLimiter(5, 60));
+// Code emails across resend and reset: 15 an hour per visitor (FIX-044)
+app.use(['/api/auth/resend-otp', '/api/auth/forgot-password'], authRateLimiter(15, 3600, 'otp-email'));
 app.use(['/api/auth/reset-password', '/api/auth/change-password'], authRateLimiter(10, 60));
 
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
@@ -467,7 +480,21 @@ app.post('/api/client-errors', authRateLimiter(20, 60, 'client-errors'), receive
 
 // Live updates stream (Server-Sent Events)
 app.get('/api/events', authenticate, streamLiveEvents);
+// Bot check on public forms that create accounts or send email (FIX-045)
+app.post(
+  ['/api/auth/register', '/api/auth/forgot-password', '/api/receptionists/apply', '/api/receptionist/apply'],
+  requireHuman
+);
 app.use('/api/auth', authRoutes);
+// Hidden "website" field: people never fill it, simple bots do. Pretend it worked and drop it.
+const contactHoneypot = (req: Request, res: Response, next: NextFunction): void => {
+  if (typeof req.body?.website === 'string' && req.body.website.trim()) {
+    res.status(201).json({ success: true, message: 'Thank you! Your message has been received.' });
+    return;
+  }
+  next();
+};
+app.post(['/api/contact', '/api/contact-us'], contactHoneypot, requireHuman);
 app.post(['/api/contact', '/api/contact-us'], contactRateLimiter, submitContactMessage);
 app.put(['/api/users/profile', '/api/user/profile'], authenticate, blockDemoAccountChanges, updateProfile);
 app.put(['/api/doctors/profile', '/api/doctor/profile'], authenticate, blockDemoAccountChanges, updateProfile);

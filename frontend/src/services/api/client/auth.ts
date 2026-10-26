@@ -1,3 +1,4 @@
+import { withBotCheck } from '../../botCheck';
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { User } from '../types';
@@ -9,7 +10,7 @@ export const authApi = {
     const res = await safeFetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(await withBotCheck(body)),
     });
     return handleResponse(res);
   },
@@ -36,7 +37,7 @@ export const authApi = {
     const res = await safeFetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, role }),
+      body: JSON.stringify(await withBotCheck({ email, role })),
     });
     return handleResponse(res);
   },

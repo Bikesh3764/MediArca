@@ -3,6 +3,10 @@ import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { api } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 import { useToast } from '../../context/ToastContext';
+import { preloadBotCheck } from '../../services/botCheck';
+
+// Start loading the bot check as soon as this page opens
+preloadBotCheck();
 
 export const ContactUs: React.FC = () => {
   const { toast } = useToast();
@@ -11,6 +15,8 @@ export const ContactUs: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('General Inquiry');
   const [message, setMessage] = useState('');
+  // Trap field: hidden from people, filled in by simple bots
+  const [website, setWebsite] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +32,7 @@ export const ContactUs: React.FC = () => {
         phone: phone ? formatIndianPhone(phone) : undefined,
         subject,
         message,
+        ...(website ? { website } : {}),
       });
       setSubmitted(true);
       toast.success('Message sent. We’ll reply by email.');
@@ -102,6 +109,10 @@ export const ContactUs: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label htmlFor="contact-website">Website</label>
+              <input id="contact-website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            </div>
             <div>
               <label htmlFor="contact-f-1" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Name *</label>
               <input

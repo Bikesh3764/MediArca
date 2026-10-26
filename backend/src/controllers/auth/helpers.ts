@@ -1,4 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
+import type { Request, Response } from 'express';
+import { guardOtpEmail } from '../../utils/otpEmailBudget';
+import { getClientIp } from '../../utils/clientIp';
 
 export const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -85,4 +88,16 @@ export const sanitizeUserPayload = (user: any) => {
 
   (safeUser as any).needsProfileCompletion = checkNeedsProfileCompletion(user);
   return safeUser;
+};
+
+/**
+ * Counts one code email against the inbox, visitor and site caps (FIX-044).
+ * Sends the 429 itself and returns false when a cap is reached.
+ */
+export const allowOtpEmail = (req: Request, res: Response, email: string): boolean => {
+  const budget = guardOtpEmail(email, getClientIp(req));
+  if (budget.allowed) return true;
+  res.setHeader('Retry-After', String(budget.retryAfterSeconds || 60));
+  res.status(429).json({ success: false, message: budget.message, retryAfterSeconds: budget.retryAfterSeconds });
+  return false;
 };

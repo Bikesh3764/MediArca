@@ -9,6 +9,10 @@ import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecial
 import { formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 import { useToast } from '../../context/ToastContext';
+import { preloadBotCheck } from '../../services/botCheck';
+
+// Start loading the bot check as soon as this page opens
+preloadBotCheck();
 
 export interface SignupProps {
   initialRole?: 'PATIENT' | 'DOCTOR';

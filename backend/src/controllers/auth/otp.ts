@@ -8,7 +8,7 @@ import { findExistingAccountByPhone, getPhoneSearchVariants } from '../../utils/
 import { sendVerificationOtpEmail } from '../../utils/emailService';
 import { SecurityStoreUnavailableError } from '../../utils/securityStore';
 import { recordFailedVerificationAttemptAsync, getVerificationLockoutAsync, clearVerificationStateAsync, checkResendCooldown, recordResendAttempt } from '../../utils/otpSecurity';
-import { sanitizeUserPayload } from './helpers';
+import { allowOtpEmail, sanitizeUserPayload } from './helpers';
 import { createNotification, withDr } from '../../services/notificationService';
 
 export const verifyEmailOtp = async (req: Request, res: Response): Promise<void> => {
@@ -275,7 +275,9 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (!user) {
-      res.status(404).json({ success: false, message: 'Account not found with this email' });
+      // Same reply as a real send, so this can't be used to check which emails have accounts
+      recordResendAttempt(cleanEmail, requestedRole);
+      res.json({ success: true, message: 'A fresh 6-digit verification code has been sent to your email.', data: {} });
       return;
     }
 
@@ -305,6 +307,8 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
       res.status(400).json({ success: false, message: 'Email is already verified. Please sign in.' });
       return;
     }
+
+    if (!allowOtpEmail(req, res, cleanEmail)) return;
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);

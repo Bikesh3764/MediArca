@@ -9,7 +9,7 @@ import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } fro
 import { sendVerificationOtpEmail } from '../../utils/emailService';
 import { SecurityStoreUnavailableError } from '../../utils/securityStore';
 import { getVerificationLockoutAsync, checkResendCooldown, recordResendAttempt } from '../../utils/otpSecurity';
-import { sanitizeClinicalHistoryList, sanitizeUserPayload } from './helpers';
+import { allowOtpEmail, sanitizeClinicalHistoryList, sanitizeUserPayload } from './helpers';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -134,6 +134,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         });
         return;
       }
+
+      if (!allowOtpEmail(req, res, cleanEmail)) return;
 
       // Existing unverified account: update credentials, ensure role profile exists, and allow completing verification!
       const salt = await bcrypt.genSalt(10);
@@ -313,6 +315,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+
+    if (!allowOtpEmail(req, res, cleanEmail)) return;
 
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);

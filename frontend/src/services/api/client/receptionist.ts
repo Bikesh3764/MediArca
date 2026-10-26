@@ -1,3 +1,4 @@
+import { withBotCheck } from '../../botCheck';
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { DoctorSlot } from '../schedule';
@@ -176,7 +177,7 @@ export const receptionistApi = {
     const res = await safeFetch(`${API_BASE_URL}/receptionists/apply`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify(await withBotCheck(data)),
     });
     return handleResponse(res);
   },
