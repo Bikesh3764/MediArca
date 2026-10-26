@@ -65,7 +65,7 @@ export const DoctorsTab: React.FC = () => {
                           key={st}
                           type="button"
                           onClick={() => setDoctorStatusFilter(st)}
-                          className={`px-3 py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
+                          className={`h-9 sm:h-auto px-3 sm:py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
                             doctorStatusFilter === st
                               ? 'bg-white text-[#1d1d1f]  font-semibold'
                               : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -80,7 +80,7 @@ export const DoctorsTab: React.FC = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="table-stack w-full text-left text-xs">
                     <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
                         <th className="py-3 px-3">Doctor</th>
@@ -127,14 +127,14 @@ export const DoctorsTab: React.FC = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 font-normal text-[#1d1d1f]">{doc.specialty}</td>
-                          <td className="py-3.5 px-3 text-[#86868b]">
+                          <td data-label="Specialty" className="py-3.5 px-3 font-normal text-[#1d1d1f]">{doc.specialty}</td>
+                          <td data-label="Shift" className="py-3.5 px-3 text-[#86868b]">
                             {doc.checkingStartTime
                               ? `${format12Hour(doc.checkingStartTime)} – ${format12Hour(doc.checkingEndTime)}`
                               : 'Flexible'}
                           </td>
-                          <td className="py-3.5 px-3 font-semibold text-[#1d1d1f]">₹{doc.consultationFee}</td>
-                          <td className="py-3.5 px-3">
+                          <td data-label="Fee" className="py-3.5 px-3 font-semibold text-[#1d1d1f]">₹{doc.consultationFee}</td>
+                          <td data-label="Status" className="py-3.5 px-3">
                             {renderStatusBadge(getPractitionerStatus(doc))}
                           </td>
                           <td className="py-3.5 px-3 text-right">

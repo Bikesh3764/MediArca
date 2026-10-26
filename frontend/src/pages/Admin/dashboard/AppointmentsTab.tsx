@@ -208,15 +208,15 @@ export const AppointmentsTab: React.FC = () => {
 
                     {/* Date Quick Filter Segmented Control + Custom Date Picker */}
                     <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#e5e5ea]">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="inline-flex items-center p-1 bg-white rounded-full border border-[#e5e5ea]">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+                        <div className="inline-flex items-center p-1 bg-white rounded-full border border-[#e5e5ea] max-w-full overflow-x-auto no-scrollbar">
                           <button
                             type="button"
                             onClick={() => {
                               setBookingDateFilter('ALL');
                               setBookingCustomDate('');
                             }}
-                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                            className={`h-8 px-3 rounded-full text-xs whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                               bookingDateFilter === 'ALL'
                                 ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -231,7 +231,7 @@ export const AppointmentsTab: React.FC = () => {
                               setBookingDateFilter('TODAY');
                               setBookingCustomDate('');
                             }}
-                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                            className={`h-8 px-3 rounded-full text-xs whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                               bookingDateFilter === 'TODAY'
                                 ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -246,7 +246,7 @@ export const AppointmentsTab: React.FC = () => {
                               setBookingDateFilter('TOMORROW');
                               setBookingCustomDate('');
                             }}
-                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                            className={`h-8 px-3 rounded-full text-xs whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                               bookingDateFilter === 'TOMORROW'
                                 ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -261,7 +261,7 @@ export const AppointmentsTab: React.FC = () => {
                               setBookingDateFilter('PAST');
                               setBookingCustomDate('');
                             }}
-                            className={`h-8 px-3 rounded-full text-xs transition-all cursor-pointer ${
+                            className={`h-8 px-3 rounded-full text-xs whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                               bookingDateFilter === 'PAST'
                                 ? 'bg-[#f5f5f7] text-[#1d1d1f] font-semibold  border border-black/5'
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -319,7 +319,7 @@ export const AppointmentsTab: React.FC = () => {
                   {/* MODE 1: ALL RECORDS FLAT TABLE */}
                   {bookingViewMode === 'table' && filteredAppointments.length > 0 && (
                     <div className="overflow-x-auto mt-5">
-                      <table className="w-full text-left text-xs">
+                      <table className="table-stack w-full text-left text-xs">
                         <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                           <tr>
                             <th className="py-3 px-3">Date</th>
@@ -337,14 +337,14 @@ export const AppointmentsTab: React.FC = () => {
                             const clinicInfo = resolveClinic(appt);
                             return (
                               <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
-                                <td className="py-3 px-3">
+                                <td data-label="Date" className="py-3 px-3">
                                   <div className="flex items-center gap-1.5">
                                     <span className="font-semibold text-[#1d1d1f]">{formatDisplayDate(appt.appointmentDate)}</span>
                                     {getDateBadge(appt.appointmentDate)}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
-                                <td className="py-3 px-3">
+                                <td data-label="Token" className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                <td data-label="Patient" className="py-3 px-3">
                                   <div>
                                     <span className="font-normal text-[#1d1d1f]">
                                       {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
@@ -359,7 +359,7 @@ export const AppointmentsTab: React.FC = () => {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="py-3 px-3">
+                                <td data-label="Doctor" className="py-3 px-3">
                                   <div>
                                     <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                     <span className="text-[11px] text-[#0066cc] block mt-0.5">
@@ -367,7 +367,7 @@ export const AppointmentsTab: React.FC = () => {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="py-3 px-3">
+                                <td data-label="Clinic" className="py-3 px-3">
                                   <div className="flex items-start gap-1.5">
                                     <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                     <div>
@@ -380,8 +380,8 @@ export const AppointmentsTab: React.FC = () => {
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
+                                <td data-label="Status" className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                <td data-label="Time" className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                 <td className="py-3 px-3 text-right">
                                   <button
                                     type="button"
@@ -432,7 +432,7 @@ export const AppointmentsTab: React.FC = () => {
 
                             {/* Date Appointments Table */}
                             <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs">
+                              <table className="table-stack w-full text-left text-xs">
                                 <thead className="border-b border-[#f0f0f2] text-[#86868b] font-semibold bg-[#fafafa]">
                                   <tr>
                                     <th className="py-2.5 px-3">Token #</th>
@@ -449,8 +449,8 @@ export const AppointmentsTab: React.FC = () => {
                                     const clinicInfo = resolveClinic(appt);
                                     return (
                                       <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
-                                        <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
-                                        <td className="py-3 px-3">
+                                        <td data-label="Token" className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                        <td data-label="Patient" className="py-3 px-3">
                                           <div>
                                             <span className="font-normal text-[#1d1d1f]">
                                               {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
@@ -465,7 +465,7 @@ export const AppointmentsTab: React.FC = () => {
                                             </span>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-3">
+                                        <td data-label="Doctor" className="py-3 px-3">
                                           <div>
                                             <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                             <span className="text-[11px] text-[#0066cc] block mt-0.5">
@@ -473,7 +473,7 @@ export const AppointmentsTab: React.FC = () => {
                                             </span>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-3">
+                                        <td data-label="Clinic" className="py-3 px-3">
                                           <div className="flex items-start gap-1.5">
                                             <Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0 mt-0.5" />
                                             <div>
@@ -486,8 +486,8 @@ export const AppointmentsTab: React.FC = () => {
                                             </div>
                                           </div>
                                         </td>
-                                        <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                        <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
+                                        <td data-label="Status" className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                        <td data-label="Time" className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                         <td className="py-3 px-3 text-right">
                                           <button
                                             type="button"
@@ -551,7 +551,7 @@ export const AppointmentsTab: React.FC = () => {
 
                             {/* Clinic Appointments Table */}
                             <div className="overflow-x-auto">
-                              <table className="w-full text-left text-xs">
+                              <table className="table-stack w-full text-left text-xs">
                                 <thead className="border-b border-[#f0f0f2] text-[#86868b] font-semibold bg-[#fafafa]">
                                   <tr>
                                     <th className="py-2.5 px-3">Date</th>
@@ -566,14 +566,14 @@ export const AppointmentsTab: React.FC = () => {
                                 <tbody className="divide-y divide-[#f0f0f0]">
                                   {items.map((appt) => (
                                     <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
-                                      <td className="py-3 px-3">
+                                      <td data-label="Date" className="py-3 px-3">
                                         <div className="flex items-center gap-1.5">
                                           <span className="font-semibold text-[#1d1d1f]">{formatDisplayDate(appt.appointmentDate)}</span>
                                           {getDateBadge(appt.appointmentDate)}
                                         </div>
                                       </td>
-                                      <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
-                                      <td className="py-3 px-3">
+                                      <td data-label="Token" className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                      <td data-label="Patient" className="py-3 px-3">
                                         <div>
                                           <span className="font-normal text-[#1d1d1f]">
                                             {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
@@ -588,7 +588,7 @@ export const AppointmentsTab: React.FC = () => {
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="py-3 px-3">
+                                      <td data-label="Doctor" className="py-3 px-3">
                                         <div>
                                           <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
                                           <span className="text-[11px] text-[#0066cc] block mt-0.5">
@@ -596,8 +596,8 @@ export const AppointmentsTab: React.FC = () => {
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
-                                      <td className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
+                                      <td data-label="Status" className="py-3 px-3">{renderAppointmentStatusBadge(appt.status)}</td>
+                                      <td data-label="Time" className="py-3 px-3 text-[#86868b] font-normal">{appt.estimatedTime || 'N/A'}</td>
                                       <td className="py-3 px-3 text-right">
                                         <button
                                           type="button"

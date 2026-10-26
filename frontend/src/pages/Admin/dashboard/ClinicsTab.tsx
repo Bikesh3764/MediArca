@@ -63,7 +63,7 @@ export const ClinicsTab: React.FC = () => {
                           key={st}
                           type="button"
                           onClick={() => setClinicStatusFilter(st)}
-                          className={`px-3 py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
+                          className={`h-9 sm:h-auto px-3 sm:py-1 rounded-full text-xs font-normal transition-all cursor-pointer whitespace-nowrap ${
                             clinicStatusFilter === st
                               ? 'bg-white text-[#1d1d1f]  font-semibold'
                               : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -78,7 +78,7 @@ export const ClinicsTab: React.FC = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="table-stack w-full text-left text-xs">
                     <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
                         <th className="py-3 px-3">Clinic</th>
@@ -115,11 +115,13 @@ export const ClinicsTab: React.FC = () => {
                                 {c.phone && <div className="text-[11px] text-[#86868b]">{c.phone}</div>}
                               </div>
                             </td>
-                            <td className="py-3.5 px-3 text-[#1d1d1f]">
-                              <div>{c.address}</div>
-                              <div className="text-[#86868b] text-[11px]">{c.city}</div>
+                            <td data-label="Location" className="py-3.5 px-3 text-[#1d1d1f]">
+                              <div>
+                                <div>{c.address}</div>
+                                <div className="text-[#86868b] text-[11px]">{c.city}</div>
+                              </div>
                             </td>
-                            <td className="py-3.5 px-3">
+                            <td data-label="Team" className="py-3.5 px-3">
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-[#1d1d1f] font-normal">
                                   {c._count?.doctors ?? c.doctorsCount ?? 0} doctors
@@ -129,7 +131,7 @@ export const ClinicsTab: React.FC = () => {
                                 </span>
                               </div>
                             </td>
-                            <td className="py-3.5 px-3">
+                            <td data-label="Status" className="py-3.5 px-3">
                               {renderStatusBadge(getPractitionerStatus(c))}
                             </td>
                             <td className="py-3.5 px-3 text-right">
