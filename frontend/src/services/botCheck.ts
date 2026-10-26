@@ -77,6 +77,7 @@ export const getBotCheckToken = async (): Promise<string | undefined> => {
       widgetId = ts.render(host, {
         sitekey: SITE_KEY,
         appearance: 'interaction-only',
+        theme: 'light',
         callback: (token: string) => finish(token),
         'error-callback': () => finish(undefined),
         'expired-callback': () => finish(undefined),
