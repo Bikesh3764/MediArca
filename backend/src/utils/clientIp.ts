@@ -4,10 +4,10 @@ import type { Request } from 'express';
 /**
  * The visitor's real IP address, used as the rate-limit key.
  *
- * Render sits behind Cloudflare. Cloudflare always overwrites `CF-Connecting-IP` with the
- * address that actually connected, so a client can't fake it. `X-Forwarded-For` keeps
- * whatever the client sent at its start, and a fake value there used to give every request
- * a fresh rate-limit bucket (FIX-043). Local runs have no Cloudflare and use `req.ip`.
+ * Render sits behind Cloudflare. With `trust proxy 1`, `req.ip` is Render's internal load
+ * balancer (10.x), so every visitor used to share a few rate-limit buckets (FIX-043). Cloudflare
+ * sets `CF-Connecting-IP` to the address that actually connected and refuses requests that
+ * try to send their own, so it can't be faked. Local runs have no Cloudflare and use `req.ip`.
  */
 export const getTrustedClientIp = (req: Request): string | null => {
   const cf = req.headers?.['cf-connecting-ip'];

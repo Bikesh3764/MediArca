@@ -32,10 +32,5 @@ export const receiveClientError = (req: Request, res: Response): void => {
   console.error(
     `[ClientError] ${clip(body.message, 300)} | page=${page} | ua=${clip(req.headers['user-agent'], 160)}\n${clip(body.stack, 1500)}`
   );
-  // TEMP (FIX-043 check): which proxy headers reach the app. Remove after checking.
-  if (String(body.message || '').startsWith('ipdiag')) {
-    const h = req.headers;
-    console.log(`[IpDiag] ip=${req.ip} sock=${req.socket?.remoteAddress} xff=${h['x-forwarded-for']} cf=${h['cf-connecting-ip']} tci=${h['true-client-ip']} xri=${h['x-real-ip']} cfray=${h['cf-ray']}`);
-  }
   res.status(204).end();
 };
