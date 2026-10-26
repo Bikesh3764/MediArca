@@ -7,7 +7,7 @@ import { executeScrollReset, setManualScrollRestoration } from '../../utils/scro
  *
  * Implements FIX-020 from MASTER_FIX_PLAN.md:
  * - Automatically and reliably resets scroll position to the top on page-level route changes.
- * - Compatible with React Router HashRouter (#/route).
+ * - Works with React Router's BrowserRouter (/route).
  * - Compatible with route-level lazy loading (FIX-011) and dynamic chunk loading.
  * - Resets all possible scroll roots: window, document.documentElement, document.body, and main container.
  * - Uses immediate reset + dual requestAnimationFrame safety guards for asynchronous layout rendering.

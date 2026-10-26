@@ -23,7 +23,7 @@ export const reportClientError = (error: unknown): void => {
       body: JSON.stringify({
         message: err.message.slice(0, 300),
         stack: (err.stack || '').slice(0, 1500),
-        url: `${window.location.pathname}${window.location.hash.split('?')[0]}`,
+        url: window.location.pathname,
       }),
     }).catch(() => {});
   } catch {

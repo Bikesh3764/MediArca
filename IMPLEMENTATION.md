@@ -24,7 +24,7 @@ MediArca is a modern, fullstack clinical queue and healthcare operations platfor
  ┌────────────────────────────────────────────────────────┐
  │   Frontend Client (React 19, TypeScript, Vite)         │
  │   • Apple Design System (HIG, SF Pro, #f5f5f7 canvas)  │
- │   • HashRouter (GitHub Pages SPA Compatibility)        │
+ │   • BrowserRouter (clean addresses)                    │
  │   • Tailwind CSS + Lucide Icons + Google OAuth 2.0     │
  └──────────────────────────┬─────────────────────────────┘
                             │ HTTPS / REST API

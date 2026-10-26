@@ -62,7 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
     this.setState({ hasError: false, error: null });
     if (!this.props.isInline) {
-      window.location.href = '#/';
+      window.location.href = import.meta.env.BASE_URL || '/';
     }
   };
 
@@ -123,7 +123,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   size="md"
                   onClick={() => {
                     this.setState({ hasError: false, error: null });
-                    window.location.href = '#/';
+                    window.location.href = import.meta.env.BASE_URL || '/';
                   }}
                   className="flex items-center gap-2 text-xs h-9 px-4 font-normal"
                 >

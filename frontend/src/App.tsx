@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
-import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { siteBase } from './utils/siteUrl';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
@@ -327,7 +328,7 @@ export function App() {
         <NotificationProvider>
           <ToastProvider>
             <ConfirmProvider>
-              <Router>
+              <Router basename={siteBase() || '/'}>
                 <ScrollToTop />
                 <AppShell />
               </Router>

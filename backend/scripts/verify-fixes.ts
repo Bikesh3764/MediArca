@@ -7170,7 +7170,17 @@ Follow-up Date: 2026-10-15`;
     assert(appTsxContent.includes("import('./pages/Home')"), 'Test A: Home is dynamically imported via lazy()');
 
     // Test B: Router & Architecture preservation
-    assert(appTsxContent.includes('HashRouter as Router'), 'Test B: Preserves HashRouter for GitHub Pages single-page compatibility');
+    // Owner chose clean addresses (mediarca.in/doctors) over #/ on 2026-10-27; old #/ links are rewritten on load
+    assert(appTsxContent.includes('BrowserRouter as Router'), 'Test B: Uses BrowserRouter for clean page addresses');
+    assert(appTsxContent.includes('basename={siteBase()'), 'Test B: Router basename follows the build base (GitHub Pages /MediArca/)');
+    {
+      const mainTsx = fs.readFileSync(path.join(__dirname, '../../frontend/src/main.tsx'), 'utf8');
+      const siteUrlTs = fs.readFileSync(path.join(__dirname, '../../frontend/src/utils/siteUrl.ts'), 'utf8');
+      assert(mainTsx.indexOf('upgradeLegacyHashUrl();') > -1 && mainTsx.indexOf('upgradeLegacyHashUrl();') < mainTsx.indexOf('createRoot('), 'Test B: Old #/ links are rewritten before the app renders');
+      assert(!siteUrlTs.includes('#${'), 'Test B: appUrl builds links without #/');
+      const redirects = fs.readFileSync(path.join(__dirname, '../../frontend/public/_redirects'), 'utf8');
+      assert(/\/\*\s+\/index\.html\s+200/.test(redirects), 'Test B: Cloudflare Pages serves the app for every page address');
+    }
     assert(appTsxContent.includes('<ScrollToTop />'), 'Test B: Preserves ScrollToTop component');
     assert(appTsxContent.includes('<ErrorBoundary>'), 'Test B: Preserves ErrorBoundary at root for dynamic chunk failure protection');
     assert(appTsxContent.includes('const RouteLoadingFallback'), 'Test B: RouteLoadingFallback component is defined with Apple design spinner');

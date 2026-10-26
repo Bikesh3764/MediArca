@@ -121,5 +121,5 @@ The master test suite additionally verifies:
 - **Email OTP** is sent from a personal Gmail account (500/day limit, spam risk).
 - **Redis not set up in production**: rate limits, code email caps and login lockouts live in memory and reset whenever the free server restarts. Adding a Redis URL (`REDIS_URL`) fixes this; it needs an account with a Redis provider.
 - **Demo doctor linked to a real clinic** in production (owner decision: kept on purpose).
-- **Page addresses use `#/`** (HashRouter), which a test protects for GitHub Pages. Search engines only see the home page; switching to normal addresses needs the owner to agree to change that test.
+- ~~Page addresses use `#/`~~ **Done 2026-10-27** (owner asked): clean addresses like `mediarca.in/doctors` (BrowserRouter). Old `#/` links, including printed QR posters, are rewritten on load by `upgradeLegacyHashUrl()` in `frontend/src/utils/siteUrl.ts`. Cloudflare serves the app for every path via `public/_redirects`; GitHub Pages via the `404.html` copy.
 
