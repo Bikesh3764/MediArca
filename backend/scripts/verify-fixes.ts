@@ -10445,6 +10445,40 @@ Follow-up Date: 2026-10-15`;
     'Step 3: appointmentController integrates live queue cache and atomic mutation invalidation'
   );
 
+  // Brevo HTTPS email (Render's free plan blocks SMTP ports). Uses a fake fetch: no real email is sent.
+  {
+    const { sendViaBrevo, isBrevoConfigured } = await import('../src/utils/brevoMail');
+    const saved = { key: process.env.BREVO_API_KEY, sender: process.env.BREVO_SENDER_EMAIL };
+    try {
+      delete process.env.BREVO_API_KEY;
+      assert(!isBrevoConfigured(), 'Brevo: off when BREVO_API_KEY is not set (Gmail SMTP is used)');
+
+      process.env.BREVO_API_KEY = 'test-key';
+      process.env.BREVO_SENDER_EMAIL = 'sender@example.com';
+      let seen: any = null;
+      const okFetch: any = async (url: string, init: any) => {
+        seen = { url, headers: init.headers, body: JSON.parse(init.body) };
+        return { ok: true, status: 201, json: async () => ({ messageId: '<abc@brevo>' }) };
+      };
+      const sent = await sendViaBrevo({ to: 'p@example.com', toName: 'Asha', subject: 'S', html: '<b>1</b>', text: '1' }, okFetch);
+      assert(sent.messageId === '<abc@brevo>', 'Brevo: returns the message id on success');
+      assert(seen.url === 'https://api.brevo.com/v3/smtp/email' && seen.headers['api-key'] === 'test-key', 'Brevo: posts to the HTTPS API with the key header');
+      assert(
+        seen.body.sender.email === 'sender@example.com' && seen.body.to[0].email === 'p@example.com' &&
+        seen.body.htmlContent === '<b>1</b>' && seen.body.textContent === '1',
+        'Brevo: sends sender, recipient, HTML and text'
+      );
+
+      const badFetch: any = async () => ({ ok: false, status: 401, json: async () => ({ code: 'unauthorized', message: 'Key not found' }) });
+      let rejected = '';
+      try { await sendViaBrevo({ to: 'p@example.com', subject: 'S', html: 'h', text: 't' }, badFetch); } catch (e: any) { rejected = e.message; }
+      assert(rejected.includes('401') && !rejected.includes('test-key'), 'Brevo: a rejected key throws (so SMTP fallback runs) without logging the key');
+    } finally {
+      if (saved.key === undefined) delete process.env.BREVO_API_KEY; else process.env.BREVO_API_KEY = saved.key;
+      if (saved.sender === undefined) delete process.env.BREVO_SENDER_EMAIL; else process.env.BREVO_SENDER_EMAIL = saved.sender;
+    }
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

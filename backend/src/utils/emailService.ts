@@ -1,5 +1,6 @@
 import nodemailer, { Transporter } from 'nodemailer';
 import prisma from '../config/database';
+import { isBrevoConfigured, sendViaBrevo } from './brevoMail';
 
 let cachedTransporter: Transporter | null = null;
 let cachedFrom: string = '';
@@ -212,6 +213,18 @@ export async function sendVerificationOtpEmail(
       console.log(`[emailService] Dispatching email verification OTP to ${toEmail}`);
     }
 
+    const subject = isReset ? `${otp} is your MediArca password reset code` : `${otp} is your MediArca verification code`;
+
+    // Brevo first (HTTPS works on Render's free plan); Gmail SMTP stays as the backup
+    if (isBrevoConfigured()) {
+      try {
+        const sent = await sendViaBrevo({ to: toEmail, toName: rawName, subject, html: htmlContent, text: textContent });
+        return { success: true, messageId: sent.messageId };
+      } catch (brevoErr: any) {
+        console.error(`[emailService] Brevo could not send to ${toEmail}: ${brevoErr?.message}. Trying SMTP.`);
+      }
+    }
+
     const { transporter, from } = await getTransporter();
     if (!transporter) {
       if (process.env.NODE_ENV !== 'production') {
@@ -223,7 +236,7 @@ export async function sendVerificationOtpEmail(
     const sendPromise = transporter.sendMail({
       from,
       to: toEmail,
-      subject: isReset ? `${otp} is your MediArca password reset code` : `${otp} is your MediArca verification code`,
+      subject,
       text: textContent,
       html: htmlContent,
     });
