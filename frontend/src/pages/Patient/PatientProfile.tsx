@@ -80,9 +80,9 @@ export const PatientProfile: React.FC = () => {
 
       updateUser(updated);
       setSuccessMsg('Profile updated.');
-      toast.success('Profile details saved successfully');
+      toast.success('Profile saved');
     } catch (err: any) {
-      const msg = err.message || 'Failed to update profile.';
+      const msg = err.message || 'Couldn’t update profile. Try again.';
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -129,7 +129,7 @@ export const PatientProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number
+                  Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
@@ -168,7 +168,7 @@ export const PatientProfile: React.FC = () => {
                   type="text"
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
-                  placeholder="Optional contact name & number"
+                  placeholder="Name and phone"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>

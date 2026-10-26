@@ -63,9 +63,9 @@ export const QueueTab: React.FC = () => {
               <div className="p-4 rounded-2xl bg-danger-soft border border-danger-line/80 text-danger text-xs flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-[14px] text-danger">Medical Practitioner License Suspended</h4>
+                  <h4 className="font-semibold text-[14px] text-danger">Account suspended</h4>
                   <p className="mt-0.5 leading-relaxed text-danger">
-                    Your account is suspended. Bookings are paused. Contact MediArca support.
+                    Bookings are paused. Please contact MediArca support.
                   </p>
                 </div>
               </div>
@@ -74,9 +74,9 @@ export const QueueTab: React.FC = () => {
               <div className="p-4 rounded-2xl bg-danger-soft border border-danger-line/80 text-danger text-xs flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-[14px] text-danger">Doctor Profile Application Rejected</h4>
+                  <h4 className="font-semibold text-[14px] text-danger">Profile not approved</h4>
                   <p className="mt-0.5 leading-relaxed text-danger">
-                    Your verification wasn’t approved. Contact MediArca support.
+                    Please contact MediArca support.
                   </p>
                 </div>
               </div>
@@ -85,9 +85,9 @@ export const QueueTab: React.FC = () => {
               <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-3 ">
                 <AlertTriangle className="w-5 h-5 text-[#0066cc] flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-[14px] text-[#1d1d1f]">Profile Pending Admin Verification</h4>
+                  <h4 className="font-semibold text-[14px] text-[#1d1d1f]">Profile under review</h4>
                   <p className="mt-0.5 leading-relaxed text-[#86868b]">
-                    Your profile is under review. Patients can find you once it’s approved.
+                    Patients can find you once it’s approved.
                   </p>
                 </div>
               </div>
@@ -98,7 +98,7 @@ export const QueueTab: React.FC = () => {
               <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-[#0066cc] animate-spin" />
-                  <span>Connecting to cloud database...</span>
+                  <span>Connecting...</span>
                 </div>
                 <button
                   type="button"
@@ -119,15 +119,15 @@ export const QueueTab: React.FC = () => {
               const leaveInfo = activeClinic ? activeClinic.todayLeave : user?.doctorProfile?.todayLeave;
               if (!isOnLeave) return null;
               return (
-                <div className="p-4 rounded-2xl bg-danger-soft border border-danger-line text-xs text-danger flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn ">
+                <div className="p-4 rounded-2xl bg-warning-soft border border-warning-line text-xs text-[#1d1d1f] flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <CalendarX className="w-5 h-5 text-danger shrink-0" />
+                    <CalendarX className="w-5 h-5 text-warning shrink-0" />
                     <div>
-                      <h4 className="font-semibold text-[13px] text-danger">
-                        You are Marked on Leave Today
+                      <h4 className="font-semibold text-[13px] text-[#1d1d1f]">
+                        You’re on leave today
                       </h4>
-                      <p className="text-danger mt-0.5 leading-relaxed">
-                        {leaveInfo?.reason ? `Reason: ${leaveInfo.reason}` : 'New patient bookings and walk-in queue tokens are paused for today.'}
+                      <p className="text-[#86868b] mt-0.5 leading-relaxed">
+                        {leaveInfo?.reason ? leaveInfo.reason : 'Bookings and walk-ins are paused.'}
                       </p>
                     </div>
                   </div>
@@ -143,20 +143,20 @@ export const QueueTab: React.FC = () => {
                               await fetchQueue(false);
                             }
                           } catch (err: any) {
-                            toast.error(err?.message || 'Failed to resume consultations');
+                            toast.error(err?.message || 'Couldn’t resume. Try again.');
                           }
                         }}
-                        className="h-8 px-3.5 rounded-full bg-white hover:bg-danger-soft text-danger border border-danger-line font-semibold text-xs transition-all cursor-pointer "
+                        className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white font-normal text-xs transition-all cursor-pointer"
                       >
-                        Resume Today
+                        Resume
                       </button>
                     )}
                     <button
                       type="button"
                       onClick={() => setScheduleLeaveModalClinic({ clinicId: activeClinic?.clinicId, clinicName: activeClinic?.clinicName })}
-                      className="h-8 px-3.5 rounded-full bg-danger hover:bg-danger text-white font-normal text-xs transition-all cursor-pointer "
+                      className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] font-normal text-xs transition-all cursor-pointer"
                     >
-                      Manage Leaves
+                      Leaves
                     </button>
                   </div>
                 </div>
@@ -231,7 +231,7 @@ export const QueueTab: React.FC = () => {
                           : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                       }`}
                     >
-                      <span>All Upcoming</span>
+                      <span>Upcoming</span>
                       {queueData?.upcomingSummary && queueData.upcomingSummary.totalUpcomingCount > 0 && (
                         <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded-full bg-[#0066cc] text-white">
                           {queueData.upcomingSummary.totalUpcomingCount}
@@ -248,7 +248,7 @@ export const QueueTab: React.FC = () => {
                       setDate(e.target.value);
                     }}
                     className="h-10 px-3.5 rounded-full border border-[#e5e5ea] text-base sm:text-xs font-normal bg-[#f5f5f7] hover:bg-[#e8e8ed]/70 focus:bg-white text-[#1d1d1f] transition-all focus:outline-none focus:border-[#0066cc] cursor-pointer w-full sm:w-auto text-center"
-                    title="Choose Specific Date"
+                    title="Pick a date"
                   />
                 </div>
 
@@ -328,7 +328,7 @@ export const QueueTab: React.FC = () => {
                         className="h-8 px-3 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.04] cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                       >
                         <X className="w-3.5 h-3.5" />
-                        <span>Reset Filters</span>
+                        <span>Reset</span>
                       </button>
                     )}
                   </div>
@@ -341,7 +341,7 @@ export const QueueTab: React.FC = () => {
                       className="h-8 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 transition-all"
                     >
                       <SlidersHorizontal className="w-3.5 h-3.5 text-[#0066cc]" />
-                      <span>Clinic & Shift Filters{(selectedClinicId !== 'all' || selectedSlotId !== 'all') ? ' • Active' : ''}</span>
+                      <span>Filters{(selectedClinicId !== 'all' || selectedSlotId !== 'all') ? ' • Active' : ''}</span>
                     </button>
                     {(selectedClinicId !== 'all' || selectedSlotId !== 'all') && (
                       <button
@@ -360,7 +360,7 @@ export const QueueTab: React.FC = () => {
                   {queueFiltersDrawerOpen && (
                     <div className="sm:hidden w-full bg-white rounded-2xl border border-[#e5e5ea] p-3.5  space-y-3 animate-fadeIn">
                       <div className="flex items-center justify-between pb-2 border-b border-[#e5e5ea]">
-                        <span className="text-xs font-semibold text-[#1d1d1f]">Queue Filters</span>
+                        <span className="text-xs font-semibold text-[#1d1d1f]">Filters</span>
                         <button
                           type="button"
                           onClick={() => setQueueFiltersDrawerOpen(false)}
@@ -372,7 +372,7 @@ export const QueueTab: React.FC = () => {
 
                       {affiliations?.clinics && affiliations.clinics.length > 0 && (
                         <div className="space-y-1">
-                          <label className="text-[11px] font-normal text-[#86868b]">Select Clinic</label>
+                          <label className="text-[11px] font-normal text-[#86868b]">Clinic</label>
                           <div className="w-full h-10 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full px-2 flex items-center">
                             <AppleFilterSelect
                               value={selectedClinicId === 'all' ? 'All' : selectedClinicId}
@@ -390,7 +390,7 @@ export const QueueTab: React.FC = () => {
 
                       {availableShifts.length > 0 && (
                         <div className="space-y-1">
-                          <label className="text-[11px] font-normal text-[#86868b]">Select Shift</label>
+                          <label className="text-[11px] font-normal text-[#86868b]">Shift</label>
                           <div className="w-full h-10 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full px-2 flex items-center">
                             <AppleFilterSelect
                               value={selectedSlotId === 'all' ? 'All' : selectedSlotId}
@@ -416,7 +416,7 @@ export const QueueTab: React.FC = () => {
                             }}
                             className="text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
                           >
-                            Reset All Filters
+                            Reset
                           </button>
                         </div>
                       )}
@@ -429,7 +429,7 @@ export const QueueTab: React.FC = () => {
             {/* Clean 3-Column Metrics Strip */}
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <div className="bg-white rounded-2xl sm:rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 ">
-                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Waiting in Queue</p>
+                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Waiting</p>
                 <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {displayedWaitingQueue.length}
                 </h3>
@@ -443,7 +443,7 @@ export const QueueTab: React.FC = () => {
               </div>
 
               <div className="bg-white rounded-2xl sm:rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 ">
-                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Total Bookings</p>
+                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Total</p>
                 <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {(displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length}
                 </h3>
@@ -457,7 +457,7 @@ export const QueueTab: React.FC = () => {
                 <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#e5e5ea]">
                     <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                      Active Cabin
+                      In cabin
                     </h3>
                     {displayedActiveInConsultation ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -555,8 +555,8 @@ export const QueueTab: React.FC = () => {
                           type="button"
                           disabled={holdingId === displayedActiveInConsultation.id}
                           onClick={() => handleHoldConsultation(displayedActiveInConsultation.id)}
-                          className="w-full sm:w-auto h-10 px-4 rounded-full bg-warning-soft hover:bg-warning-soft text-warning border border-warning-line text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                          title="Place patient on hold and return them to the waiting queue"
+                          className="w-full sm:w-auto h-10 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                          title="Send back to the waiting list"
                         >
                           <PauseCircle className="w-3.5 h-3.5" />
                           <span>{holdingId === displayedActiveInConsultation.id ? 'Holding...' : 'Hold'}</span>
@@ -575,9 +575,9 @@ export const QueueTab: React.FC = () => {
                     </div>
                   ) : (
                     <div className="py-6 text-center">
-                      <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">No Patient in Cabin</h4>
+                      <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">No one in cabin</h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto leading-relaxed">
-                        Call in the next patient who has arrived.
+                        Call the next patient who has arrived.
                       </p>
                     </div>
                   )}
@@ -590,7 +590,7 @@ export const QueueTab: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3.5 border-b border-[#e5e5ea]">
                     <div className="flex items-center gap-2">
                       <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                        Waiting Queue
+                        Waiting
                       </h3>
                       <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                         {displayedWaitingQueue.length}
@@ -619,7 +619,7 @@ export const QueueTab: React.FC = () => {
                             type="text"
                             value={queueSearch}
                             onChange={(e) => setQueueSearch(e.target.value)}
-                            placeholder="Search name, phone, token..."
+                            placeholder="Search name, phone or token"
                             className="h-10 sm:h-9 px-3.5 rounded-full border border-[#d2d2d7] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:border-[#0066cc] w-full sm:w-48"
                           />
                           {!isDoctorAway && nextPresentTarget && (
@@ -746,7 +746,7 @@ export const QueueTab: React.FC = () => {
                                 ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc]'
                                 : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]'
                             }`}
-                            title={appt.isCheckedIn ? 'Click to unmark arrival' : 'Click to mark patient arrived at clinic'}
+                            title={appt.isCheckedIn ? 'Undo arrival' : 'Mark as arrived'}
                           >
                             <CheckCircle2
                               className={`w-3.5 h-3.5 ${appt.isCheckedIn ? 'text-[#0066cc]' : 'text-[#86868b]'}`}
@@ -758,7 +758,7 @@ export const QueueTab: React.FC = () => {
                           {(appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn)) && appt.isCheckedIn && (
                             isDoctorAway ? (
                               <span className="h-8 px-3 rounded-full text-xs font-normal text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                                Doctor Away
+                                You’re away
                               </span>
                             ) : (
                               <button

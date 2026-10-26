@@ -21,7 +21,7 @@ export const ClinicsTab: React.FC = () => {
 <UtilityCard>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
-                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Clinic Facility Verification Queue</h3>
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Clinics</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Clinics appear in search after approval.
                     </p>
@@ -39,7 +39,7 @@ export const ClinicsTab: React.FC = () => {
                       type="text"
                       value={clinicSearchQuery}
                       onChange={(e) => setClinicSearchQuery(e.target.value)}
-                      placeholder="Search clinic by name, address, city, contact..."
+                      placeholder="Search clinics"
                       className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {clinicSearchQuery && (
@@ -81,10 +81,10 @@ export const ClinicsTab: React.FC = () => {
                   <table className="w-full text-left text-xs">
                     <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
-                        <th className="py-3 px-3">Facility</th>
+                        <th className="py-3 px-3">Clinic</th>
                         <th className="py-3 px-3">Location</th>
                         <th className="py-3 px-3">Capacity & Team</th>
-                        <th className="py-3 px-3">Verification Status</th>
+                        <th className="py-3 px-3">Status</th>
                         <th className="py-3 px-3 text-right">Action</th>
                       </tr>
                     </thead>
@@ -93,8 +93,8 @@ export const ClinicsTab: React.FC = () => {
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-xs text-[#86868b]">
                             {clinicSearchQuery || clinicStatusFilter !== 'ALL'
-                              ? 'No clinical facilities match your search query or status filter.'
-                              : 'No clinical facilities registered on the platform yet.'}
+                              ? 'No clinics match.'
+                              : 'No clinics yet.'}
                           </td>
                         </tr>
                       ) : (
@@ -122,7 +122,7 @@ export const ClinicsTab: React.FC = () => {
                             <td className="py-3.5 px-3">
                               <div className="flex flex-col gap-0.5">
                                 <span className="text-[#1d1d1f] font-normal">
-                                  {c._count?.doctors ?? c.doctorsCount ?? 0} Affiliated Doctor(s)
+                                  {c._count?.doctors ?? c.doctorsCount ?? 0} doctors
                                 </span>
                                 <span className="text-[11px] text-[#86868b]">
                                   {c._count?.receptionists ?? c.receptionistsCount ?? 0} Receptionist(s) • {c._count?.appointments ?? c.appointmentsCount ?? 0} Bookings

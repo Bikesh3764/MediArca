@@ -100,7 +100,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
               ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc] font-semibold'
               : 'border-[#e5e5ea] bg-[#f5f5f7] text-[#48484a] hover:bg-[#ebebee]'
           }`}
-          title="Filter by Medical Specialty"
+          title="Specialty"
         >
           <Stethoscope className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
           <span className="truncate max-w-[130px] sm:max-w-[170px]">
@@ -141,7 +141,7 @@ export const SearchableSpecialtySelect: React.FC<SearchableSpecialtySelectProps>
           {allowOther && value === 'Other' && (
             <div className="mt-3">
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Specify Medical Specialty
+                Type your specialty
               </label>
               <input
                 type="text"

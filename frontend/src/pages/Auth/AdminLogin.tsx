@@ -24,7 +24,7 @@ export const AdminLogin: React.FC = () => {
 
     const cleanEmail = email.trim();
     if (!cleanEmail) {
-      setError('Please enter your administrator ID or email.');
+      setError('Enter your email.');
       setSubmitting(false);
       return;
     }
@@ -38,7 +38,7 @@ export const AdminLogin: React.FC = () => {
       }
 
       setAuthenticated(true);
-      toast.success('Administrator authenticated');
+      toast.success('Signed in');
       setTimeout(() => {
         navigate('/admin', { replace: true });
       }, 500);
@@ -183,7 +183,7 @@ export const AdminLogin: React.FC = () => {
             className="inline-flex items-center gap-1.5 text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Return to Home</span>
+            <span>Home</span>
           </Link>
         </div>
       </div>

@@ -65,7 +65,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
             <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
           </div>
           <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Arrival QR Code
+            Check-in QR Code
           </h2>
         </div>
 
@@ -92,7 +92,7 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
           </div>
 
           <p className="text-xs font-normal text-[#1d1d1f]">
-            Scan with phone camera to check in
+            Scan with your phone to check in
           </p>
         </div>
 

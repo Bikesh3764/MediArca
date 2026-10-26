@@ -182,7 +182,7 @@ export const DoctorDashboard: React.FC = () => {
               <div className="p-6 border-b border-[#e5e5ea] flex items-start justify-between gap-4 bg-white">
                 <div>
                   <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">
-                    Affiliate Clinic or Hospital
+                    Join a clinic
                   </h3>
                 </div>
                 <button aria-label="Close"
@@ -226,7 +226,7 @@ export const DoctorDashboard: React.FC = () => {
                     type="text"
                     value={clinicSearchQuery}
                     onChange={(e) => setClinicSearchQuery(e.target.value)}
-                    placeholder="Search clinic by name, address, or area..."
+                    placeholder="Search clinics"
                     className="w-full h-11 pl-10 pr-9 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     autoFocus
                   />
@@ -299,11 +299,11 @@ export const DoctorDashboard: React.FC = () => {
                 {filteredPublicClinics.length === 0 ? (
                   <EmptyState
                     icon={Building2}
-                    title="No Verified Clinics Found"
+                    title="No clinics found"
                     description={
                       clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
-                        ? 'No clinics match your current search or location filters. Try clearing your search.'
-                        : 'No verified clinics are currently registered in the network.'
+                        ? 'Try a different search.'
+                        : 'No clinics yet.'
                     }
                     actionText={
                       clinicSearchQuery || clinicStateFilter !== 'All' || clinicCityFilter !== 'All'
@@ -340,7 +340,7 @@ export const DoctorDashboard: React.FC = () => {
                               {c.clinicName}
                             </h4>
                             <span
-                              title="Verified Healthcare Facility"
+                              title="Verified clinic"
                               className="inline-flex items-center gap-1 text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc]"
                             >
                               <CheckCircle2 className="w-3 h-3 text-[#0066cc]" />
@@ -375,16 +375,16 @@ export const DoctorDashboard: React.FC = () => {
                           {isAffiliated ? (
                             <span className="px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              Affiliated
+                              Joined
                             </span>
                           ) : isPending ? (
                             <span className="px-3.5 py-1.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-normal flex items-center gap-1.5">
                               <Clock3 className="w-3.5 h-3.5" />
-                              Request Pending
+                              Requested
                             </span>
                           ) : hasIncoming ? (
                             <span className="px-3.5 py-1.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-semibold flex items-center gap-1.5">
-                              Clinic Requested You
+                              Invited you
                             </span>
                           ) : (
                             <button
@@ -396,12 +396,12 @@ export const DoctorDashboard: React.FC = () => {
                               {isAddingThis ? (
                                 <>
                                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Affiliating...</span>
+                                  <span>Sending...</span>
                                 </>
                               ) : (
                                 <>
                                   <Plus className="w-3.5 h-3.5" />
-                                  <span>Affiliate</span>
+                                  <span>Join</span>
                                 </>
                               )}
                             </button>
@@ -415,7 +415,7 @@ export const DoctorDashboard: React.FC = () => {
 
               {/* Modal Footer */}
               <div className="p-4 border-t border-[#e5e5ea] bg-white flex items-center justify-between text-xs text-[#86868b] px-6">
-                <span>Only administrator-verified clinics can be affiliated.</span>
+                <span>Only verified clinics are shown.</span>
                 <button
                   type="button"
                   onClick={() => setIsAffiliateModalOpen(false)}

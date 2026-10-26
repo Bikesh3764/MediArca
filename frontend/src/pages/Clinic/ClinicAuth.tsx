@@ -106,15 +106,15 @@ export const ClinicAuth: React.FC = () => {
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!state) {
-      setError('Please select the state where your clinic is located');
+      setError('Choose your state.');
       return;
     }
     if (!isValidIndianPhone(phone)) {
-      setError('Please enter a valid 10-digit Indian phone number');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
     if (password.trim().length < 8) {
-      setError('Password must be at least 8 characters long.');
+      setError('Password must be at least 8 characters.');
       return;
     }
     setError(null);
@@ -174,7 +174,7 @@ export const ClinicAuth: React.FC = () => {
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
             </Link>
             <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-              Clinic Portal
+              Clinic
             </h1>
           </div>
 
@@ -206,7 +206,7 @@ export const ClinicAuth: React.FC = () => {
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
-              Register Clinic
+              Register
             </button>
           </div>
 
@@ -224,7 +224,7 @@ export const ClinicAuth: React.FC = () => {
               {isGoogleConfigured ? (
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google Sign-In was cancelled or origin not authorized')}
+                  onError={() => setError('Google sign-in didn’t work. Try again or use email.')}
                   shape="pill"
                   size="large"
                   text="continue_with"
@@ -248,14 +248,14 @@ export const ClinicAuth: React.FC = () => {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Clinic Admin Email
+                  Email
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="clinic@domain.com"
+                  placeholder="clinic@example.com"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -316,14 +316,14 @@ export const ClinicAuth: React.FC = () => {
             <form onSubmit={handleSignupSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Official Clinic Facility Name
+                  Clinic name
                 </label>
                 <input
                   type="text"
                   required
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
-                  placeholder="e.g. City Polyclinic & Diagnostic"
+                  placeholder="e.g. City Clinic"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -331,7 +331,7 @@ export const ClinicAuth: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    State / UT
+                    State
                   </label>
                   <div className="relative">
                     <select
@@ -340,7 +340,7 @@ export const ClinicAuth: React.FC = () => {
                       onChange={(e) => handleStateChange(e.target.value)}
                       className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
-                      <option value="">Select State</option>
+                      <option value="">Choose state</option>
                       {INDIAN_STATES.map((st) => (
                         <option key={st} value={st}>
                           {st}
@@ -353,7 +353,7 @@ export const ClinicAuth: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    City / Town
+                    City
                   </label>
                   <div className="relative">
                     <select
@@ -369,7 +369,7 @@ export const ClinicAuth: React.FC = () => {
                           {c}
                         </option>
                       ))}
-                      {state && <option value="__custom__">+ Other / Not Listed</option>}
+                      {state && <option value="__custom__">Other</option>}
                     </select>
                     <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -379,7 +379,7 @@ export const ClinicAuth: React.FC = () => {
               {isCustomCity && (
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Enter City Name
+                    City name
                   </label>
                   <input
                     type="text"
@@ -389,7 +389,7 @@ export const ClinicAuth: React.FC = () => {
                       setCustomCity(e.target.value);
                       setCity(e.target.value);
                     }}
-                    placeholder="Enter your town or city"
+                    placeholder="Your city"
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
@@ -397,7 +397,7 @@ export const ClinicAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Street Address
+                  Address
                 </label>
                 <input
                   type="text"
@@ -411,7 +411,7 @@ export const ClinicAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number
+                  Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
@@ -435,14 +435,14 @@ export const ClinicAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Official Email
+                  Email
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@clinic.com"
+                  placeholder="clinic@example.com"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -480,7 +480,7 @@ export const ClinicAuth: React.FC = () => {
                   {submitting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Registering Clinic...</span>
+                      <span>Registering...</span>
                     </>
                   ) : (
                     'Create Clinic Account'
@@ -495,7 +495,7 @@ export const ClinicAuth: React.FC = () => {
         <p className="mt-5 text-center text-xs text-[#86868b]">
           Front desk staff?{' '}
           <Link to="/receptionist/login" className="text-[#0066cc] font-semibold hover:underline">
-            Reception Desk Sign In
+            Receptionist sign in
           </Link>
         </p>
 

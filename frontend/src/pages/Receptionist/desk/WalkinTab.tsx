@@ -1,3 +1,5 @@
+import { formatDisplayDate } from '../../../services/api';
+import { AvatarImage } from '../../../components/ui/AvatarImage';
 import React from 'react';
 import { getLocalDateString, getFileUrl, formatShiftOption, WEEKDAY_NAMES } from '../../../services/api';
 import { sanitizeIndianPhone } from '../../../utils/phoneUtils';
@@ -41,7 +43,7 @@ export const WalkinTab: React.FC = () => {
               <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-[#f0f0f2]">
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Walk-in Patient Booking
+                    Walk-in
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
                     Create a token for someone at the desk.
@@ -60,7 +62,7 @@ export const WalkinTab: React.FC = () => {
                 <div className="py-14 text-center">
                   <p className="text-sm font-semibold text-[#1d1d1f]">No Doctors Assigned</p>
                   <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto">
-                    Ask your clinic to assign doctors to you first.
+                    Ask your clinic to assign doctors to you.
                   </p>
                 </div>
               ) : (
@@ -70,7 +72,7 @@ export const WalkinTab: React.FC = () => {
                     {/* 1. Practitioner Selection */}
                     <div>
                       <label className="block text-xs font-normal text-[#1d1d1f] mb-2 tracking-tight">
-                        Select Practitioner
+                        Doctor
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {linkedDoctors.map((doc) => {
@@ -90,11 +92,7 @@ export const WalkinTab: React.FC = () => {
                             >
                               <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
                                 {doc.avatarUrl ? (
-                                  <img
-                                    src={getFileUrl(doc.avatarUrl)}
-                                    alt={doc.fullName}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  <AvatarImage src={getFileUrl(doc.avatarUrl)} name={doc.fullName} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
                                     {doc.fullName[0]}
@@ -122,7 +120,7 @@ export const WalkinTab: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                          Consultation Date
+                          Date
                         </label>
                         <input
                           type="date"
@@ -136,7 +134,7 @@ export const WalkinTab: React.FC = () => {
 
                       <div>
                         <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                          Checking Shift
+                          Shift
                         </label>
                         <div className="relative">
                           <select
@@ -167,7 +165,7 @@ export const WalkinTab: React.FC = () => {
                     {/* Fixed Reception Desk Clinic Facility (DEF-06) */}
                     <div>
                       <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                        Clinic Facility
+                        Clinic
                       </label>
                       <div className="h-11 px-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-between text-[13px] text-[#1d1d1f]">
                         <span className="font-normal truncate">{data?.clinic?.clinicName || 'Clinic Desk'}</span>
@@ -182,7 +180,7 @@ export const WalkinTab: React.FC = () => {
                           <CalendarX className="w-4 h-4 text-danger shrink-0 mt-0.5" />
                           <div>
                             <span className="font-semibold block text-danger">
-                              Practitioner Marked on Leave Today
+                              Doctor is on leave today
                             </span>
                             <span className="text-danger mt-0.5 block leading-relaxed">
                               {activeSelectedDoctor.todayLeave?.reason
@@ -201,7 +199,7 @@ export const WalkinTab: React.FC = () => {
                           }
                           className="h-7 px-3 rounded-full bg-white hover:bg-danger-soft text-danger border border-danger-line font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
                         >
-                          Manage Leave
+                          Leave
                         </button>
                       </div>
                     )}
@@ -217,7 +215,7 @@ export const WalkinTab: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <CalendarOff className="w-4 h-4 text-warning shrink-0" />
                               <span>
-                                <span className="font-semibold">Practitioner Off:</span> {cleanDoctorName(activeSelectedDoctor.fullName)} does not sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
+                                <span className="font-semibold">Day off:</span> {cleanDoctorName(activeSelectedDoctor.fullName)} does not sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
                               </span>
                             </div>
                             <button
@@ -246,13 +244,13 @@ export const WalkinTab: React.FC = () => {
 
                     {isSelectedShiftEnded && (
                       <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs text-[#1d1d1f]">
-                        <span className="font-semibold">Shift Ended for Today:</span> Please choose an upcoming shift or select tomorrow's date.
+                        <span className="font-semibold">Shift ended.</span> Pick another shift or tomorrow.
                       </div>
                     )}
 
                     {!isSelectedShiftEnded && isSelectedShiftFull && (
                       <div className="p-3.5 rounded-xl bg-danger-soft border border-danger-line text-xs text-danger">
-                        <span className="font-semibold">Shift Capacity Reached:</span> This shift is full. Please select another shift or date.
+                        <span className="font-semibold">Shift full.</span> Pick another shift or date.
                       </div>
                     )}
 
@@ -260,7 +258,7 @@ export const WalkinTab: React.FC = () => {
                     <div className="pt-2 border-t border-[#f0f0f2] space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <label className="text-xs font-normal text-[#1d1d1f] tracking-tight">
-                          Patient Details
+                          Patient
                         </label>
                         <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 w-full sm:w-64 select-none">
                           <button
@@ -283,7 +281,7 @@ export const WalkinTab: React.FC = () => {
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
-                            Family / Other
+                            Family
                           </button>
                         </div>
                       </div>
@@ -291,7 +289,7 @@ export const WalkinTab: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Patient Full Name *
+                            Name *
                           </label>
                           <input
                             type="text"
@@ -305,7 +303,7 @@ export const WalkinTab: React.FC = () => {
 
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Mobile Number *
+                            Mobile *
                           </label>
                           <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all overflow-hidden">
                             <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
@@ -360,7 +358,7 @@ export const WalkinTab: React.FC = () => {
 
                         <div className="col-span-2">
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Chief Complaint (Optional)
+                            Reason (optional)
                           </label>
                           <input
                             type="text"
@@ -388,10 +386,10 @@ export const WalkinTab: React.FC = () => {
                           : !activeSelectedDoctor?.slots || activeSelectedDoctor.slots.length === 0
                           ? 'No Shifts Configured'
                           : isSelectedShiftEnded
-                          ? 'Shift Ended — Select Another Slot'
+                          ? 'Shift ended'
                           : isSelectedShiftFull
-                          ? 'Shift Full — Maximum Capacity Reached'
-                          : `Issue Walk-in Token (#${walkinPreview?.nextQueueNumber || 1})`}
+                          ? 'Shift full'
+                          : `Issue Token #${walkinPreview?.nextQueueNumber || 1}`}
                       </button>
                     </div>
                   </form>
@@ -401,10 +399,10 @@ export const WalkinTab: React.FC = () => {
                     <div className="flex items-center justify-between border-b border-[#e5e5ea] pb-4">
                       <div>
                         <span className="text-xs font-normal text-[#86868b] block">
-                          Next Queue Token
+                          Next token
                         </span>
                         <span className="text-xs text-[#1d1d1f] font-normal mt-0.5 block">
-                          {appointmentDate}
+                          {formatDisplayDate(appointmentDate)}
                         </span>
                       </div>
                       <span
@@ -424,7 +422,7 @@ export const WalkinTab: React.FC = () => {
 
                     <div className="py-3 text-center bg-white rounded-2xl border border-[#e5e5ea]">
                       <span className="text-[11px] font-normal text-[#86868b] uppercase tracking-wider block">
-                        Token Number
+                        Token
                       </span>
                       <div className="text-4xl font-semibold text-[#0066cc] tracking-tight my-1">
                         #{walkinPreview?.nextQueueNumber || 1}
@@ -436,19 +434,19 @@ export const WalkinTab: React.FC = () => {
 
                     <div className="space-y-2.5 text-xs">
                       <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
-                        <span className="text-[#86868b]">Practitioner</span>
+                        <span className="text-[#86868b]">Doctor</span>
                         <span className="font-semibold text-[#1d1d1f]">
                           {cleanDoctorName(activeSelectedDoctor?.fullName)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1.5 border-b border-[#e5e5ea]">
-                        <span className="text-[#86868b]">Patients Ahead</span>
+                        <span className="text-[#86868b]">Ahead</span>
                         <span className="font-semibold text-[#1d1d1f]">
                           {previewLoading ? '...' : `${walkinPreview?.patientsAhead ?? 0} waiting`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1.5">
-                        <span className="text-[#86868b]">Consultation Fee</span>
+                        <span className="text-[#86868b]">Fee</span>
                         <span className="text-sm font-semibold text-[#1d1d1f]">
                           ₹{activeSelectedDoctor?.consultationFee?.toFixed(0) || 0}
                         </span>

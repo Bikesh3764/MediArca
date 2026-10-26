@@ -1,3 +1,4 @@
+import { formatClinicAddress } from '../../../utils/address';
 import React from 'react';
 import { WeekdayDisplay } from '../../../components/common/WeekdayDisplay';
 import { Users, Clock, CheckCircle2, Trash2, Plus, AlertCircle, X, MapPin, Check, Calendar, QrCode } from 'lucide-react';
@@ -58,24 +59,24 @@ export const AffiliationsTab: React.FC = () => {
             )}
 
             {/* Clean 3-Column Metrics Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
-                <span className="text-xs text-[#86868b] font-normal block">Affiliated Clinics</span>
-                <h3 className="text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-3.5 sm:p-5 min-w-0">
+                <span className="text-[11px] sm:text-xs text-[#86868b] font-normal block truncate">Clinics</span>
+                <h3 className="text-xl sm:text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {affiliations?.clinics.length || 0}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
-                <span className="text-xs text-[#86868b] font-normal block">Assigned Desk Staff</span>
-                <h3 className="text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-3.5 sm:p-5 min-w-0">
+                <span className="text-[11px] sm:text-xs text-[#86868b] font-normal block truncate">Staff</span>
+                <h3 className="text-xl sm:text-[28px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
                   {affiliations?.receptionists.length || 0}
                 </h3>
               </div>
 
-              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 ">
-                <span className="text-xs text-[#86868b] font-normal block">Total Clinic Earnings</span>
-                <h3 className="text-[28px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-3.5 sm:p-5 min-w-0">
+                <span className="text-[11px] sm:text-xs text-[#86868b] font-normal block truncate">Earnings</span>
+                <h3 className="text-xl sm:text-[28px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
                   ₹{(
                     affiliations?.clinics.reduce(
                       (sum: number, c) => sum + (c.revenue || 0),
@@ -88,10 +89,10 @@ export const AffiliationsTab: React.FC = () => {
 
             {/* Incoming Clinic Affiliation Invitations */}
             {affiliations?.incomingRequests && affiliations.incomingRequests.length > 0 && (
-              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-6">
                 <div className="mb-4">
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                    Incoming Clinic Invitations ({affiliations.incomingRequests.length})
+                    Invitations ({affiliations.incomingRequests.length})
                   </h3>
                 </div>
 
@@ -105,10 +106,10 @@ export const AffiliationsTab: React.FC = () => {
                         <h4 className="font-semibold text-[15px] text-[#1d1d1f]">{req.clinicName}</h4>
                         <p className="text-xs text-[#86868b] flex items-center gap-1 mt-1">
                           <MapPin className="w-3.5 h-3.5 text-[#86868b]" />
-                          {req.address}{req.city ? `, ${req.city}` : ''}
+                          {formatClinicAddress(req, { withState: false })}
                         </p>
                         {req.phone && (
-                          <p className="text-xs text-[#86868b] mt-0.5">Phone: {req.phone}</p>
+                          <p className="text-xs text-[#86868b] mt-0.5">{req.phone}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#e5e5ea]">
@@ -137,10 +138,10 @@ export const AffiliationsTab: React.FC = () => {
 
             {/* Pending Outgoing Clinic Requests */}
             {affiliations?.outgoingRequests && affiliations.outgoingRequests.length > 0 && (
-              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
+              <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                    Pending Clinic Approvals ({affiliations.outgoingRequests.length})
+                    Waiting for approval ({affiliations.outgoingRequests.length})
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,7 +152,7 @@ export const AffiliationsTab: React.FC = () => {
                     >
                       <div>
                         <h4 className="font-semibold text-[14px] text-[#1d1d1f]">{req.clinicName}</h4>
-                        <p className="text-xs text-[#86868b] mt-0.5">{req.address}{req.city ? `, ${req.city}` : ''}</p>
+                        <p className="text-xs text-[#86868b] mt-0.5">{formatClinicAddress(req, { withState: false })}</p>
                       </div>
                       <span className="text-xs font-normal px-2.5 py-1 rounded-full bg-white text-[#86868b] border border-[#e5e5ea]">
                         Pending
@@ -163,30 +164,14 @@ export const AffiliationsTab: React.FC = () => {
             )}
 
             {/* Section 1: Affiliated Clinics */}
-            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                    Affiliated Clinics
-                  </h3>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
-                    {affiliations?.clinics.length || 0}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setClinicSearchQuery('');
-                    setClinicStateFilter('All');
-                    setClinicCityFilter('All');
-                    setIsAffiliateModalOpen(true);
-                  }}
-                  className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Affiliate New Clinic</span>
-                </button>
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
+                  My Clinics
+                </h3>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
+                  {affiliations?.clinics.length || 0}
+                </span>
               </div>
 
               {affiliationsLoading ? (
@@ -197,7 +182,7 @@ export const AffiliationsTab: React.FC = () => {
                 </div>
               ) : affiliations?.clinics.length === 0 ? (
                 <div className="p-8 text-center bg-[#f5f5f7] rounded-2xl border border-[#e5e5ea]">
-                  <h4 className="text-[15px] font-semibold text-[#1d1d1f]">No Clinics Affiliated</h4>
+                  <h4 className="text-[15px] font-semibold text-[#1d1d1f]">No clinics yet</h4>
                   <div className="mt-4">
                     <button
                       type="button"
@@ -210,7 +195,7 @@ export const AffiliationsTab: React.FC = () => {
                       className="h-9 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Find & Affiliate Clinic</span>
+                      <span>Add Clinic</span>
                     </button>
                   </div>
                 </div>
@@ -232,14 +217,14 @@ export const AffiliationsTab: React.FC = () => {
                             </div>
                             <p className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5 truncate">
                               <MapPin className="w-3.5 h-3.5 text-[#86868b] flex-shrink-0" />
-                              <span className="truncate">{clinic.address}{clinic.city ? `, ${clinic.city}` : ''}</span>
+                              <span className="truncate">{formatClinicAddress(clinic, { withState: false })}</span>
                             </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleRemoveClinic(clinic.clinicId, clinic.clinicName)}
                             className="text-[#86868b] hover:text-danger hover:bg-danger-soft p-1.5 rounded-full transition-all flex-shrink-0 cursor-pointer"
-                            title="Detach from Clinic"
+                            title="Leave clinic"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -269,11 +254,11 @@ export const AffiliationsTab: React.FC = () => {
 
                         {/* Shifts Status */}
                         <div className="mt-3 flex items-center justify-between text-xs px-1 text-[#86868b]">
-                          <span className="font-normal">Practice Shifts</span>
+                          <span className="font-normal">Shifts</span>
                           <span className="font-normal text-[#1d1d1f] truncate max-w-[220px]">
                             {clinic.slots && clinic.slots.length > 0
                               ? `${clinic.slots.length} ${clinic.slots.length === 1 ? 'Shift' : 'Shifts'}`
-                              : 'Default schedule'}
+                              : 'Default'}
                           </span>
                         </div>
 
@@ -300,7 +285,7 @@ export const AffiliationsTab: React.FC = () => {
                           type="button"
                           onClick={() => setScheduleLeaveModalClinic({ clinicId: clinic.clinicId, clinicName: clinic.clinicName })}
                           className="h-9 px-3.5 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-                          title="Doctor Schedule & Leave"
+                          title="Schedule and leave"
                         >
                           <Calendar className="w-3.5 h-3.5 text-[#0066cc]" />
                           <span>Schedule</span>
@@ -311,7 +296,7 @@ export const AffiliationsTab: React.FC = () => {
                             setSelectedStandeeClinic({
                               clinicId: clinic.clinicId,
                               clinicName: clinic.clinicName,
-                              clinicAddress: `${clinic.address || ''}${clinic.city ? `, ${clinic.city}` : ''}`,
+                              clinicAddress: formatClinicAddress(clinic, { withState: false }),
                               clinicPhone: clinic.phone || '',
                               checkinCode: (clinic as any).checkinCode || '',
                             });
@@ -331,10 +316,10 @@ export const AffiliationsTab: React.FC = () => {
             </div>
 
             {/* Section 2: Authorized Clinic Desk Staff */}
-            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-5">
                 <h3 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">
-                  Authorized Desk Staff
+                  Front desk staff
                 </h3>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                   {affiliations?.receptionists.length || 0}

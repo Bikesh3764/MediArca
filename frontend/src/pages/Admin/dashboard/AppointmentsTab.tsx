@@ -39,7 +39,7 @@ export const AppointmentsTab: React.FC = () => {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#e5e5ea]">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Platform Bookings & Queue Oversight</h3>
+                        <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Bookings</h3>
                         <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f]">
                           {filteredAppointments.length} of {appointments.length} Total
                         </span>
@@ -64,9 +64,9 @@ export const AppointmentsTab: React.FC = () => {
                             ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
-                        title="View flat table of all matching bookings"
+                        title="Show all"
                       >
-                        <span>All Records</span>
+                        <span>All</span>
                       </button>
 
                       <button
@@ -77,7 +77,7 @@ export const AppointmentsTab: React.FC = () => {
                             ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
-                        title="Group bookings chronologically by date"
+                        title="Group by date"
                       >
                         <span>By Date</span>
                       </button>
@@ -90,7 +90,7 @@ export const AppointmentsTab: React.FC = () => {
                             ? 'bg-white text-[#1d1d1f]  font-semibold'
                             : 'text-[#86868b] hover:text-[#1d1d1f]'
                         }`}
-                        title="Group bookings by clinic facility"
+                        title="Group by clinic"
                       >
                         <span>By Clinic</span>
                       </button>
@@ -100,12 +100,12 @@ export const AppointmentsTab: React.FC = () => {
                   {/* Summary Metric Counters Bar */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 my-5">
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-normal text-[#86868b] block">Total Shown</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Shown</span>
                       <strong className="text-lg font-semibold text-[#1d1d1f] mt-0.5 block">{filteredAppointments.length}</strong>
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-normal text-[#86868b] block">Today's Visits</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Today</span>
                       <strong className="text-lg font-semibold text-[#0066cc] mt-0.5 block">
                         {filteredAppointments.filter((a) => a.appointmentDate === todayStr).length}
                       </strong>
@@ -133,7 +133,7 @@ export const AppointmentsTab: React.FC = () => {
                     </div>
 
                     <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-center">
-                      <span className="text-xs font-normal text-[#86868b] block">Cancelled/Off</span>
+                      <span className="text-xs font-normal text-[#86868b] block">Cancelled</span>
                       <strong className="text-lg font-semibold text-danger mt-0.5 block">
                         {filteredAppointments.filter((a) => ['CANCELLED', 'EXPIRED'].includes((a.status || '').toUpperCase())).length}
                       </strong>
@@ -150,7 +150,7 @@ export const AppointmentsTab: React.FC = () => {
                           type="text"
                           value={bookingSearchQuery}
                           onChange={(e) => setBookingSearchQuery(e.target.value)}
-                          placeholder="Search patient, practitioner, clinic, token #..."
+                          placeholder="Search patient, doctor, clinic or token"
                           className="w-full h-11 pl-10 pr-8 rounded-xl bg-white border border-[#d2d2d7] text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                         />
                         {bookingSearchQuery && (
@@ -194,11 +194,11 @@ export const AppointmentsTab: React.FC = () => {
                           >
                             <option value="ALL">All Statuses</option>
                             <option value="WAITING">Waiting</option>
-                            <option value="IN_CONSULTATION">In Consultation</option>
+                            <option value="IN_CONSULTATION">In cabin</option>
                             <option value="COMPLETED">Completed</option>
                             <option value="CANCELLED">Cancelled</option>
                             <option value="EXPIRED">Expired</option>
-                            <option value="PENDING_APPROVAL">Pending Approval</option>
+                            <option value="PENDING_APPROVAL">Not paid yet</option>
                           </select>
                           <Filter className="w-4 h-4 text-[#86868b] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -267,7 +267,7 @@ export const AppointmentsTab: React.FC = () => {
                                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                             }`}
                           >
-                            Past History
+                            Past
                           </button>
                         </div>
 
@@ -299,7 +299,7 @@ export const AppointmentsTab: React.FC = () => {
                           className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold text-danger bg-danger-soft hover:bg-danger-soft border border-danger-line transition-all cursor-pointer active:scale-95"
                         >
                           <RotateCcw className="w-3 h-3" />
-                          <span>Reset Filters</span>
+                          <span>Reset</span>
                         </button>
                       )}
                     </div>
@@ -309,7 +309,7 @@ export const AppointmentsTab: React.FC = () => {
                   {filteredAppointments.length === 0 && (
                     <EmptyState
                       icon={Calendar}
-                      title="No Bookings Found"
+                      title="No bookings"
                       description={`No appointments match your active date (${bookingDateFilter !== 'ALL' ? bookingDateFilter : 'selected'}), clinic, or search filter.`}
                       actionText="Clear All Filters"
                       onAction={handleResetBookingFilters}
@@ -325,8 +325,8 @@ export const AppointmentsTab: React.FC = () => {
                             <th className="py-3 px-3">Date</th>
                             <th className="py-3 px-3">Queue Token</th>
                             <th className="py-3 px-3">Patient</th>
-                            <th className="py-3 px-3">Practitioner</th>
-                            <th className="py-3 px-3">Clinic / Facility</th>
+                            <th className="py-3 px-3">Doctor</th>
+                            <th className="py-3 px-3">Clinic</th>
                             <th className="py-3 px-3">Status</th>
                             <th className="py-3 px-3">Est. Time</th>
                             <th className="py-3 px-3 text-right">Details</th>
@@ -339,7 +339,7 @@ export const AppointmentsTab: React.FC = () => {
                               <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                                 <td className="py-3 px-3">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[#1d1d1f]">{appt.appointmentDate}</span>
+                                    <span className="font-semibold text-[#1d1d1f]">{formatDisplayDate(appt.appointmentDate)}</span>
                                     {getDateBadge(appt.appointmentDate)}
                                   </div>
                                 </td>
@@ -387,7 +387,7 @@ export const AppointmentsTab: React.FC = () => {
                                     type="button"
                                     onClick={() => setSelectedAppointment(appt)}
                                     className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
-                                    title="Inspect Booking Details"
+                                    title="Details"
                                   >
                                     <Eye className="w-4 h-4" />
                                   </button>
@@ -437,8 +437,8 @@ export const AppointmentsTab: React.FC = () => {
                                   <tr>
                                     <th className="py-2.5 px-3">Token #</th>
                                     <th className="py-2.5 px-3">Patient</th>
-                                    <th className="py-2.5 px-3">Practitioner</th>
-                                    <th className="py-2.5 px-3">Clinic Facility</th>
+                                    <th className="py-2.5 px-3">Doctor</th>
+                                    <th className="py-2.5 px-3">Clinic</th>
                                     <th className="py-2.5 px-3">Status</th>
                                     <th className="py-2.5 px-3">Est. Time</th>
                                     <th className="py-2.5 px-3 text-right">Details</th>
@@ -493,7 +493,7 @@ export const AppointmentsTab: React.FC = () => {
                                             type="button"
                                             onClick={() => setSelectedAppointment(appt)}
                                             className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
-                                            title="Inspect Booking Details"
+                                            title="Details"
                                           >
                                             <Eye className="w-4 h-4" />
                                           </button>
@@ -557,7 +557,7 @@ export const AppointmentsTab: React.FC = () => {
                                     <th className="py-2.5 px-3">Date</th>
                                     <th className="py-2.5 px-3">Token #</th>
                                     <th className="py-2.5 px-3">Patient</th>
-                                    <th className="py-2.5 px-3">Practitioner</th>
+                                    <th className="py-2.5 px-3">Doctor</th>
                                     <th className="py-2.5 px-3">Status</th>
                                     <th className="py-2.5 px-3">Est. Time</th>
                                     <th className="py-2.5 px-3 text-right">Details</th>
@@ -568,7 +568,7 @@ export const AppointmentsTab: React.FC = () => {
                                     <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
                                       <td className="py-3 px-3">
                                         <div className="flex items-center gap-1.5">
-                                          <span className="font-semibold text-[#1d1d1f]">{appt.appointmentDate}</span>
+                                          <span className="font-semibold text-[#1d1d1f]">{formatDisplayDate(appt.appointmentDate)}</span>
                                           {getDateBadge(appt.appointmentDate)}
                                         </div>
                                       </td>
@@ -603,7 +603,7 @@ export const AppointmentsTab: React.FC = () => {
                                           type="button"
                                           onClick={() => setSelectedAppointment(appt)}
                                           className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
-                                          title="Inspect Booking Details"
+                                          title="Details"
                                         >
                                           <Eye className="w-4 h-4" />
                                         </button>

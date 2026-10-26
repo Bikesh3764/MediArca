@@ -12,8 +12,10 @@ import {
   formatDoctorDegrees,
   getFileUrl,
   cleanSlotName,
+  formatDisplayDate,
 } from '../../services/api';
 import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
+import { formatClinicAddress } from '../../utils/address';
 import { useAuth } from '../../context/AuthContext';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
@@ -140,7 +142,7 @@ export const BookAppointment: React.FC = () => {
           }
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load doctor profile');
+        setError(err.message || 'Couldn’t load doctor profile. Try again.');
       } finally {
         setLoading(false);
       }
@@ -151,6 +153,8 @@ export const BookAppointment: React.FC = () => {
 
   // Sync queue preview dynamically when slot or date or clinic changes
   useEffect(() => {
+    // Drop answers for an old selection so a slow reply can't overwrite the current one.
+    let stale = false;
     const fetchPreview = async () => {
       if (!id || !appointmentDate) return;
       setPreviewLoading(true);
@@ -161,6 +165,7 @@ export const BookAppointment: React.FC = () => {
           selectedSlotId || undefined,
           selectedClinicId || undefined
         );
+        if (stale) return;
         setQueuePreview(preview);
         if (preview.selectedSlotId && (!selectedSlotId || (preview.isPassed && preview.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(preview.selectedSlotId);
@@ -168,11 +173,14 @@ export const BookAppointment: React.FC = () => {
       } catch (err) {
         console.error('Queue calculation preview failed:', err);
       } finally {
-        setPreviewLoading(false);
+        if (!stale) setPreviewLoading(false);
       }
     };
 
     fetchPreview();
+    return () => {
+      stale = true;
+    };
   }, [id, appointmentDate, selectedSlotId, selectedClinicId]);
 
   const handleSelectClinic = (clinicId: string) => {
@@ -207,7 +215,7 @@ export const BookAppointment: React.FC = () => {
     }
 
     if (doctor.clinics!.length > 1 && !selectedClinicId) {
-      setError('Please select a clinic venue.');
+      setError('Please choose a clinic.');
       setSubmitting(false);
       return;
     }
@@ -219,13 +227,13 @@ export const BookAppointment: React.FC = () => {
     }
 
     if (isSelectedSlotOnLeave) {
-      setError(`Dr. ${doctor.user?.fullName || 'the doctor'} is on leave on this date${queuePreview?.leaveReason ? ` (${queuePreview.leaveReason})` : ''}. Please pick another date.`);
+      setError('The doctor is on leave this day. Pick another date.');
       setSubmitting(false);
       return;
     }
 
     if (isSelectedSlotDayOff) {
-      setError(`Dr. ${doctor.user?.fullName || 'the doctor'} does not consult on ${queuePreview?.dayName || 'this day'}s at this clinic facility. Available sitting days: ${(queuePreview?.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).join(', ')}.`);
+      setError(`The doctor isn’t here on ${queuePreview?.dayName || 'this day'}s. Available: ${(queuePreview?.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).map((d) => d.charAt(0) + d.slice(1).toLowerCase()).join(', ')}.`);
       setSubmitting(false);
       return;
     }
@@ -245,18 +253,18 @@ export const BookAppointment: React.FC = () => {
     const isForOther = bookingFor === 'other';
     if (isForOther) {
       if (!patientName.trim()) {
-        setError('Please provide the patient full name.');
+        setError('Enter the patient’s name.');
         setSubmitting(false);
         return;
       }
       if (!patientAge.trim()) {
-        setError('Please provide the patient age.');
+        setError('Enter the patient’s age.');
         setSubmitting(false);
         return;
       }
       const parsedAge = parseInt(patientAge.trim(), 10);
       if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
-        setError('Please enter a valid patient age between 0 and 125.');
+        setError('Enter an age between 0 and 125.');
         setSubmitting(false);
         return;
       }
@@ -280,7 +288,7 @@ export const BookAppointment: React.FC = () => {
       setConfirmedAppointment(appt);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setError(err.message || 'Failed to complete appointment booking');
+      setError(err.message || 'Booking failed. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -309,9 +317,9 @@ export const BookAppointment: React.FC = () => {
         <div className="text-center p-8 bg-white rounded-2xl  border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
-          <p className="text-xs text-[#86868b] mb-6">The requested doctor is unavailable or inactive.</p>
+          <p className="text-xs text-[#86868b] mb-6">This doctor isn’t available.</p>
           <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
-            Back to Directory
+            Find Doctors
           </AppleButton>
         </div>
       </div>
@@ -327,17 +335,13 @@ export const BookAppointment: React.FC = () => {
   const deskName =
     confirmedAppointment?.receptionistName ||
     primaryReceptionist?.name ||
-    (confirmedAppointment?.clinic?.clinicName
-      ? `${confirmedAppointment.clinic.clinicName} Front Desk`
-      : selectedClinic?.clinic?.clinicName
-      ? `${selectedClinic.clinic.clinicName} Front Desk`
-      : 'Front Desk Receptionist');
+    'Front desk';
 
   // 1. Post-Booking Success & Receptionist Details Screen
   if (confirmedAppointment) {
     return (
       <div className="min-h-screen bg-[#f5f5f7] pb-24 md:pb-16 pb-safe">
-        <SubNav title="Requested" width="2xl">
+        <SubNav title="Booked" width="2xl">
           <AppleButton
             variant="ghost"
             size="sm"
@@ -353,16 +357,16 @@ export const BookAppointment: React.FC = () => {
           <UtilityCard className="text-center py-8 px-5 sm:px-8 space-y-6">
             <div>
               <span className="text-xs font-normal text-[#0066cc] block mb-1">
-                Request Submitted
+                Request sent
               </span>
               <h2 className="text-[22px] sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] leading-snug">
-                Pending Receptionist Confirmation
+                Pay to confirm your token
               </h2>
               <p className="text-xs text-[#86868b] mt-1 font-normal">
-                {confirmedAppointment.appointmentDate} · {cleanSlotName(confirmedAppointment.checkingWindow)}
+                {formatDisplayDate(confirmedAppointment.appointmentDate)} · {cleanSlotName(confirmedAppointment.checkingWindow)}
               </p>
               <div className="mt-3.5 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                <span className="text-xs font-normal text-[#86868b]">Estimated Token</span>
+                <span className="text-xs font-normal text-[#86868b]">Est. token</span>
                 <span className="text-xl font-semibold text-[#0066cc] tracking-tight">
                   #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
                 </span>
@@ -374,13 +378,13 @@ export const BookAppointment: React.FC = () => {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <span className="text-xs font-normal text-[#86868b] block">
-                    Pay Receptionist to Confirm
+                    Receptionist
                   </span>
                   <h4 className="text-base font-semibold text-[#1d1d1f] mt-0.5 tracking-tight">
                     {deskName}
                   </h4>
                   <p className="text-xs text-[#86868b] mt-0.5">
-                    {selectedClinic?.clinic.clinicName} · {selectedClinic?.clinic.address}{selectedClinic?.clinic.city ? `, ${selectedClinic.clinic.city}` : ''}
+                    {selectedClinic?.clinic.clinicName} · {formatClinicAddress(selectedClinic?.clinic, { withState: false })}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
@@ -392,7 +396,7 @@ export const BookAppointment: React.FC = () => {
               </div>
 
               <p className="text-xs text-[#86868b] leading-relaxed pt-2.5 border-t border-[#e5e5ea]">
-                Your token is confirmed when you pay. Call the receptionist to pay by UPI, or pay at the desk. Whoever pays first is confirmed first.
+                Pay by UPI over a call or at the desk. First to pay is confirmed first.
               </p>
 
               {deskPhone ? (
@@ -402,7 +406,7 @@ export const BookAppointment: React.FC = () => {
                     className="w-full h-11 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-normal flex items-center justify-center gap-2 active:scale-[0.98] transition-all duration-150  cursor-pointer select-none"
                   >
                     <Phone className="w-4 h-4 shrink-0" />
-                    <span className="truncate">Call {deskName}: {formatDisplayPhone(deskPhone)}</span>
+                    <span className="truncate">Call {formatDisplayPhone(deskPhone)}</span>
                   </a>
                 </div>
               ) : (
@@ -419,14 +423,14 @@ export const BookAppointment: React.FC = () => {
                 onClick={() => navigate('/patient/appointments')}
                 className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer select-none"
               >
-                View Request in My Passes
+                View My Passes
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/doctors')}
                 className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
               >
-                Back to Doctors
+                Find Doctors
               </button>
             </div>
           </UtilityCard>
@@ -529,17 +533,17 @@ export const BookAppointment: React.FC = () => {
                       </span>
                       {doctor.clinics[0].hasReceptionist ? (
                         <span className="text-[11px] font-normal text-success bg-success-soft border border-success-line/60 px-2 py-0.5 rounded-full shrink-0">
-                          Desk Active
+                          Open
                         </span>
                       ) : (
                         <span className="text-[11px] font-normal text-warning bg-warning-soft border border-warning-line/60 px-2 py-0.5 rounded-full shrink-0">
-                          Desk Offline
+                          Closed
                         </span>
                       )}
                     </div>
                     <span className="text-xs text-[#86868b] flex items-center gap-1 mt-0.5 truncate">
                       <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
-                      <span className="truncate">{doctor.clinics[0].clinic.address}{doctor.clinics[0].clinic.city ? `, ${doctor.clinics[0].clinic.city}` : ''}</span>
+                      <span className="truncate">{formatClinicAddress(doctor.clinics[0].clinic, { withState: false })}</span>
                     </span>
                   </div>
                   <span className="text-xs font-semibold text-[#1d1d1f] bg-[#f5f5f7] border border-[#e5e5ea] px-3 py-1 rounded-full shrink-0 ml-2">
@@ -567,11 +571,11 @@ export const BookAppointment: React.FC = () => {
                           <div className="flex items-center gap-1.5 shrink-0">
                             {c.hasReceptionist ? (
                               <span className="text-[11px] font-normal text-success bg-success-soft border border-success-line/60 px-2 py-0.5 rounded-full">
-                                Desk Active
+                                Open
                               </span>
                             ) : (
                               <span className="text-[11px] font-normal text-warning bg-warning-soft border border-warning-line/60 px-2 py-0.5 rounded-full">
-                                Desk Offline
+                                Closed
                               </span>
                             )}
                             {isSelected && (
@@ -584,8 +588,7 @@ export const BookAppointment: React.FC = () => {
                         <span className="text-xs text-[#86868b] flex items-center gap-1 truncate">
                           <MapPin className="w-3 h-3 text-[#86868b] shrink-0" />
                           <span className="truncate">
-                            {c.clinic.address}
-                            {c.clinic.city && !c.clinic.address.toLowerCase().includes(c.clinic.city.toLowerCase()) ? `, ${c.clinic.city}` : ''}
+                            {formatClinicAddress(c.clinic, { withState: false })}
                           </span>
                         </span>
                         <div className="mt-2 pt-2 border-t border-[#e5e5ea] flex items-center justify-between text-xs">
@@ -685,15 +688,15 @@ export const BookAppointment: React.FC = () => {
                     <div>
                       {itemOnLeave ? (
                         <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-warning-soft border border-warning-line text-warning">
-                          Doctor on Leave
+                          On leave
                         </span>
                       ) : itemDayOff ? (
                         <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b]">
-                          Not Sitting
+                          Day off
                         </span>
                       ) : slotPassed ? (
                         <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[#86868b]">
-                          Shift Ended
+                          Ended
                         </span>
                       ) : slotFull ? (
                         <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-danger-soft/80 border border-danger-line/80 text-danger">
@@ -716,14 +719,14 @@ export const BookAppointment: React.FC = () => {
             <div className="my-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
               <div className="flex items-baseline justify-between mb-2">
                 <div>
-                  <span className="text-[11px] text-[#86868b] block font-normal">Token No.</span>
+                  <span className="text-[11px] text-[#86868b] block font-normal">Token</span>
                   <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#0066cc]">
                     {isSelectedSlotOnLeave
-                      ? 'On Leave'
+                      ? 'On leave'
                       : isSelectedSlotDayOff
-                      ? 'Not Sitting'
+                      ? 'Day off'
                       : isSelectedSlotPassed
-                      ? 'Shift Ended'
+                      ? 'Ended'
                       : `#${Math.max(1, queuePreview.nextQueueNumber || 1)}`}
                   </span>
                 </div>
@@ -733,11 +736,11 @@ export const BookAppointment: React.FC = () => {
                     {previewLoading
                       ? 'Updating...'
                       : isSelectedSlotOnLeave
-                      ? 'Doctor on Leave'
+                      ? '—'
                       : isSelectedSlotDayOff
-                      ? 'Not Sitting on this Day'
+                      ? '—'
                       : isSelectedSlotPassed
-                      ? 'Closed'
+                      ? '—'
                       : queuePreview.estimatedTime}
                   </span>
                 </div>
@@ -746,12 +749,12 @@ export const BookAppointment: React.FC = () => {
                 <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
                 <span>
                   {isSelectedSlotOnLeave
-                    ? 'Doctor on leave on this date'
+                    ? 'Pick another date'
                     : isSelectedSlotDayOff
-                    ? `Not sitting on ${queuePreview.dayName || 'this day'}s`
+                    ? 'Pick another date'
                     : isSelectedSlotPassed
-                    ? 'Pick an upcoming shift'
-                    : 'Assigned upon receptionist payment'}
+                    ? 'Pick another shift'
+                    : 'Confirmed after payment'}
                 </span>
               </div>
             </div>
@@ -762,7 +765,7 @@ export const BookAppointment: React.FC = () => {
             {/* Booking For Toggle */}
             <div className="py-2 border-b border-[#f0f0f2] pb-4">
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Booking For
+                Booking for
               </label>
               <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 max-w-xs select-none">
                 <button
@@ -785,19 +788,19 @@ export const BookAppointment: React.FC = () => {
                       : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
                   }`}
                 >
-                  Someone Else
+                  Someone else
                 </button>
               </div>
 
               {bookingFor === 'other' && (
                 <div className="mt-3 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
                   <div className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-                    Patient Details
+                    Patient
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-1">
                       <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                        Full Name <span className="text-danger">*</span>
+                        Name <span className="text-danger">*</span>
                       </label>
                       <input
                         type="text"
@@ -850,13 +853,13 @@ export const BookAppointment: React.FC = () => {
 
             <div>
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Reason for Visit
+                Reason
               </label>
               <input
                 type="text"
                 value={reasonForVisit}
                 onChange={(e) => setReasonForVisit(e.target.value)}
-                placeholder="e.g. Checkup, consultation, follow-up"
+                placeholder="e.g. Checkup, follow-up"
                 className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>
@@ -869,7 +872,7 @@ export const BookAppointment: React.FC = () => {
                 rows={2}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Describe any symptoms (optional)..."
+                placeholder="e.g. Fever since 2 days"
                 className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               ></textarea>
             </div>
@@ -877,11 +880,11 @@ export const BookAppointment: React.FC = () => {
             {/* Fee & Confirmation Notice */}
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-[#86868b]">Consultation Fee</span>
+                <span className="text-[#86868b]">Fee</span>
                 <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
               </div>
               <p className="text-[11px] text-[#86868b] leading-relaxed">
-                Pay the receptionist by UPI over a call, or at the desk, to confirm your token. Whoever pays first is confirmed first.
+                Pay the receptionist by UPI over a call or at the desk. First to pay is confirmed first.
               </p>
             </div>
 
@@ -889,9 +892,9 @@ export const BookAppointment: React.FC = () => {
               <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-start gap-2.5">
                 <AlertCircle className="w-4 h-4 text-[#86868b] shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold block text-[#1d1d1f] mb-0.5">Booking Unavailable at this Clinic</span>
+                  <span className="font-semibold block text-[#1d1d1f] mb-0.5">Booking closed</span>
                   <span className="text-[#86868b]">
-                    Online queue booking is currently closed for this doctor at {selectedClinic?.clinic.clinicName || 'this facility'} at this clinic for now.
+                    Online booking is closed at {selectedClinic?.clinic.clinicName || 'this clinic'} for now.
                   </span>
                 </div>
               </div>
@@ -899,25 +902,25 @@ export const BookAppointment: React.FC = () => {
 
             {isSelectedSlotOnLeave && (
               <div className="p-3 rounded-xl bg-warning-soft/80 border border-warning-line/80 text-warning text-xs">
-                Doctor is on leave on this date{queuePreview?.leaveReason ? ` (${queuePreview.leaveReason})` : ''}. Please pick another date.
+                The doctor is on leave this day{queuePreview?.leaveReason ? ` (${queuePreview.leaveReason})` : ''}. Pick another date.
               </div>
             )}
 
             {isSelectedSlotDayOff && (
               <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
-                Doctor does not consult on {queuePreview?.dayName || 'this day'}s at this clinic facility. Available sitting days: {(queuePreview?.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).join(', ')}.
+                The doctor isn’t here on {queuePreview?.dayName || 'this day'}s. Available: {(queuePreview?.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']).map((d) => d.charAt(0) + d.slice(1).toLowerCase()).join(', ')}.
               </div>
             )}
 
             {isSelectedSlotPassed && (
               <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
-                This shift has ended for today. Pick an upcoming shift or future date.
+                This shift has ended. Pick another shift or date.
               </div>
             )}
 
             {isSelectedSlotFull && !isSelectedSlotPassed && !isSelectedSlotOnLeave && !isSelectedSlotDayOff && (
               <div className="p-3 rounded-xl bg-danger-soft/80 border border-danger-line/80 text-danger text-xs">
-                Shift is full. Select another slot or date.
+                This shift is full. Pick another shift or date.
               </div>
             )}
 
@@ -928,20 +931,20 @@ export const BookAppointment: React.FC = () => {
                 className="w-full sm:w-auto h-11 px-7 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {!doctor.clinics || doctor.clinics.length === 0
-                  ? 'Booking Unavailable'
+                  ? 'Booking closed'
                   : !hasActiveReceptionist
-                  ? 'Booking Unavailable (No Desk Staff)'
+                  ? 'Booking closed'
                   : submitting
-                  ? 'Submitting Request...'
+                  ? 'Booking...'
                   : isSelectedSlotOnLeave
-                  ? 'Doctor on Leave'
+                  ? 'Doctor on leave'
                   : isSelectedSlotDayOff
-                  ? 'Not Sitting on this Day'
+                  ? 'Day off'
                   : isSelectedSlotPassed
-                  ? 'Shift Ended'
+                  ? 'Shift ended'
                   : isSelectedSlotFull
-                  ? 'Shift Full'
-                  : `Submit Request to Receptionist (₹${activeFee})`}
+                  ? 'Shift full'
+                  : `Book Token · ₹${activeFee}`}
               </button>
             </div>
           </form>

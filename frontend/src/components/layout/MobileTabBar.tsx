@@ -119,7 +119,7 @@ export const MobileTabBar: React.FC = () => {
       >
         <div className="flex items-center justify-around max-w-md mx-auto">
           {renderTab('/clinic/dashboard?tab=doctors', 'Doctors', Users, isDoctorsActive)}
-          {renderTab('/clinic/dashboard?tab=receptionists', 'Desk Staff', UserCheck, isStaffActive)}
+          {renderTab('/clinic/dashboard?tab=receptionists', 'Staff', UserCheck, isStaffActive)}
           {renderTab('/clinic/dashboard?tab=appointments', 'Bookings', CalendarCheck, isBookingsActive)}
         </div>
       </nav>
@@ -143,9 +143,9 @@ export const MobileTabBar: React.FC = () => {
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/92 backdrop-blur-xl border-t border-[#e5e5ea] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1 px-2 shadow-[0_-2px_12px_rgba(0,0,0,0.03)] select-none transition-all duration-200"
       >
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {renderTab('/receptionist/dashboard?tab=queue', 'Live Queue', Clock, isQueueActive)}
+          {renderTab('/receptionist/dashboard?tab=queue', 'Queue', Clock, isQueueActive)}
           {renderTab('/receptionist/dashboard?tab=walkin', 'Walk-in', UserPlus, isWalkinActive)}
-          {renderTab('/receptionist/dashboard?tab=pending', 'Approvals', ShieldCheck, isPendingActive)}
+          {renderTab('/receptionist/dashboard?tab=pending', 'Pending', ShieldCheck, isPendingActive)}
           {renderTab('/receptionist/dashboard?tab=doctors', 'Doctors', Stethoscope, isDoctorsActive)}
         </div>
       </nav>
@@ -172,7 +172,7 @@ export const MobileTabBar: React.FC = () => {
           {renderTab('/admin?tab=doctors', 'Doctors', Stethoscope, isDoctorsActive)}
           {renderTab('/admin?tab=clinics', 'Clinics', Building2, isClinicsActive)}
           {renderTab('/admin?tab=appointments', 'Bookings', CalendarCheck, isAppointmentsActive)}
-          {renderTab('/admin?tab=messages', 'Inquiries', Mail, isMessagesActive)}
+          {renderTab('/admin?tab=messages', 'Messages', Mail, isMessagesActive)}
         </div>
       </nav>
     );
@@ -197,7 +197,7 @@ export const MobileTabBar: React.FC = () => {
         {/* Live Passes / Appointments */}
         {renderTab(
           user ? '/patient/appointments' : '/login?redirect=/patient/appointments',
-          'My Passes',
+          'Appointments',
           Ticket,
           isPassesActive
         )}

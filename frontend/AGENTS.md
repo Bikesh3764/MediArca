@@ -63,6 +63,13 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
    - The global nav stays white and frosted (brand decision); don't change it to black.
    - Page titles use `SubNav` with a `width` matching the page content; portals use `DashboardLayout` (including Admin).
    - On phones, tap targets should be at least 36px tall and nothing may overflow the screen width; check at 390px.
+   - Action buttons are blue (`#0066cc`) or white with a hairline border. Only destructive confirms (Delete, Cancel appointment) may be red. Green/orange are for status dots and chips, never buttons (FIX-043).
+13. **Shared Display Helpers (FIX-043)**:
+   - Dates: `formatDisplayDate(yyyy-mm-dd)` from `services/api` ("Today", "Tomorrow", "Tue, 27 Oct"). Never print raw ISO dates or call `toLocaleDateString()` without `'en-IN'`.
+   - Addresses: `formatClinicAddress(clinic)` from `utils/address.ts` (skips city/state already in the address).
+   - Profile photos: `<AvatarImage>` from `components/ui/AvatarImage.tsx` (falls back to the initial).
+   - Shift names: `cleanSlotName` keeps the doctor's own name ("Morning Shift"); don't strip it to "Shift 1".
+   - Words: say Doctor, Clinic, Join, Remove, Receptionist, Appointments — not Practitioner, Facility, Affiliate, Detach, Provision, Console, Passes.
 11. **Typography**:
    Do not load SF Pro from third-party CDNs (licence + render blocking). Apple devices get SF Pro via `-apple-system`; others use Inter.
 

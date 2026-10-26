@@ -19,39 +19,39 @@ export const FAQ: React.FC = () => {
   const faqs: FAQItem[] = [
     {
       id: '1',
-      question: 'How does the live queue token system work?',
+      question: 'How does the live queue work?',
       answer:
-        'When you book an appointment, you get a queue token number. As the doctor sees patients, your live pass updates to show how many patients are ahead and when to reach the clinic.',
+        'When you book, you get a token number. Your appointment page shows how many people are ahead of you and when to reach the clinic.',
     },
     {
       id: '2',
-      question: 'Do I need to pay any advance fee online?',
+      question: 'Do I pay anything online?',
       answer:
-        'No. Booking on MediArca is 100% free with zero upfront charges. You pay the doctor’s consultation fee directly at the clinic counter upon arrival.',
+        'No. There is no booking fee. You pay the doctor’s fee to the receptionist, by UPI over a call or at the desk. Your token is confirmed once you pay.',
     },
     {
       id: '3',
-      question: 'Can I book an appointment for my family members?',
+      question: 'Can I book for my family?',
       answer:
-        'Yes. On the booking page, select "Booking for: Dependent / Family" and enter their name and age. The token pass will be issued under their name.',
+        'Yes. On the booking page, choose "Someone else" and enter their name and age. The token is made in their name.',
     },
     {
       id: '4',
-      question: 'Can I cancel my booking if my plans change?',
+      question: 'Can I cancel?',
       answer:
-        'Yes, you can cancel your token pass at any time before your consultation from your appointments tab. There are no cancellation fees or penalties.',
+        'Yes, any time before your visit, from Appointments. There is no cancellation fee.',
     },
     {
       id: '5',
-      question: 'What happens if the doctor steps out or is delayed?',
+      question: 'What if the doctor is late?',
       answer:
-        'The clinic staff updates the doctor’s live status (In Cabin, Stepped Out, or Break) which is shown immediately on your live ticket so you know the exact situation.',
+        'The clinic updates the doctor’s status (In Cabin, Stepped Out or Not in Cabin). You see it on your appointment right away.',
     },
     {
       id: '6',
-      question: 'How do I check in when I arrive at the clinic?',
+      question: 'How do I check in at the clinic?',
       answer:
-        'When you reach the clinic, simply tell your token number to the receptionist or scan the clinic QR code at the front desk to confirm your arrival.',
+        'Scan the QR code at the front desk with your phone. You can also tell the receptionist your token number.',
     },
   ];
 
@@ -61,10 +61,10 @@ export const FAQ: React.FC = () => {
         {/* Header (No pill badge) */}
         <div className="text-center space-y-3">
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f]">
-            Help & FAQs
+            FAQ
           </h1>
           <p className="text-sm text-[#6e6e73]">
-            Simple answers to common questions about booking and queue tokens.
+            Quick answers about booking and tokens.
           </p>
         </div>
 
@@ -108,7 +108,7 @@ export const FAQ: React.FC = () => {
         <div className="p-6 rounded-2xl bg-white border border-[#e5e5ea] text-center space-y-2">
           <p className="text-sm font-semibold text-[#1d1d1f]">Still have a question?</p>
           <p className="text-xs text-[#6e6e73]">
-            Feel free to write to us anytime at{' '}
+            Write to us at{' '}
             <a href="mailto:contact@mediarca.in" className="text-[#0066cc] font-normal hover:underline">
               contact@mediarca.in
             </a>

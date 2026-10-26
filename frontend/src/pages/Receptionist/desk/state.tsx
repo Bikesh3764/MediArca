@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { api, ReceptionistDashboardData, ReceptionistQueueItem, getLocalDateString, getIndianTimeMinutes, timeToMinutes, Appointment, QueuePreview } from '../../../services/api';
+import { api, ReceptionistDashboardData, ReceptionistQueueItem, getLocalDateString, getIndianTimeMinutes, timeToMinutes, Appointment, QueuePreview, formatDisplayDate } from '../../../services/api';
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
+import { formatClinicAddress } from '../../../utils/address';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../../utils/liveEvents';
 import { useAuth } from '../../../context/AuthContext';
@@ -178,7 +179,7 @@ export const useReceptionistDashboardState = () => {
         navigate('/receptionist/login');
         return;
       }
-      setError(err.message || 'Failed to load desk details');
+      setError(err.message || 'Couldn’t load desk details. Try again.');
     } finally {
       setLoading(false);
     }
@@ -298,14 +299,14 @@ export const useReceptionistDashboardState = () => {
           ? ' (Pending Doctor Approval)'
           : '';
       setSuccessMsg(
-        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${tokenDisplay}.`
+        `${rescheduleTarget.patientName} moved to ${formatDisplayDate(rescheduleDate)}${tokenDisplay}.`
       );
       setRescheduleTarget(null);
       if (queueDoctorId) fetchQueue();
       fetchPendingAppointments();
       fetchDeskData();
     } catch (err: any) {
-      setRescheduleError(err.message || 'Failed to reschedule appointment');
+      setRescheduleError(err.message || 'Couldn’t reschedule appointment. Try again.');
     } finally {
       setRescheduling(false);
     }
@@ -322,16 +323,16 @@ export const useReceptionistDashboardState = () => {
         fetchQueue();
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to approve appointment');
+      setError(err.message || 'Couldn’t approve appointment. Try again.');
     } finally {
       setApprovingId(null);
     }
   };
   const handleRejectPendingAppointment = async (apptId: string) => {
     const ok = await confirm({
-      title: 'Decline Booking Request?',
-      message: 'Decline this booking? The patient will be told.',
-      confirmText: 'Decline Request',
+      title: 'Decline booking?',
+      message: 'The patient will be told.',
+      confirmText: 'Decline',
       isDestructive: true,
     });
     if (!ok) return;
@@ -345,8 +346,8 @@ export const useReceptionistDashboardState = () => {
       await fetchPendingAppointments();
       fetchDeskData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to decline appointment');
-      setError(err.message || 'Failed to decline appointment');
+      toast.error(err.message || 'Couldn’t decline appointment. Try again.');
+      setError(err.message || 'Couldn’t decline appointment. Try again.');
     } finally {
       setRejectingId(null);
     }
@@ -393,7 +394,8 @@ export const useReceptionistDashboardState = () => {
         effectiveClinicId || undefined
       );
       setWalkinPreview(preview);
-      if (preview.selectedSlotId && !slotId) {
+      const currentSlotStatus = preview.availableSlots?.find((s) => s.slot.id === slotId);
+      if (preview.selectedSlotId && (!slotId || ((preview.isPassed || currentSlotStatus?.isPassed) && preview.selectedSlotId !== slotId))) {
         setSlotId(preview.selectedSlotId);
       }
     } catch (err) {
@@ -474,7 +476,7 @@ export const useReceptionistDashboardState = () => {
       await refreshUser();
       setSuccessMsg('Temporary password updated. Reception desk unlocked.');
     } catch (err: any) {
-      setPasswordError(err.message || 'Failed to update password');
+      setPasswordError(err.message || 'Couldn’t update password. Try again.');
     } finally {
       setChangingPassword(false);
     }
@@ -483,12 +485,12 @@ export const useReceptionistDashboardState = () => {
   const handleWalkinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDoctorId || !patientName.trim() || !patientPhone.trim()) {
-      setError('Please provide doctor, patient name, and mobile number');
+      setError('Enter the doctor, name and mobile.');
       return;
     }
 
     if (!isValidIndianPhone(patientPhone)) {
-      setError('Please enter a valid 10-digit mobile number');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
 
@@ -506,7 +508,7 @@ export const useReceptionistDashboardState = () => {
     if (patientAge.trim()) {
       const parsedAge = parseInt(patientAge.trim(), 10);
       if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
-        setError('Please enter a valid patient age between 0 and 125.');
+        setError('Enter an age between 0 and 125.');
         return;
       }
     }
@@ -569,7 +571,7 @@ export const useReceptionistDashboardState = () => {
       fetchDeskData();
       fetchWalkinPreview();
     } catch (err: any) {
-      setError(err.message || 'Failed to book walk-in appointment');
+      setError(err.message || 'Couldn’t add walk-in. Try again.');
     } finally {
       setBookingLoading(false);
     }
@@ -585,8 +587,8 @@ export const useReceptionistDashboardState = () => {
       const promptMsg = `Are you sure you want to cancel the queue appointment for ${patientName}?`;
       const ok = confirm
         ? await confirm({
-            title: 'Cancel Queue Appointment?',
-            message: `${promptMsg} This action cannot be undone.`,
+            title: 'Cancel appointment?',
+            message: `${promptMsg} This can’t be undone.`,
             confirmText: 'Yes, Cancel',
             isDestructive: true,
           })
@@ -608,7 +610,7 @@ export const useReceptionistDashboardState = () => {
       if (targetAppt) {
         const targetDate = targetAppt.appointmentDate || queueDate;
         if (targetDate !== getLocalDateString()) {
-          toast.warning(`Cannot update an appointment scheduled for ${targetDate} to '${status}'. Only today's appointments can be updated.`);
+          toast.warning('You can only update today’s appointments.');
           return;
         }
         if (!targetAppt.isCheckedIn) {
@@ -620,11 +622,11 @@ export const useReceptionistDashboardState = () => {
 
     try {
       await api.updateAppointmentStatus(appointmentId, status);
-      toast.success(`Status updated to ${status.replace('_', ' ')}`);
+      toast.success('Updated');
       fetchQueue();
       fetchDeskData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update status');
+      toast.error(err.message || 'Couldn’t update status. Try again.');
     }
   };
   const [togglingCheckinId, setTogglingCheckinId] = useState<string | null>(null);
@@ -648,7 +650,7 @@ export const useReceptionistDashboardState = () => {
         );
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update clinic arrival status');
+      toast.error(err.message || 'Couldn’t update arrival. Try again.');
     } finally {
       setTogglingCheckinId(null);
     }
@@ -672,7 +674,7 @@ export const useReceptionistDashboardState = () => {
     },
     {
       id: 'pending',
-      label: 'Approvals',
+      label: 'Pending',
       icon: ShieldCheck,
       active: activeTab === 'pending',
       onClick: () => setActiveTab('pending'),
@@ -695,13 +697,8 @@ export const useReceptionistDashboardState = () => {
       badge: unreadNotifCount > 0 ? unreadNotifCount : undefined,
     },
   ];
-  const clinicCity = data?.clinic?.city?.trim();
-  const clinicAddr = data?.clinic?.address?.trim();
-  const displayLocation = [clinicAddr, clinicCity]
-    .filter(Boolean)
-    .filter((v, i, a) => a.indexOf(v) === i)
-    .join(', ');
-  const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName}` : 'Reception Desk';
+  const displayLocation = formatClinicAddress(data?.clinic, { withState: false });
+  const titleText = data?.clinic?.clinicName ? `${data.clinic.clinicName}` : 'Front Desk';
   const subtitleText = displayLocation ? `${displayLocation}` : undefined;
   return {
     user,
@@ -837,8 +834,6 @@ export const useReceptionistDashboardState = () => {
     setTogglingCheckinId,
     handleToggleCheckIn,
     navItems,
-    clinicCity,
-    clinicAddr,
     displayLocation,
     titleText,
     subtitleText,

@@ -25,7 +25,7 @@ export const EditStaffModal: React.FC = () => {
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Manage Doctor Desk Access</h3>
+                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Doctors they handle</h3>
                 <p className="text-[13px] text-[#86868b] mt-0.5">
                   {editingRec.fullName}
                 </p>
@@ -41,12 +41,12 @@ export const EditStaffModal: React.FC = () => {
 
             <form onSubmit={handleUpdateAssignedDoctors} className="space-y-4 pt-5">
               <p className="text-xs text-[#86868b] leading-relaxed">
-                Doctors this receptionist can manage:
+                Pick doctors:
               </p>
 
               {doctors.length === 0 ? (
                 <div className="p-4 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl text-xs text-[#86868b] text-center">
-                  No affiliated doctors currently onboarded to this clinic.
+                  No doctors yet.
                 </div>
               ) : (
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">

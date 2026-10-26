@@ -1,3 +1,4 @@
+import { cleanSlotName } from '../../../services/api';
 
 export interface TokenPassData {
   queueNumber: number;
@@ -48,14 +49,6 @@ export const getCleanReason = (reason?: string | null, patientName?: string | nu
 
   return r;
 };
-export const cleanShiftDisplayName = (shiftStr?: string | null): string => {
-  if (!shiftStr || !shiftStr.trim()) return 'Shift 1';
-  const shiftNumMatch = shiftStr.match(/shift\s*(\d+)/i);
-  if (shiftNumMatch) {
-    return `Shift ${shiftNumMatch[1]}`;
-  }
-  let cleaned = shiftStr.replace(/\s*\([^)]*\)/g, '').trim();
-  cleaned = cleaned.replace(/\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*[-–to]\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?/gi, '').trim();
-  cleaned = cleaned.replace(/\s*(?:morning|afternoon|evening|night)/gi, '').trim();
-  return cleaned || 'Shift 1';
-};
+// Keeps the doctor's own shift name ("Morning Shift"); it used to strip "Morning"/"Evening",
+// which merged different shifts into one "Shift" group.
+export const cleanShiftDisplayName = (shiftStr?: string | null): string => cleanSlotName(shiftStr, 'Shift 1');

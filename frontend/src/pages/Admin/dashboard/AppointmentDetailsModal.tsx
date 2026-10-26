@@ -42,31 +42,31 @@ export const AppointmentDetailsModal: React.FC = () => {
             <div className="space-y-3 text-xs text-[#1d1d1f]">
               {/* Patient Block */}
               <div className="p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-2">
-                <span className="text-xs font-semibold text-[#1d1d1f] block">Patient Information</span>
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Patient</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Patient Name</span>
+                    <span className="text-[#86868b] block text-[11px]">Name</span>
                     <strong className="text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patient?.user?.fullName || selectedAppointment.patientName || 'Walk-in Patient'}
                     </strong>
                     {selectedAppointment.isForOther && (
-                      <span className="text-[11px] text-[#86868b] font-normal">(Family Member)</span>
+                      <span className="text-[11px] text-[#86868b] font-normal">(Family)</span>
                     )}
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Contact Phone</span>
+                    <span className="text-[#86868b] block text-[11px]">Phone</span>
                     <span className="font-normal text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patientPhone || selectedAppointment.patient?.user?.phone || 'Not Provided'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Email Address</span>
+                    <span className="text-[#86868b] block text-[11px]">Email</span>
                     <span className="font-normal text-[#1d1d1f] truncate block mt-0.5">
                       {selectedAppointment.patient?.user?.email || 'N/A'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Arrival Status</span>
+                    <span className="text-[#86868b] block text-[11px]">Arrival</span>
                     <span className="font-normal text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.isCheckedIn ? 'Checked-in at Desk' : 'Not Checked-in'}
                     </span>
@@ -76,15 +76,15 @@ export const AppointmentDetailsModal: React.FC = () => {
 
               {/* Doctor & Clinic Block */}
               <div className="p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea] space-y-2">
-                <span className="text-xs font-semibold text-[#1d1d1f] block">Clinical Facility & Practitioner</span>
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Doctor & Clinic</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Attending Practitioner</span>
+                    <span className="text-[#86868b] block text-[11px]">Doctor</span>
                     <strong className="text-[#1d1d1f] mt-0.5 block">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
                     <span className="text-[11px] text-[#0066cc] block">{selectedAppointment.doctor?.specialty}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Facility Name</span>
+                    <span className="text-[#86868b] block text-[11px]">Clinic</span>
                     <strong className="text-[#1d1d1f] mt-0.5 block">{resolveClinic(selectedAppointment).name}</strong>
                     {resolveClinic(selectedAppointment).city && (
                       <span className="text-[11px] text-[#86868b] block">{resolveClinic(selectedAppointment).city}</span>
@@ -100,7 +100,7 @@ export const AppointmentDetailsModal: React.FC = () => {
               {/* Clinical Notes / Reason */}
               {(selectedAppointment.reasonForVisit || selectedAppointment.symptoms) && (
                 <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-1">
-                  <span className="text-xs font-semibold text-[#1d1d1f] block">Reason for Visit / Symptoms</span>
+                  <span className="text-xs font-semibold text-[#1d1d1f] block">Reason</span>
                   <p className="text-xs text-[#48484a] leading-relaxed">
                     {selectedAppointment.reasonForVisit || selectedAppointment.symptoms}
                   </p>

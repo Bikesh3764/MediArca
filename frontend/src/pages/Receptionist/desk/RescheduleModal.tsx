@@ -29,9 +29,9 @@ export const RescheduleModal: React.FC = () => {
             <div className="flex items-start justify-between pb-3 border-b border-[#f0f0f2]">
               <div>
                 <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                  Reschedule Appointment
+                  Move Appointment
                 </h3>
-                <p className="text-xs text-[#86868b] mt-0.5">Shift patient visit to another date or shift</p>
+                <p className="text-xs text-[#86868b] mt-0.5">Pick a new date or shift.</p>
               </div>
               <button aria-label="Close"
                 type="button"
@@ -52,7 +52,7 @@ export const RescheduleModal: React.FC = () => {
                 <span className="font-semibold text-[#1d1d1f]">{cleanDoctorName(rescheduleTarget.doctorName)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#86868b]">Current Date</span>
+                <span className="text-[#86868b]">Current date</span>
                 <span className="font-normal text-[#1d1d1f]">
                   {rescheduleTarget.currentDate}
                   {rescheduleTarget.currentQueueNumber ? ` (#${rescheduleTarget.currentQueueNumber})` : ''}
@@ -62,7 +62,7 @@ export const RescheduleModal: React.FC = () => {
 
             <div>
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                New Appointment Date
+                New date
               </label>
               <input
                 type="date"
@@ -103,7 +103,7 @@ export const RescheduleModal: React.FC = () => {
               return (
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Consultation Shift
+                    Shift
                   </label>
                   <div className="relative">
                     <select
@@ -111,7 +111,7 @@ export const RescheduleModal: React.FC = () => {
                       onChange={(e) => setRescheduleSlotId(e.target.value)}
                       className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f]  focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer"
                     >
-                      <option value="">Standard Hours / Any Shift</option>
+                      <option value="">Any shift</option>
                       {doc.slots.map((s) => (
                         <option key={s.id} value={s.id}>
                           {formatShiftOption(s)}

@@ -26,7 +26,7 @@ export const Footer: React.FC = () => {
 
             {/* Direct Contact Channels */}
             <div className="space-y-2 pt-1 text-sm text-[#48484a]">
-              <p className="text-xs text-[#86868b] font-normal">Support & Inquiries</p>
+              <p className="text-xs text-[#86868b] font-normal">Contact</p>
               <a
                 href="mailto:contact@mediarca.in"
                 className="inline-flex items-center gap-2 font-normal text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
@@ -40,7 +40,7 @@ export const Footer: React.FC = () => {
           {/* Column 2: Clinical Care (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
             <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-              Clinical Care
+              Patients
             </h4>
             <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
               <li>
@@ -50,7 +50,7 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/doctors?tab=clinics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Verified Clinics
+                  Clinics
                 </Link>
               </li>
               <li>
@@ -58,17 +58,17 @@ export const Footer: React.FC = () => {
                   to={user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login'}
                   className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block"
                 >
-                  Live Queue Passes
+                  Appointments
                 </Link>
               </li>
               <li>
                 <Link to="/clinic-checkin" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Clinic Arrival Guide
+                  Check In
                 </Link>
               </li>
               <li>
                 <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  How Queue Works
+                  How It Works
                 </Link>
               </li>
             </ul>
@@ -116,27 +116,22 @@ export const Footer: React.FC = () => {
           {/* Column 4: Company & Support (Spans 3 columns) */}
           <div className="lg:col-span-3 space-y-4">
             <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-              Company & Help
+              Company
             </h4>
             <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
               <li>
                 <Link to="/about" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  About MediArca
-                </Link>
-              </li>
-              <li>
-                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  How It Works
+                  About
                 </Link>
               </li>
               <li>
                 <Link to="/faq" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  FAQs & Help
+                  FAQ
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Contact Support
+                  Contact
                 </Link>
               </li>
             </ul>
@@ -148,7 +143,7 @@ export const Footer: React.FC = () => {
           <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-                Desk & Partner Portals
+                Sign in as
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
@@ -156,28 +151,28 @@ export const Footer: React.FC = () => {
                 to="/patient/login"
                 className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
-                Patient Portal
+                Patient
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/doctor/login"
                 className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
-                Doctor Console
+                Doctor
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/clinic/login"
                 className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
-                Clinic Management
+                Clinic
               </Link>
               <span className="text-[#d2d2d7]">•</span>
               <Link
                 to="/receptionist/login"
                 className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
               >
-                Reception Desk
+                Receptionist
               </Link>
             </div>
           </div>
@@ -186,7 +181,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Disclaimer & Copyright Bar */}
         <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">
           <p className="text-xs leading-relaxed text-[#86868b]">
-            <strong>Medical Disclaimer:</strong> MediArca manages clinic queues and is not an emergency service. In an emergency, call 112 / 108 or go to the nearest hospital.
+            <strong className="font-semibold">Not for emergencies.</strong> In an emergency, call 112 / 108 or go to the nearest hospital.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
@@ -194,17 +189,14 @@ export const Footer: React.FC = () => {
               © {currentYear} MediArca. All rights reserved.
             </p>
             <div className="flex flex-wrap items-center gap-5 text-xs sm:text-sm text-[#48484a]">
-              <Link to="/terms" className="hover:text-[#0066cc] transition-colors">
+              <Link to="/terms" className="hover:text-[#0066cc] transition-colors py-1.5 inline-block">
                 Terms
               </Link>
-              <Link to="/privacy" className="hover:text-[#0066cc] transition-colors">
+              <Link to="/privacy" className="hover:text-[#0066cc] transition-colors py-1.5 inline-block">
                 Privacy
               </Link>
-              <Link to="/refund-policy" className="hover:text-[#0066cc] transition-colors">
+              <Link to="/refund-policy" className="hover:text-[#0066cc] transition-colors py-1.5 inline-block">
                 Cancellation Policy
-              </Link>
-              <Link to="/faq" className="hover:text-[#0066cc] transition-colors">
-                Help
               </Link>
             </div>
           </div>

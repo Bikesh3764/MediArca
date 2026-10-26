@@ -1,3 +1,4 @@
+import { formatClinicAddress } from '../../utils/address';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -49,7 +50,7 @@ export const ReceptionistAuth: React.FC = () => {
       const loggedUser = await login({ email: email.trim(), password, role: 'RECEPTIONIST' });
       if (loggedUser.role !== 'RECEPTIONIST') {
         logout();
-        setError('This account does not have receptionist desk permissions.');
+        setError('This isn’t a receptionist account.');
         setSubmitting(false);
         return;
       }
@@ -79,11 +80,11 @@ export const ReceptionistAuth: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters long.');
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      setError('New password and confirmation do not match.');
+      setError('Passwords don’t match.');
       return;
     }
 
@@ -104,10 +105,10 @@ export const ReceptionistAuth: React.FC = () => {
         const currentUser = await api.getMe();
         updateUser({ ...currentUser, mustChangePassword: false });
       }
-      toast.success('Password updated successfully');
+      toast.success('Password saved');
       navigate('/receptionist/dashboard');
     } catch (err: any) {
-      const msg = err.message || 'Failed to update permanent password';
+      const msg = err.message || 'Couldn’t save password. Try again.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -124,7 +125,7 @@ export const ReceptionistAuth: React.FC = () => {
       const loggedUser = await login({ email: 'receptionist@mediarca.com', password: 'receptionist123', role: 'RECEPTIONIST' });
       if (loggedUser.role !== 'RECEPTIONIST') {
         logout();
-        setError('This account does not have receptionist desk permissions.');
+        setError('This isn’t a receptionist account.');
         setSubmitting(false);
         return;
       }
@@ -166,17 +167,17 @@ export const ReceptionistAuth: React.FC = () => {
     setError(null);
 
     if (!applyFullName.trim() || !applyEmail.trim() || !applyPassword.trim()) {
-      setError('Please fill in your full name, email, and password.');
+      setError('Enter your name, email and password.');
       return;
     }
 
     if (!isValidIndianPhone(applyPhone)) {
-      setError('Please provide a valid 10-digit Indian phone number.');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
 
     if (!applyClinicId) {
-      setError('Please select a verified clinic to join.');
+      setError('Choose a clinic.');
       return;
     }
 
@@ -197,13 +198,13 @@ export const ReceptionistAuth: React.FC = () => {
       });
 
       setApplySuccessClinic(selectedClinic?.clinicName || 'the clinic');
-      toast.success('Receptionist application submitted for clinic review');
+      toast.success('Request sent to the clinic');
       setApplyFullName('');
       setApplyEmail('');
       setApplyPhone('');
       setApplyPassword('');
     } catch (err: any) {
-      const msg = err.message || 'Failed to submit receptionist application.';
+      const msg = err.message || 'Couldn’t send request. Try again.';
       setError(msg);
       toast.error(msg);
     } finally {
@@ -221,7 +222,7 @@ export const ReceptionistAuth: React.FC = () => {
                 <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
               </Link>
               <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                Set Permanent Password
+                Set Your Password
               </h1>
             </div>
 
@@ -242,7 +243,7 @@ export const ReceptionistAuth: React.FC = () => {
                   required
                   value={tempPassword}
                   onChange={(e) => setTempPassword(e.target.value)}
-                  placeholder="Enter temporary password"
+                  placeholder="From your clinic"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -312,7 +313,7 @@ export const ReceptionistAuth: React.FC = () => {
                   {changingPassword ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Saving Password...</span>
+                      <span>Saving...</span>
                     </>
                   ) : (
                     'Save & Enter Reception Desk'
@@ -346,7 +347,7 @@ export const ReceptionistAuth: React.FC = () => {
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
             </Link>
             <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-              Reception Desk
+              Receptionist
             </h1>
           </div>
 
@@ -365,7 +366,7 @@ export const ReceptionistAuth: React.FC = () => {
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
-              Desk Sign In
+              Sign In
             </button>
             <button
               type="button"
@@ -379,7 +380,7 @@ export const ReceptionistAuth: React.FC = () => {
                   : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
               }`}
             >
-              Apply to Clinic
+              Join a Clinic
             </button>
           </div>
 
@@ -394,10 +395,10 @@ export const ReceptionistAuth: React.FC = () => {
             <div className="text-center py-4 space-y-4">
               <div>
                 <h3 className="text-base font-semibold text-[#1d1d1f]">
-                  Application Submitted
+                  Request sent
                 </h3>
                 <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
-                  Your application to join <span className="font-normal text-[#1d1d1f]">{applySuccessClinic}</span> has been sent to the clinic administrator.
+                  Your application to join <span className="font-normal text-[#1d1d1f]">{applySuccessClinic}</span> has been sent to the clinic.
                 </p>
               </div>
               <button
@@ -408,7 +409,7 @@ export const ReceptionistAuth: React.FC = () => {
                 }}
                 className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer"
               >
-                Back to Desk Sign In
+                Back to Sign In
               </button>
             </div>
           ) : authMode === 'apply' ? (
@@ -422,28 +423,28 @@ export const ReceptionistAuth: React.FC = () => {
                   required
                   value={applyFullName}
                   onChange={(e) => setApplyFullName(e.target.value)}
-                  placeholder="Your full legal name"
+                  placeholder="Full name"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Email Address
+                  Email
                 </label>
                 <input
                   type="email"
                   required
                   value={applyEmail}
                   onChange={(e) => setApplyEmail(e.target.value)}
-                  placeholder="name@domain.com"
+                  placeholder="name@example.com"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number
+                  Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
@@ -464,7 +465,7 @@ export const ReceptionistAuth: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
-                  <span>Clinic Facility</span>
+                  <span>Clinic</span>
                   {clinicsLoading && <span className="text-[11px] font-normal text-[#86868b]">Loading…</span>}
                 </label>
                 <div className="relative">
@@ -475,11 +476,11 @@ export const ReceptionistAuth: React.FC = () => {
                     className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
                     {clinics.length === 0 ? (
-                      <option value="">No verified clinics available</option>
+                      <option value="">No clinics yet</option>
                     ) : (
                       clinics.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.clinicName} — {c.address}{c.city ? `, ${c.city}` : ''}
+                          {c.clinicName} — {formatClinicAddress(c, { withState: false })}
                         </option>
                       ))
                     )}
@@ -524,14 +525,14 @@ export const ReceptionistAuth: React.FC = () => {
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Desk Email
+                  Email
                 </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="receptionist@domain.com"
+                  placeholder="name@example.com"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -595,7 +596,7 @@ export const ReceptionistAuth: React.FC = () => {
         <p className="mt-5 text-center text-xs text-[#86868b]">
           Clinic administrator?{' '}
           <Link to="/clinic/login" className="text-[#0066cc] font-semibold hover:underline">
-            Clinic Portal Sign In
+            Clinic sign in
           </Link>
         </p>
       </div>

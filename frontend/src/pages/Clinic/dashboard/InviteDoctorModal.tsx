@@ -41,7 +41,7 @@ export const InviteDoctorModal: React.FC = () => {
             <form onSubmit={handleAddDoctor} className="space-y-4 pt-5">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Doctor's Registered Email
+                  Doctor’s email
                 </label>
                 <input
                   type="email"
@@ -49,7 +49,7 @@ export const InviteDoctorModal: React.FC = () => {
                   disabled={adding}
                   value={doctorEmail}
                   onChange={(e) => setDoctorEmail(e.target.value)}
-                  placeholder="dr.sarah@mediarca.com"
+                  placeholder="doctor@example.com"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -59,7 +59,7 @@ export const InviteDoctorModal: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-normal text-[#86868b]">
-                      Or search from verified doctors
+                      Or search doctors
                     </label>
                     <span className="text-xs text-[#86868b]">{allDoctors.length} available</span>
                   </div>
@@ -67,7 +67,7 @@ export const InviteDoctorModal: React.FC = () => {
                     type="text"
                     value={doctorSearchQuery}
                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
-                    placeholder="Filter by name, specialty, or email..."
+                    placeholder="Name, specialty or email"
                     className="w-full h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] mb-2.5"
                   />
                   <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
@@ -105,7 +105,7 @@ export const InviteDoctorModal: React.FC = () => {
                             </div>
                             {isAlreadyAdded ? (
                               <span className="text-[11px] text-[#86868b] px-2.5 py-1 rounded-full bg-white border border-[#e5e5ea] font-normal shrink-0">
-                                Affiliated
+                                Added
                               </span>
                             ) : isPendingInvitation ? (
                               <span className="text-[11px] text-warning bg-warning-soft border border-warning-line/80 px-2.5 py-1 rounded-full font-normal shrink-0">
@@ -116,7 +116,7 @@ export const InviteDoctorModal: React.FC = () => {
                                 type="button"
                                 disabled={adding}
                                 onClick={() => handleQuickAdd(docEmail, d.id)}
-                                className="h-7 px-3 rounded-full bg-success hover:bg-success text-white text-xs font-semibold cursor-pointer transition-all active:scale-[0.98] shrink-0"
+                                className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal cursor-pointer transition-all active:scale-[0.98] shrink-0"
                               >
                                 {adding ? 'Accepting...' : 'Accept'}
                               </button>

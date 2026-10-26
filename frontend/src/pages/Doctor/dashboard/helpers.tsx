@@ -1,4 +1,4 @@
-import { Appointment, getLocalDateString } from '../../../services/api';
+import { Appointment, getLocalDateString, cleanSlotName } from '../../../services/api';
 
 export const getYesterdayDateString = (): string => {
   const d = new Date();
@@ -58,16 +58,15 @@ export const getSlotShortLabel = (appt: Appointment, slots: any[]): string => {
   if (appt.slotId) {
     const matched = slots.find((s) => s.id === appt.slotId);
     if (matched) {
-      return `Shift ${slots.indexOf(matched) + 1}`;
+      return cleanSlotName(matched.name, `Shift ${slots.indexOf(matched) + 1}`);
     }
   }
   if (appt.checkingWindow) {
-    const shiftMatch = appt.checkingWindow.match(/(Shift\s*\d+)/i);
-    if (shiftMatch) return shiftMatch[1];
     const matched = slots.find((s) => s.startTime && appt.checkingWindow?.includes(s.startTime));
     if (matched) {
-      return `Shift ${slots.indexOf(matched) + 1}`;
+      return cleanSlotName(matched.name, `Shift ${slots.indexOf(matched) + 1}`);
     }
+    return cleanSlotName(appt.checkingWindow);
   }
-  return 'Shift 1';
+  return 'Shift';
 };

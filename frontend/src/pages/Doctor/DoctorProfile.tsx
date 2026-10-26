@@ -1,3 +1,4 @@
+import { AvatarImage } from '../../components/ui/AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api, getFileUrl, ALL_SPECIALTIES } from '../../services/api';
@@ -51,7 +52,7 @@ export const DoctorProfile: React.FC = () => {
     if (!rawFile) return;
 
     if (!rawFile.type.startsWith('image/')) {
-      setErrorMsg('Please upload a valid image file (JPEG, PNG, WebP).');
+      setErrorMsg('Please choose a JPG, PNG or WebP image.');
       return;
     }
 
@@ -86,7 +87,7 @@ export const DoctorProfile: React.FC = () => {
       setSuccessMsg('Profile photo updated.');
       setTimeout(() => setAvatarOptimization(null), 5000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update profile photo');
+      setErrorMsg(err.message || 'Couldn’t update profile photo. Try again.');
       setAvatarOptimization(null);
     } finally {
       setAvatarLoading(false);
@@ -135,13 +136,13 @@ export const DoctorProfile: React.FC = () => {
       specialty === 'Other' ? customSpecialty.trim() : specialty.trim();
 
     if (!finalSpecialty) {
-      setErrorMsg('Please select or specify your clinical specialty.');
+      setErrorMsg('Please choose your specialty.');
       setSaving(false);
       return;
     }
 
     if (!isValidIndianPhone(phone)) {
-      setErrorMsg('Please enter a valid 10-digit Indian mobile number.');
+      setErrorMsg('Enter a valid 10-digit mobile number.');
       setSaving(false);
       return;
     }
@@ -160,9 +161,9 @@ export const DoctorProfile: React.FC = () => {
       updateUser(updatedUser);
       await refreshUser();
       setSuccessMsg('Doctor profile saved.');
-      toast.success('Doctor profile saved successfully');
+      toast.success('Profile saved');
     } catch (err: any) {
-      const errMsg = err.message || 'Failed to update doctor profile. Please try again.';
+      const errMsg = err.message || 'Couldn’t update doctor profile. Try again.';
       setErrorMsg(errMsg);
       toast.error(errMsg);
     } finally {
@@ -202,7 +203,7 @@ export const DoctorProfile: React.FC = () => {
     <DashboardLayout
       portalType="DOCTOR"
       navItems={navItems}
-      title="Profile & Settings"
+      title="Profile"
     >
       <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {successMsg && (
@@ -220,16 +221,12 @@ export const DoctorProfile: React.FC = () => {
         )}
 
         {/* Profile Avatar Card with Auto-Compression */}
-        <UtilityCard title="Profile Photo">
+        <UtilityCard title="Photo">
           <div className="flex flex-col sm:flex-row items-center gap-5">
             <div className="relative group">
               <div className="w-20 h-20 rounded-full overflow-hidden border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-center">
                 {user?.avatarUrl ? (
-                  <img
-                    src={getFileUrl(user.avatarUrl)}
-                    alt={user.fullName}
-                    className="w-full h-full object-cover"
-                  />
+                  <AvatarImage src={getFileUrl(user.avatarUrl)} name={user.fullName} className="w-full h-full object-cover" />
                 ) : (
                   <UserIcon className="w-9 h-9 text-[#86868b]" />
                 )}
@@ -277,11 +274,11 @@ export const DoctorProfile: React.FC = () => {
 
         <form onSubmit={handleSave} className="space-y-6">
           {/* Professional Credentials Card */}
-          <UtilityCard title="Professional Details">
+          <UtilityCard title="Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Full Name & Title
+                  Name
                 </label>
                 <input
                   type="text"
@@ -295,7 +292,7 @@ export const DoctorProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number
+                  Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
@@ -347,7 +344,7 @@ export const DoctorProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Experience (Years)
+                  Experience (years)
                 </label>
                 <input
                   type="number"
@@ -368,7 +365,7 @@ export const DoctorProfile: React.FC = () => {
                 rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Clinical background and focus areas"
+                placeholder="A few lines about your work"
                 className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
               />
             </div>

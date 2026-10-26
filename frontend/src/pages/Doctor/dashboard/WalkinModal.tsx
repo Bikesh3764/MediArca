@@ -81,12 +81,12 @@ export const WalkinModal: React.FC = () => {
             <form onSubmit={handleCreateWalkin} className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Patient Full Name
+                  Patient name
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Enter patient's full name"
+                  placeholder="Full name"
                   value={walkinName}
                   onChange={(e) => setWalkinName(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
@@ -116,7 +116,7 @@ export const WalkinModal: React.FC = () => {
                       onChange={(e) => setWalkinGender(e.target.value)}
                       className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
-                      <option value="Not Specified">Not Specified</option>
+                      <option value="Not Specified">Not specified</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
@@ -128,7 +128,7 @@ export const WalkinModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number <span className="text-[#86868b] font-normal">(Optional)</span>
+                  Mobile <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none">
@@ -137,7 +137,7 @@ export const WalkinModal: React.FC = () => {
                   <input
                     type="tel"
                     inputMode="numeric"
-                    placeholder="10-digit mobile number"
+                    placeholder="98765 43210"
                     maxLength={10}
                     value={sanitizeIndianPhone(walkinPhone)}
                     onChange={(e) => setWalkinPhone(sanitizeIndianPhone(e.target.value))}
@@ -148,7 +148,7 @@ export const WalkinModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Consultation Date
+                  Date
                 </label>
                 <div className="flex items-center gap-2">
                   <button
@@ -187,7 +187,7 @@ export const WalkinModal: React.FC = () => {
               {affiliations?.clinics && affiliations.clinics.length > 1 && (
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Clinic Venue
+                    Clinic
                   </label>
                   <div className="relative">
                     <select
@@ -199,7 +199,7 @@ export const WalkinModal: React.FC = () => {
                       }}
                       className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
-                      <option value="">Select Clinic Venue</option>
+                      <option value="">Choose clinic</option>
                       {affiliations.clinics.map((c) => (
                         <option key={c.clinicId} value={c.clinicId}>
                           {c.clinicName} {c.city ? `(${c.city})` : ''}
@@ -219,7 +219,7 @@ export const WalkinModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Checking Shift
+                  Shift
                 </label>
                 <div className="relative">
                   <select
@@ -227,7 +227,7 @@ export const WalkinModal: React.FC = () => {
                     onChange={(e) => setWalkinSlotId(e.target.value)}
                     className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                   >
-                    <option value="">Current / Default Shift</option>
+                    <option value="">Current shift</option>
                     {(
                       (walkinClinicId && affiliations?.clinics.find((c) => c.clinicId === walkinClinicId)?.slots) ||
                       (affiliations?.clinics?.length === 1 && affiliations.clinics[0].slots) ||
@@ -244,11 +244,11 @@ export const WalkinModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Reason for Visit
+                  Reason
                 </label>
                 <input
                   type="text"
-                  placeholder="Fever, cough, general consultation"
+                  placeholder="e.g. Fever, cough"
                   value={walkinReason}
                   onChange={(e) => setWalkinReason(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"

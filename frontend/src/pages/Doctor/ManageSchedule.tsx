@@ -1,3 +1,4 @@
+import { formatClinicAddress } from '../../utils/address';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -290,7 +291,7 @@ export const ManageSchedule: React.FC = () => {
     setWorkingDays((prev) => {
       if (prev.includes(day)) {
         if (prev.length <= 1) {
-          setError('You must select at least one practicing day.');
+          setError('Pick at least one day.');
           return prev;
         }
         setError(null);
@@ -323,7 +324,7 @@ export const ManageSchedule: React.FC = () => {
         await api.cancelDoctorLeave(user.doctorProfile.id, todayLeave.id);
         setIsOnLeaveToday(false);
         setTodayLeave(null);
-        setSuccessMsg('You have resumed consultations for today.');
+        setSuccessMsg('You’re available today.');
       } else {
         const res = await api.addDoctorLeave(user.doctorProfile.id, {
           type: 'TODAY',
@@ -332,11 +333,11 @@ export const ManageSchedule: React.FC = () => {
         });
         setIsOnLeaveToday(true);
         setTodayLeave((res as any)?.data || res || null);
-        setSuccessMsg('You are marked on leave for today.');
+        setSuccessMsg('You’re on leave today.');
       }
       await fetchAffiliations();
     } catch (err: any) {
-      setError(err?.message || 'Failed to update leave status');
+      setError(err?.message || 'Couldn’t update leave. Try again.');
     } finally {
       setSaving(false);
     }
@@ -371,24 +372,24 @@ export const ManageSchedule: React.FC = () => {
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
       if (!s.startTime || !s.endTime) {
-        setError(`Please specify both start and end time for ${s.name || `Shift ${i + 1}`}.`);
+        setError(`Add a start and end time for ${s.name || `Shift ${i + 1}`}.`);
         setSaving(false);
         return;
       }
       const startMins = timeToMinutes(s.startTime);
       const endMins = timeToMinutes(s.endTime);
       if (endMins <= startMins) {
-        setError(`Shift end time must be after start time for ${s.name || `Shift ${i + 1}`}.`);
+        setError(`End time must be after start time (${s.name || `Shift ${i + 1}`}).`);
         setSaving(false);
         return;
       }
       if (!s.maxPatients || s.maxPatients < 1) {
-        setError(`Max patients capacity for ${s.name || `Shift ${i + 1}`} must be at least 1.`);
+        setError(`Max patients must be at least 1 (${s.name || `Shift ${i + 1}`}).`);
         setSaving(false);
         return;
       }
       if (!s.avgConsultationMinutes || s.avgConsultationMinutes < 1) {
-        setError(`Average consultation time for ${s.name || `Shift ${i + 1}`} must be at least 1 minute.`);
+        setError(`Mins per patient must be at least 1 (${s.name || `Shift ${i + 1}`}).`);
         setSaving(false);
         return;
       }
@@ -404,7 +405,7 @@ export const ManageSchedule: React.FC = () => {
         const start2 = timeToMinutes(s2.startTime);
         const end2 = timeToMinutes(s2.endTime);
         if (start1 < end2 && start2 < end1) {
-          setError(`Shift overlap detected between ${s1.name || `Shift ${i + 1}`} and ${s2.name || `Shift ${j + 1}`}. Please ensure shift hours do not overlap.`);
+          setError(`${s1.name || `Shift ${i + 1}`} and ${s2.name || `Shift ${j + 1}`} overlap. Change the times.`);
           setSaving(false);
           return;
         }
@@ -425,8 +426,8 @@ export const ManageSchedule: React.FC = () => {
 
       await refreshUser();
       const msg = selectedClinic
-        ? `Practice schedule & consultation fee for ${selectedClinic.clinicName} updated successfully!`
-        : 'Independent practice schedule & consultation fee updated successfully!';
+        ? `Schedule saved for ${selectedClinic.clinicName}.`
+        : 'Schedule saved.';
       setSuccessMsg(msg);
       toast.success(msg);
       if (selectedClinic) {
@@ -439,7 +440,7 @@ export const ManageSchedule: React.FC = () => {
         );
       }
     } catch (err: any) {
-      const errMsg = err.message || 'Failed to update schedule';
+      const errMsg = err.message || 'Couldn’t update schedule. Try again.';
       setError(errMsg);
       toast.error(errMsg);
     } finally {
@@ -474,7 +475,7 @@ export const ManageSchedule: React.FC = () => {
                 <div>
                   <p className="font-semibold text-[14px] flex items-center gap-2 text-[#1d1d1f]">
                     <AlertTriangle className="w-4 h-4 text-[#0066cc]" />
-                    Clinic Affiliation Required for Online Bookings
+                    Add a clinic first
                   </p>
                   <p className="text-[#86868b] mt-1 leading-relaxed">
                     Add a clinic to start taking bookings.
@@ -485,7 +486,7 @@ export const ManageSchedule: React.FC = () => {
                   onClick={() => navigate('/doctor/dashboard?tab=affiliations')}
                   className="h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-normal transition-all whitespace-nowrap self-start sm:self-auto cursor-pointer"
                 >
-                  Affiliate with a Clinic
+                  Add Clinic
                 </button>
               </div>
             )}
@@ -510,7 +511,7 @@ export const ManageSchedule: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <label className="text-[13px] font-semibold text-[#1d1d1f] flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-[#0066cc]" />
-                    <span>Practicing Facility</span>
+                    <span>Clinic</span>
                   </label>
                   {clinics.length > 1 ? (
                     <div className="relative w-full sm:w-auto min-w-0">
@@ -529,7 +530,7 @@ export const ManageSchedule: React.FC = () => {
                     </div>
                   ) : (
                     <span className="text-xs font-normal text-[#1d1d1f] bg-white px-3.5 py-1.5 rounded-full border border-[#e5e5ea]">
-                      {selectedClinic ? selectedClinic.clinicName : 'Independent Practice'}
+                      {selectedClinic ? selectedClinic.clinicName : 'Own practice'}
                     </span>
                   )}
                 </div>
@@ -539,7 +540,7 @@ export const ManageSchedule: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-[#0066cc] flex-shrink-0" />
                       <span className="text-[#1d1d1f] font-normal">
-                        {selectedClinic.address}{selectedClinic.city ? `, ${selectedClinic.city}` : ''}
+                        {formatClinicAddress(selectedClinic, { withState: false })}
                       </span>
                     </div>
                     {selectedClinic.phone && (
@@ -562,10 +563,10 @@ export const ManageSchedule: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                          Sitting Days
+                          Days
                         </h3>
                         <p className="text-xs text-[#86868b] mt-0.5">
-                          Days available at {selectedClinic ? selectedClinic.clinicName : 'this clinic'}
+                          Days you see patients here
                         </p>
                       </div>
                     </div>
@@ -626,13 +627,13 @@ export const ManageSchedule: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <span className="text-xs font-normal text-[#86868b] block mb-0.5">
-                      {selectedClinic ? `${selectedClinic.clinicName} Capacity` : 'Daily Capacity'}
+                      Daily capacity
                     </span>
                     <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight">
-                      {totalMaxDailyPatients} Max Daily Patients
+                      {totalMaxDailyPatients} patients a day
                     </h2>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      {slots.length} configured shift{slots.length > 1 ? 's' : ''}
+                      {slots.length} shift{slots.length > 1 ? 's' : ''}
                     </p>
                   </div>
 
@@ -684,7 +685,7 @@ export const ManageSchedule: React.FC = () => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Start Time
+                            Start
                           </label>
                           <input
                             type="time"
@@ -697,7 +698,7 @@ export const ManageSchedule: React.FC = () => {
 
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            End Time
+                            End
                           </label>
                           <input
                             type="time"
@@ -710,7 +711,7 @@ export const ManageSchedule: React.FC = () => {
 
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Avg Consultation (mins)
+                            Mins per patient
                           </label>
                           <input
                             type="number"
@@ -760,7 +761,7 @@ export const ManageSchedule: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4">
                   <div className="max-w-sm">
                     <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                      Consultation Fee (₹ INR){selectedClinic ? ` at ${selectedClinic.clinicName}` : ''}
+                      Fee (₹)
                     </label>
                     <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                       <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[14px] font-semibold text-[#1d1d1f]">
@@ -789,10 +790,10 @@ export const ManageSchedule: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                          Out-of-Office & Leaves
+                          Leave
                         </h3>
                         <p className="text-xs text-[#86868b] mt-0.5">
-                          Take today off or plan time away
+                          Take today off or plan leave
                         </p>
                       </div>
                     </div>
@@ -803,7 +804,7 @@ export const ManageSchedule: React.FC = () => {
                       className="h-8 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-semibold text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
                     >
                       <Calendar className="w-3.5 h-3.5" />
-                      <span>Manage All Leaves & Dates</span>
+                      <span>All leaves</span>
                     </button>
                   </div>
 
@@ -812,13 +813,13 @@ export const ManageSchedule: React.FC = () => {
                     <div className="flex items-center gap-2.5">
                       {isOnLeaveToday ? (
                         <>
-                          <div className="w-2.5 h-2.5 rounded-full bg-danger shrink-0" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-warning-dot shrink-0" />
                           <div>
                             <span className="text-xs font-semibold text-[#1d1d1f] block">
-                              Marked on Leave Today
+                              On leave today
                             </span>
-                            <span className="text-[11px] text-danger">
-                              {todayLeave?.reason ? `Reason: ${todayLeave.reason}` : 'No patient consultations will be accepted today.'}
+                            <span className="text-[11px] text-[#86868b]">
+                              {todayLeave?.reason ? todayLeave.reason : 'Bookings are paused today.'}
                             </span>
                           </div>
                         </>
@@ -827,10 +828,10 @@ export const ManageSchedule: React.FC = () => {
                           <div className="w-2.5 h-2.5 rounded-full bg-success-dot shrink-0" />
                           <div>
                             <span className="text-xs font-semibold text-[#1d1d1f] block">
-                              Available for Consultations Today
+                              Available today
                             </span>
                             <span className="text-[11px] text-[#86868b]">
-                              Your queue is active and accepting patient tokens.
+                              Patients can book.
                             </span>
                           </div>
                         </>
@@ -841,21 +842,21 @@ export const ManageSchedule: React.FC = () => {
                       type="button"
                       onClick={handleToggleTodayLeave}
                       disabled={saving}
-                      className={`h-8 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-60 ${
+                      className={`h-9 px-4 rounded-full text-xs font-normal transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-[0.98] disabled:opacity-60 ${
                         isOnLeaveToday
-                          ? 'bg-success-dot hover:bg-success-dot text-white '
-                          : 'bg-danger-soft hover:bg-danger-soft text-danger border border-danger-line'
+                          ? 'bg-[#0066cc] hover:bg-[#0071e3] text-white'
+                          : 'bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                       }`}
                     >
                       {isOnLeaveToday ? (
                         <>
                           <CalendarCheck className="w-3.5 h-3.5" />
-                          <span>Resume Consultations Today</span>
+                          <span>Resume</span>
                         </>
                       ) : (
                         <>
                           <CalendarX className="w-3.5 h-3.5" />
-                          <span>Put on Leave Today</span>
+                          <span>Take today off</span>
                         </>
                       )}
                     </button>
@@ -870,10 +871,8 @@ export const ManageSchedule: React.FC = () => {
                     className="w-full sm:w-auto h-11 px-8 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                   >
                     {saving
-                      ? 'Saving Schedule...'
-                      : selectedClinic
-                      ? `Save Schedule for ${selectedClinic.clinicName}`
-                      : 'Save Schedule'}
+                      ? 'Saving...'
+                      : 'Save'}
                   </button>
                 </div>
               </form>

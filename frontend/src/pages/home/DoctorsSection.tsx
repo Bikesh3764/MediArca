@@ -91,14 +91,14 @@ export const DoctorsSection: React.FC = () => {
                     variant="form"
                     includeAll={true}
                     counts={specialtyCounts}
-                    placeholder="Select specialty..."
+                    placeholder="Any specialty"
                   />
                 </div>
 
                 {/* Max Consultation Fee Slider */}
                 <div>
                   <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    <span>Fee Limit</span>
+                    <span>Max fee</span>
                     <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                   </div>
                   <input
@@ -152,7 +152,7 @@ export const DoctorsSection: React.FC = () => {
               {doctorMobileFiltersOpen && (
                 <div className="lg:hidden bg-white p-5 rounded-2xl border border-[#e5e5ea]  space-y-4">
                   <div className="flex items-center justify-between pb-2.5 border-b border-[#f0f0f2]">
-                    <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">Filter Options</span>
+                    <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">Filters</span>
                     {(doctorSearchQuery || doctorLocationQuery || selectedSpecialty !== 'All' || selectedCity !== 'All' || selectedState !== 'All' || minExperience > 0 || maxFee < 3000) && (
                       <button
                         type="button"
@@ -205,7 +205,7 @@ export const DoctorsSection: React.FC = () => {
 
                   <div>
                     <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                      <span>Fee Limit</span>
+                      <span>Max fee</span>
                       <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                     </div>
                     <input
@@ -271,8 +271,8 @@ export const DoctorsSection: React.FC = () => {
                       className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer  transition-all"
                     >
                       <option value="experience">Most Experienced</option>
-                      <option value="fee_low">Price: Low to High</option>
-                      <option value="fee_high">Price: High to Low</option>
+                      <option value="fee_low">Fee: Low to High</option>
+                      <option value="fee_high">Fee: High to Low</option>
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
                   </div>

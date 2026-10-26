@@ -13,7 +13,7 @@ export const MessagesTab: React.FC = () => {
 <UtilityCard>
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">User Contact Inquiries</h3>
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Messages</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Messages from the Contact page.
                     </p>
@@ -24,7 +24,7 @@ export const MessagesTab: React.FC = () => {
                 {contactMessages.length === 0 ? (
                   <EmptyState
                     icon={MessageSquare}
-                    title="No Messages Received Yet"
+                    title="No messages yet"
                     description="New messages will show up here."
                   />
                 ) : (
@@ -67,7 +67,7 @@ export const MessagesTab: React.FC = () => {
 
                           <div className="flex items-center gap-2 self-end sm:self-center">
                             <span className="text-[11px] text-[#86868b]">
-                              {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(msg.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {msg.status === 'NEW' && (
                               <button
@@ -81,7 +81,7 @@ export const MessagesTab: React.FC = () => {
                               href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
                               className="px-3.5 py-1 rounded-full text-xs font-semibold bg-[#0066cc] hover:bg-[#0071e3] text-white cursor-pointer transition-all"
                             >
-                              Reply Email
+                              Reply
                             </a>
                             <button
                               type="button"

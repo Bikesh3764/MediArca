@@ -159,7 +159,7 @@ export const appointmentsApi = {
       return text;
     }
     if (!res.ok || json.success === false) {
-      throw new Error(json.message || json.error || 'Failed to complete clinic check-in');
+      throw new Error(json.message || json.error || 'Couldn’t complete clinic check-in. Try again.');
     }
     const apptData = json.data || {};
     return {

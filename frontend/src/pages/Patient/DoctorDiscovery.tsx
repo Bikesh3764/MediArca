@@ -34,19 +34,10 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecialtySelect';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
+import { formatClinicAddress } from '../../utils/address';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
-  if (!clinic) return 'Clinical Facility';
-  const addressParts: string[] = [];
-  const addrLower = (clinic.address || '').toLowerCase();
-  if (clinic.address) addressParts.push(clinic.address);
-  if (clinic.city && !addrLower.includes(clinic.city.toLowerCase())) {
-    addressParts.push(clinic.city);
-  }
-  if (clinic.state && !addrLower.includes(clinic.state.toLowerCase())) {
-    addressParts.push(clinic.state);
-  }
-  return addressParts.join(', ') || 'Clinical Facility';
+  return formatClinicAddress(clinic) || 'Clinic';
 };
 
 interface DoctorDiscoveryProps {
@@ -527,7 +518,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   type="text"
                   value={clinicSearchQuery}
                   onChange={(e) => setClinicSearchQuery(e.target.value)}
-                  placeholder="Search clinics by name or address..."
+                  placeholder="Search clinics"
                   className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                 />
                 {clinicSearchQuery && (
@@ -596,7 +587,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
             {clinicMobileFiltersOpen && (
               <div className="sm:hidden w-full bg-white rounded-2xl border border-[#e5e5ea] p-3.5  space-y-3 animate-fadeIn">
                 <div className="flex items-center justify-between pb-2 border-b border-[#e5e5ea]">
-                  <span className="text-xs font-semibold text-[#1d1d1f]">Location Filters</span>
+                  <span className="text-xs font-semibold text-[#1d1d1f]">Location</span>
                   <button
                     type="button"
                     onClick={() => setClinicMobileFiltersOpen(false)}
@@ -606,7 +597,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   </button>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-normal text-[#86868b]">Select State</label>
+                  <label className="text-[11px] font-normal text-[#86868b]">State</label>
                   <div className="w-full h-10">
                     <AppleFilterSelect
                       value={clinicSelectedState}
@@ -621,7 +612,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-normal text-[#86868b]">Select City</label>
+                  <label className="text-[11px] font-normal text-[#86868b]">City</label>
                   <div className="w-full h-10">
                     <AppleFilterSelect
                       value={clinicSelectedCity}
@@ -710,7 +701,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       No doctors listed
                     </h4>
                     <p className="text-xs text-[#86868b] mb-5">
-                      No doctors are currently listed for this clinic.
+                      This clinic has no doctors yet.
                     </p>
                     <AppleButton variant="secondary" size="sm" onClick={handleClearClinic}>
                       Back to Clinics
@@ -810,7 +801,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                                   className="h-8 px-3.5 rounded-full text-[11px] font-normal text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
                                   title="Online booking is closed at this clinic for now."
                                 >
-                                  No Desk Staff
+                                  Closed
                                 </span>
                               ) : (
                                 <button
@@ -1036,7 +1027,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {/* Specialty Select */}
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Medical Specialty
+                  Specialty
                 </label>
                 <SearchableSpecialtySelect
                   value={selectedSpecialty}
@@ -1053,7 +1044,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               {/* Max Consultation Fee Slider */}
               <div>
                 <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  <span>Fee Limit</span>
+                  <span>Max fee</span>
                   <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
                 </div>
                 <input
@@ -1071,14 +1062,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Min Experience
+                    Experience
                   </label>
                   <select
                     value={minExp}
                     onChange={(e) => setMinExp(Number(e.target.value))}
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   >
-                    <option value={0}>All Experience</option>
+                    <option value={0}>Any</option>
                     <option value={5}>5+ Years</option>
                     <option value={10}>10+ Years</option>
                     <option value={15}>15+ Years</option>
@@ -1095,8 +1086,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"
                   >
                     <option value="experience">Most Experienced</option>
-                    <option value="fee_low">Price: Low to High</option>
-                    <option value="fee_high">Price: High to Low</option>
+                    <option value="fee_low">Fee: Low to High</option>
+                    <option value="fee_high">Fee: High to Low</option>
                   </select>
                 </div>
               </div>
@@ -1109,7 +1100,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     className="w-full h-11 rounded-full text-xs font-normal text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset All Filters</span>
+                    <span>Reset</span>
                   </button>
                 </div>
               )}
@@ -1149,7 +1140,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Doctor, clinic, keyword..."
+                  placeholder="Doctor or clinic"
                   className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none"
                 />
                 {search && (
@@ -1199,14 +1190,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 variant="form"
                 includeAll={true}
                 counts={specialtyCounts}
-                placeholder="Select specialty..."
+                placeholder="Any specialty"
               />
             </div>
 
             {/* Max Consultation Fee Slider */}
             <div>
               <div className="flex items-center justify-between text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                <span>Fee Limit</span>
+                <span>Max fee</span>
                 <span className="text-[#0066cc] font-semibold">Up to ₹{maxFee}</span>
               </div>
               <input
@@ -1338,8 +1329,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     className="appearance-none h-9 pl-3.5 pr-8 rounded-full border border-[#d2d2d7] bg-white hover:bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] cursor-pointer  transition-all"
                   >
                     <option value="experience">Most Experienced</option>
-                    <option value="fee_low">Price: Low to High</option>
-                    <option value="fee_high">Price: High to Low</option>
+                    <option value="fee_low">Fee: Low to High</option>
+                    <option value="fee_high">Fee: High to Low</option>
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 text-[#86868b] pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" />
                 </div>
@@ -1514,7 +1505,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                             </button>
                           ) : (
                             <span className="text-xs text-[#86868b] bg-[#f5f5f7] px-3 py-1.5 rounded-full border border-[#e5e5ea] select-none">
-                              Practice Suspended
+                              Unavailable
                             </span>
                           )}
                         </div>

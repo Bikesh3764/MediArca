@@ -1,3 +1,4 @@
+import { formatClinicAddress } from '../../utils/address';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -48,12 +49,12 @@ export const ClinicDashboard: React.FC = () => {
     <ClinicDashboardContext.Provider value={state}>
 <DashboardLayout
       portalType="CLINIC"
-      portalSubtitle="Clinic Portal"
+      portalSubtitle="Clinic"
       navItems={navItems}
       title={clinic?.clinicName || user?.fullName || 'Clinic Partner Portal'}
       subtitle={
         clinic?.address
-          ? `${clinic.address}${clinic?.city ? ` • ${clinic.city}` : ''}${clinic?.state ? `, ${clinic.state}` : ''}`
+          ? formatClinicAddress(clinic)
           : clinic?.city
           ? `${clinic.city}${clinic?.state ? `, ${clinic.state}` : ''}`
           : undefined
@@ -233,7 +234,7 @@ export const ClinicDashboard: React.FC = () => {
           onClose={() => setShowPosterModal(false)}
           clinicId={clinic.id}
           clinicName={clinic.clinicName}
-          clinicAddress={`${clinic.address || ''}${clinic.city ? `, ${clinic.city}` : ''}`}
+          clinicAddress={formatClinicAddress(clinic, { withState: false })}
           checkinCode={clinic.checkinCode || undefined}
         />
       )}

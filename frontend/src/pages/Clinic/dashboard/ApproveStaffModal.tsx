@@ -47,15 +47,15 @@ export const ApproveStaffModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1 tracking-tight">
-                  Assign Doctors Managed by this Receptionist
+                  Doctors they handle
                 </label>
                 <p className="text-xs text-[#86868b] mb-3 leading-relaxed">
-                  They can only manage queues for the doctors you pick.
+                  They only see these doctors’ queues.
                 </p>
 
                 {doctors.filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE').length === 0 ? (
                   <div className="p-4 rounded-xl bg-[#f5f5f7] text-[#86868b] text-xs border border-[#e5e5ea]">
-                    No doctors yet. You can approve now and assign doctors later.
+                    No doctors yet. You can add them later.
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">

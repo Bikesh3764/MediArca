@@ -91,7 +91,7 @@ export const ClinicsSection: React.FC = () => {
                         No doctors listed
                       </h4>
                       <p className="text-xs text-[#86868b] mb-5">
-                        No doctors are currently listed for this clinic.
+                        This clinic has no doctors yet.
                       </p>
                       <AppleButton variant="secondary" size="sm" onClick={handleClearClinic}>
                         Back to Clinics
@@ -201,7 +201,7 @@ export const ClinicsSection: React.FC = () => {
                                     className="h-8 px-3.5 rounded-full text-[11px] font-normal text-[#86868b] bg-[#f5f5f7] border border-[#e5e5ea] inline-flex items-center justify-center select-none"
                                     title="Online booking is closed at this clinic for now."
                                   >
-                                    No Desk Staff
+                                    Closed
                                   </span>
                                 ) : (
                                   <button

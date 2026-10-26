@@ -96,9 +96,9 @@ export class ErrorBoundary extends Component<Props, State> {
                 </h2>
                 <p className="text-[13px] text-[#86868b] mt-1.5 leading-relaxed">
                   {isChunk
-                    ? 'A new version of MediArca is live. Please reload to load the latest features.'
+                    ? 'A new version is ready. Please reload.'
                     : this.props.fallbackDescription ||
-                      'An unexpected issue occurred while rendering this view. You can retry loading this section or navigate to another view.'}
+                      'This part didn’t load. Try again or go back.'}
                 </p>
               </div>
 
@@ -142,7 +142,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-[450px] w-full bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7 text-center space-y-5">
             <div>
               <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                Something unexpected occurred
+                Something went wrong
               </h1>
               <p className="text-[13px] text-[#86868b] mt-1.5 leading-relaxed">
                 Something went wrong. Your data is safe. Reload or go home.
@@ -163,7 +163,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
-                Reload Application
+                Reload
               </AppleButton>
               <AppleButton
                 variant="secondary"

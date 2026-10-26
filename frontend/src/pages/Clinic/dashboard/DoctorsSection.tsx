@@ -1,3 +1,4 @@
+import { AvatarImage } from '../../../components/ui/AvatarImage';
 import React from 'react';
 import { getFileUrl, formatDoctorDegrees } from '../../../services/api';
 import { UserPlus, Trash2, X, Check, Clock3, Stethoscope } from 'lucide-react';
@@ -18,7 +19,7 @@ export const DoctorsSection: React.FC = () => {
 <div id="practitioners-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-6 sm:p-8 ">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#f0f0f2] mb-6">
             <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
-              Affiliated Doctors
+              Doctors
             </h2>
             <button
               type="button"
@@ -37,10 +38,10 @@ export const DoctorsSection: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#0066cc]" />
                   <h3 className="text-[14px] font-semibold text-[#1d1d1f]">
-                    Incoming Doctor Affiliation Requests ({data.incomingRequests.length})
+                    Doctor requests ({data.incomingRequests.length})
                   </h3>
                 </div>
-                <span className="text-xs text-[#0066cc] font-normal">Requires Clinic Approval</span>
+                <span className="text-xs text-[#0066cc] font-normal">Needs your approval</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {data.incomingRequests.map((doc) => (
@@ -87,7 +88,7 @@ export const DoctorsSection: React.FC = () => {
               <div className="flex items-center gap-2 mb-3">
                 <Clock3 className="w-4 h-4 text-[#86868b]" />
                 <h3 className="text-[14px] font-semibold text-[#1d1d1f]">
-                  Pending Doctor Invitations ({data.outgoingRequests.length})
+                  Invites sent ({data.outgoingRequests.length})
                 </h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -102,7 +103,7 @@ export const DoctorsSection: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                        Awaiting Doctor
+                        Waiting
                       </span>
                       <button
                         type="button"
@@ -123,9 +124,9 @@ export const DoctorsSection: React.FC = () => {
           ) : doctors.length === 0 ? (
             <EmptyState
               icon={Stethoscope}
-              title="No Doctors Affiliated Yet"
+              title="No doctors yet"
               description="Add doctors to start taking bookings."
-              actionText="Onboard First Doctor"
+              actionText="Invite Doctor"
               onAction={() => setShowAddModal(true)}
             />
           ) : (
@@ -138,7 +139,7 @@ export const DoctorsSection: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-white border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                           {doc.avatarUrl ? (
-                            <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
+                            <AvatarImage src={getFileUrl(doc.avatarUrl)} name={doc.fullName} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
                               {doc.fullName[0]}
@@ -168,7 +169,7 @@ export const DoctorsSection: React.FC = () => {
                       </div>
                       <div>
                         <div className="text-[11px] text-[#86868b]">Revenue</div>
-                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">₹{doc.revenue.toLocaleString()}</div>
+                        <div className="font-semibold text-xs text-[#1d1d1f] mt-0.5">₹{doc.revenue.toLocaleString('en-IN')}</div>
                       </div>
                     </div>
 
@@ -178,7 +179,7 @@ export const DoctorsSection: React.FC = () => {
                         className="h-8 px-3 rounded-full text-xs font-normal text-danger hover:bg-danger-soft border border-danger-line transition-all active:scale-[0.98] inline-flex items-center gap-1.5 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Detach Practitioner</span>
+                        <span>Remove</span>
                       </button>
                     </div>
                   </div>
@@ -190,11 +191,11 @@ export const DoctorsSection: React.FC = () => {
                 <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-[#e5e5ea] text-[#86868b] font-normal">
-                    <th className="pb-3 pl-2">Practitioner</th>
+                    <th className="pb-3 pl-2">Doctor</th>
                     <th className="pb-3">Specialty</th>
                     <th className="pb-3">Fee</th>
-                    <th className="pb-3 text-center">Bookings Here</th>
-                    <th className="pb-3 text-right">Revenue Here</th>
+                    <th className="pb-3 text-center">Bookings</th>
+                    <th className="pb-3 text-right">Revenue</th>
                     <th className="pb-3 text-right pr-2">Actions</th>
                   </tr>
                 </thead>
@@ -205,11 +206,7 @@ export const DoctorsSection: React.FC = () => {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex-shrink-0">
                             {doc.avatarUrl ? (
-                              <img
-                                src={getFileUrl(doc.avatarUrl)}
-                                alt={doc.fullName}
-                                className="w-full h-full object-cover"
-                              />
+                              <AvatarImage src={getFileUrl(doc.avatarUrl)} name={doc.fullName} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center font-semibold text-xs text-[#0066cc]">
                                 {doc.fullName[0]}
@@ -249,7 +246,7 @@ export const DoctorsSection: React.FC = () => {
 
                       <td className="py-4 text-right">
                         <span className="font-semibold text-[#1d1d1f] text-[14px]">
-                          ₹{doc.revenue.toLocaleString()}
+                          ₹{doc.revenue.toLocaleString('en-IN')}
                         </span>
                         <span className="text-[11px] text-[#86868b] block">at this clinic</span>
                       </td>
@@ -260,7 +257,7 @@ export const DoctorsSection: React.FC = () => {
                           className="h-8 px-3 rounded-full text-xs font-normal text-danger hover:bg-danger-soft border border-danger-line transition-all active:scale-[0.98] inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Trash2 className="w-3 h-3" />
-                          Detach
+                          Remove
                         </button>
                       </td>
                     </tr>

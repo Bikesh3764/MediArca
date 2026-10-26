@@ -7,44 +7,48 @@ export const DocumentTitleSync: React.FC = () => {
   useEffect(() => {
     const path = location.pathname;
 
-    let title = 'MediArca — Clinical Healthcare Platform';
+    let title = 'MediArca';
 
     if (path === '/') {
-      title = 'MediArca — Digital Outpatient Clinical Network';
+      title = 'MediArca — Book a Doctor, Skip the Wait';
     } else if (path === '/doctors' || path === '/patient/doctors') {
-      title = 'Find Specialists & Clinics — MediArca';
+      title = 'Find Doctors — MediArca';
     } else if (path.startsWith('/book/') || path.startsWith('/patient/book/')) {
-      title = 'Book Clinical Consultation — MediArca';
+      title = 'Book Appointment — MediArca';
     } else if (path.startsWith('/doctor/dashboard')) {
-      title = 'Doctor Console & Live Queue — MediArca';
+      title = 'Queue — MediArca';
     } else if (path.startsWith('/doctor/consultation')) {
-      title = 'Consultation Pad — MediArca';
+      title = 'Consultation — MediArca';
     } else if (path.startsWith('/doctor/schedule')) {
-      title = 'Manage Practice Shifts — MediArca';
+      title = 'Schedule — MediArca';
     } else if (path.startsWith('/doctor/affiliations')) {
-      title = 'Clinic Affiliations — MediArca';
+      title = 'Clinics — MediArca';
     } else if (path.startsWith('/doctor/profile')) {
-      title = 'Doctor Profile & Credentials — MediArca';
+      title = 'Profile — MediArca';
+    } else if (path === '/doctor/login') {
+      title = 'Sign In — MediArca';
+    } else if (path === '/doctor/signup') {
+      title = 'Create Account — MediArca';
     } else if (path.startsWith('/doctor/') || path.startsWith('/patient/doctor/')) {
-      title = 'Doctor Profile & Booking — MediArca';
+      title = 'Doctor — MediArca';
     } else if (path.startsWith('/clinic/dashboard')) {
-      title = 'Clinic Administration — MediArca';
+      title = 'Clinic — MediArca';
     } else if (path.startsWith('/clinic/login') || path.startsWith('/clinic/auth')) {
-      title = 'Clinic Partner Portal — MediArca';
+      title = 'Clinic Sign In — MediArca';
     } else if (path.startsWith('/receptionist/dashboard')) {
-      title = 'Desk Queue Management — MediArca';
+      title = 'Front Desk — MediArca';
     } else if (path.startsWith('/receptionist/login') || path.startsWith('/receptionist/auth')) {
-      title = 'Receptionist Desk Portal — MediArca';
+      title = 'Receptionist Sign In — MediArca';
     } else if (path === '/patient/appointments' || path === '/appointments') {
       title = 'Live Queue Passes — MediArca';
     } else if (path === '/patient/profile' || path === '/profile') {
-      title = 'Patient Profile & Health Details — MediArca';
+      title = 'Profile — MediArca';
     } else if (path === '/clinic-checkin') {
-      title = 'Express Clinic Check-in — MediArca';
+      title = 'Check In — MediArca';
     } else if (path === '/admin') {
-      title = 'Platform Administration — MediArca';
+      title = 'Admin — MediArca';
     } else if (path === '/admin-login' || path === '/admin/login') {
-      title = 'Admin Access — MediArca';
+      title = 'Admin Sign In — MediArca';
     } else if (path === '/login' || path === '/patient/login' || path === '/doctor/login') {
       title = 'Sign In — MediArca';
     } else if (path === '/signup' || path === '/patient/signup' || path === '/doctor/signup') {
@@ -54,15 +58,15 @@ export const DocumentTitleSync: React.FC = () => {
     } else if (path === '/contact') {
       title = 'Contact Us — MediArca';
     } else if (path === '/how-it-works') {
-      title = 'How Queue Works — MediArca';
+      title = 'How It Works — MediArca';
     } else if (path === '/faq') {
-      title = 'Frequently Asked Questions — MediArca';
+      title = 'FAQ — MediArca';
     } else if (path === '/terms') {
       title = 'Terms of Service — MediArca';
     } else if (path === '/privacy') {
       title = 'Privacy Policy — MediArca';
     } else if (path === '/refund-policy') {
-      title = 'Refund Policy — MediArca';
+      title = 'Cancellation Policy — MediArca';
     }
 
     document.title = title;

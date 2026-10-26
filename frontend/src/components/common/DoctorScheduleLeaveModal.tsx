@@ -76,7 +76,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
       }
     } catch (err: any) {
       console.error('Failed to load schedule config:', err);
-      setError(err?.message || 'Failed to load doctor schedule and leave records');
+      setError(err?.message || 'Couldn’t load schedule.');
     } finally {
       setLoading(false);
     }
@@ -146,12 +146,12 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
     setSuccessMsg(null);
     try {
       await api.updateDoctorWorkingDays(doctorId, selectedDays, clinicId || undefined);
-      setSuccessMsg('Working days updated successfully.');
+      setSuccessMsg('Days saved.');
       await loadConfig();
       if (onUpdated) onUpdated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to update working days');
+      setError(err?.message || 'Couldn’t save days.');
     } finally {
       setSavingDays(false);
     }
@@ -179,7 +179,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
       if (onUpdated) onUpdated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to update leave status');
+      setError(err?.message || 'Couldn’t update leave.');
     } finally {
       setSavingLeave(false);
     }
@@ -188,15 +188,15 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
   const handleSaveRangeLeave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!startDate || !endDate) {
-      setError('Start date and end date are required');
+      setError('Pick a start and end date.');
       return;
     }
     if (startDate > endDate) {
-      setError('Start date cannot be after end date');
+      setError('Start date must be before end date.');
       return;
     }
     if (endDate < todayStr) {
-      setError('Cannot schedule leave in the past');
+      setError('Pick a date from today on.');
       return;
     }
 
@@ -218,7 +218,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
       if (onUpdated) onUpdated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to schedule leave period');
+      setError(err?.message || 'Couldn’t save leave.');
     } finally {
       setSavingLeave(false);
     }
@@ -230,12 +230,12 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
     setSuccessMsg(null);
     try {
       await api.cancelDoctorLeave(doctorId, leaveId);
-      setSuccessMsg('Leave cancelled successfully.');
+      setSuccessMsg('Leave cancelled.');
       await loadConfig();
       if (onUpdated) onUpdated();
       if (onSuccess) onSuccess();
     } catch (err: any) {
-      setError(err?.message || 'Failed to cancel leave');
+      setError(err?.message || 'Couldn’t cancel leave.');
     } finally {
       setCancellingLeaveId(null);
     }
@@ -264,7 +264,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
               </h3>
               <p className="text-xs text-[#86868b] flex items-center gap-1.5 truncate">
                 <Building2 className="w-3.5 h-3.5 shrink-0" />
-                <span>{clinicName || config?.clinicName || 'Facility Schedule & Leaves'}</span>
+                <span>{clinicName || config?.clinicName || 'Schedule & Leave'}</span>
               </p>
             </div>
           </div>
@@ -322,8 +322,8 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   </div>
                   <p className="text-xs text-[#86868b]">
                     {config?.isOnLeaveToday
-                      ? `Doctor is marked absent today${config.todayLeave?.reason ? ` (${config.todayLeave.reason})` : ''}.`
-                      : 'Doctor is available for consultations today.'}
+                      ? `On leave today${config.todayLeave?.reason ? ` (${config.todayLeave.reason})` : ''}.`
+                      : 'Available today.'}
                   </p>
                 </div>
 
@@ -333,8 +333,8 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   disabled={savingLeave}
                   className={`h-9 px-4 rounded-full text-xs font-normal transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                     config?.isOnLeaveToday
-                      ? 'bg-success-dot hover:bg-success-dot text-white'
-                      : 'bg-danger hover:bg-[#b80012] text-white'
+                      ? 'bg-[#0066cc] hover:bg-[#0071e3] text-white'
+                      : 'bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                   } disabled:opacity-50`}
                 >
                   {savingLeave ? (
@@ -347,7 +347,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   ) : (
                     <>
                       <CalendarX className="w-3.5 h-3.5" />
-                      <span>Set Off Today</span>
+                      <span>Take today off</span>
                     </>
                   )}
                 </button>
@@ -359,10 +359,10 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   <div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-2">
                       <CalendarDays className="w-4 h-4 text-[#0066cc]" />
-                      <span>Sitting Days</span>
+                      <span>Days</span>
                     </h4>
                     <p className="text-xs text-[#86868b] mt-0.5">
-                      Select consultation days.
+                      Days you see patients.
                     </p>
                   </div>
                   {/* Presets */}
@@ -483,7 +483,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                           }}
                           className="accent-[#0066cc]"
                         />
-                        Single Day
+                        One day
                       </label>
                       <label className="flex items-center gap-2 text-xs font-normal text-[#1d1d1f] cursor-pointer">
                         <input
@@ -558,11 +558,11 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                 {/* SCHEDULED LEAVES LIST */}
                 <div className="space-y-2 pt-1">
                   <div className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">
-                    Scheduled Leaves
+                    Upcoming leave
                   </div>
                   {(!config?.leaves || config.leaves.length === 0) ? (
                     <p className="text-xs text-[#86868b] italic py-3 text-center">
-                      No upcoming leaves.
+                      No upcoming leave.
                     </p>
                   ) : (
                     <div className="divide-y divide-[#f0f0f2] border border-[#f0f0f2] rounded-2xl overflow-hidden">
@@ -585,7 +585,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                                 </span>
                                 {isTodayActive && (
                                   <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-danger text-white">
-                                    Active Today
+                                    Today
                                   </span>
                                 )}
                                 {leave.clinicName && (

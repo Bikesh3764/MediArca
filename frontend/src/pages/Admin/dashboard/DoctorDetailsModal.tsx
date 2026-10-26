@@ -1,3 +1,5 @@
+import { AvatarImage } from '../../../components/ui/AvatarImage';
+import { formatClinicAddress } from '../../../utils/address';
 import React from 'react';
 import { format12Hour, getFileUrl, formatDoctorDegrees } from '../../../services/api';
 import { AppleButton } from '../../../components/ui/AppleButton';
@@ -25,7 +27,7 @@ export const DoctorDetailsModal: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-semibold text-lg text-[#0066cc]">
                   {selectedDoctor.user.avatarUrl ? (
-                    <img src={getFileUrl(selectedDoctor.user.avatarUrl)} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
+                    <AvatarImage src={getFileUrl(selectedDoctor.user.avatarUrl)} name={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     selectedDoctor.user.fullName[0]
                   )}
@@ -57,11 +59,11 @@ export const DoctorDetailsModal: React.FC = () => {
                   <strong className="text-[#1d1d1f] mt-0.5 block">{selectedDoctor.experienceYears} Years</strong>
                 </div>
                 <div>
-                  <span className="text-[#86868b] block">Consultation Fee</span>
+                  <span className="text-[#86868b] block">Fee</span>
                   <strong className="text-[#1d1d1f] mt-0.5 block">₹{selectedDoctor.consultationFee}</strong>
                 </div>
                 <div>
-                  <span className="text-[#86868b] block">Checking Window</span>
+                  <span className="text-[#86868b] block">Shifts</span>
                   <strong className="text-[#0066cc] mt-0.5 block">
                     {selectedDoctor.checkingStartTime ? `${format12Hour(selectedDoctor.checkingStartTime)} – ${format12Hour(selectedDoctor.checkingEndTime)}` : 'Flexible'}
                   </strong>
@@ -71,7 +73,7 @@ export const DoctorDetailsModal: React.FC = () => {
               <div>
                 <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Clinic Address / Base</span>
                 <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea]">
-                  {selectedDoctor.clinicAddress || 'MediArca Direct Outpatient Practice'}
+                  {selectedDoctor.clinicAddress || 'Own practice'}
                 </p>
               </div>
 
@@ -88,10 +90,10 @@ export const DoctorDetailsModal: React.FC = () => {
                       >
                         <div>
                           <strong className="text-[#1d1d1f] block font-normal">
-                            {cAff.clinic?.clinicName || 'Clinical Facility'}
+                            {cAff.clinic?.clinicName || 'Clinic'}
                           </strong>
                           <span className="text-[11px] text-[#86868b] block">
-                            {cAff.clinic?.address || ''}{cAff.clinic?.city ? `, ${cAff.clinic.city}` : ''}
+                            {formatClinicAddress(cAff.clinic, { withState: false })}
                           </span>
                         </div>
                         {cAff.clinic?.phone && (
@@ -108,7 +110,7 @@ export const DoctorDetailsModal: React.FC = () => {
               </div>
 
               <div>
-                <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Professional Bio & Practice Philosophy</span>
+                <span className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">About</span>
                 <p className="text-[#1d1d1f] p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] leading-relaxed">
                   {selectedDoctor.bio || 'Dedicated medical practitioner accepting outpatient consultations.'}
                 </p>
@@ -137,7 +139,7 @@ export const DoctorDetailsModal: React.FC = () => {
                     className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
-                    Suspend Credentials
+                    Suspend
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedDoctor) === 'SUSPENDED' && (
@@ -151,7 +153,7 @@ export const DoctorDetailsModal: React.FC = () => {
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Re-activate Practitioner
+                    Reactivate
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedDoctor) === 'REJECTED' && (
@@ -165,7 +167,7 @@ export const DoctorDetailsModal: React.FC = () => {
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Re-evaluate & Approve
+                    Approve
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedDoctor) === 'PENDING' && (
@@ -181,7 +183,7 @@ export const DoctorDetailsModal: React.FC = () => {
                       className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
-                      Reject Application
+                      Reject
                     </AppleButton>
                     <AppleButton
                       variant="primary"
@@ -193,7 +195,7 @@ export const DoctorDetailsModal: React.FC = () => {
                       }}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {actionId === selectedDoctor.id ? 'Approving...' : 'Approve & Verify License'}
+                      {actionId === selectedDoctor.id ? 'Approving...' : 'Approve'}
                     </AppleButton>
                   </>
                 )}

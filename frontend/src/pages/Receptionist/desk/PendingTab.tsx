@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../../services/api';
 import React from 'react';
 import { getLocalDateString } from '../../../services/api';
 import { CheckCircle2, X, Phone, Check, Search } from 'lucide-react';
@@ -24,7 +25,7 @@ export const PendingTab: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2.5">
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Pending Approvals
+                    Pending
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                     {pendingAppointments.length}
@@ -38,7 +39,7 @@ export const PendingTab: React.FC = () => {
                       type="text"
                       value={pendingSearch}
                       onChange={(e) => setPendingSearch(e.target.value)}
-                      placeholder="Search patient, phone, doctor..."
+                      placeholder="Search patient, phone or doctor"
                       className="w-full h-10 sm:h-9 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                     />
                     {pendingSearch && (
@@ -56,13 +57,13 @@ export const PendingTab: React.FC = () => {
 
               {pendingLoading && pendingAppointments.length === 0 ? (
                 <div className="py-14 text-center text-xs text-[#86868b]">
-                  Loading pending online bookings...
+                  Loading…
                 </div>
               ) : pendingAppointments.length === 0 ? (
                 <EmptyState
                   icon={CheckCircle2}
-                  title="All Bookings Processed"
-                  description="No bookings to confirm. New ones show up here live."
+                  title="All done"
+                  description="New bookings show up here."
                 />
               ) : (() => {
                 const filteredPending = pendingAppointments.filter((appt) => {
@@ -78,7 +79,7 @@ export const PendingTab: React.FC = () => {
                 if (filteredPending.length === 0) {
                   return (
                     <div className="py-12 text-center">
-                      <p className="font-semibold text-sm text-[#1d1d1f]">No Matching Requests</p>
+                      <p className="font-semibold text-sm text-[#1d1d1f]">No matches</p>
                       <p className="mt-1 text-xs text-[#86868b] mb-3">
                         No pending bookings match "{pendingSearch}".
                       </p>
@@ -129,7 +130,7 @@ export const PendingTab: React.FC = () => {
                               </span>
                               <span>•</span>
                               <span>
-                                {appt.appointmentDate} • {cleanShiftDisplayName(appt.checkingWindow)}
+                                {formatDisplayDate(appt.appointmentDate)} • {cleanShiftDisplayName(appt.checkingWindow)}
                               </span>
                               {phoneDisplay && (
                                 <>
@@ -176,7 +177,7 @@ export const PendingTab: React.FC = () => {
                               }}
                               className="h-8 px-3 rounded-full text-xs font-normal text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-all cursor-pointer disabled:opacity-50"
                             >
-                              Shift Date
+                              Date
                             </button>
 
                             <button
@@ -195,7 +196,7 @@ export const PendingTab: React.FC = () => {
                               className="h-8 px-4 rounded-full text-xs font-normal text-white bg-[#0066cc] hover:bg-[#0071e3] transition-all active:scale-[0.98] disabled:opacity-50 inline-flex items-center gap-1.5 cursor-pointer"
                             >
                               <Check className="w-3.5 h-3.5" />
-                              <span>{isApproving ? 'Confirming...' : 'Confirm & Issue Token'}</span>
+                              <span>{isApproving ? 'Confirming...' : 'Mark Paid'}</span>
                             </button>
                           </div>
                         </div>

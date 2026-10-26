@@ -1,3 +1,4 @@
+import { AvatarImage } from '../../../components/ui/AvatarImage';
 import React from 'react';
 import { format12Hour, getFileUrl } from '../../../services/api';
 import { AppleButton } from '../../../components/ui/AppleButton';
@@ -22,7 +23,7 @@ export const DoctorsTab: React.FC = () => {
 <UtilityCard>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
-                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Practitioner Verification Queue</h3>
+                    <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Doctors</h3>
                     <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
                       Doctors appear in search after approval.
                     </p>
@@ -40,7 +41,7 @@ export const DoctorsTab: React.FC = () => {
                       type="text"
                       value={doctorSearchQuery}
                       onChange={(e) => setDoctorSearchQuery(e.target.value)}
-                      placeholder="Search doctor by name, specialty, email..."
+                      placeholder="Search doctors"
                       className="w-full h-10 pl-10 pr-8 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-base sm:text-xs text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:bg-white focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
                     />
                     {doctorSearchQuery && (
@@ -82,11 +83,11 @@ export const DoctorsTab: React.FC = () => {
                   <table className="w-full text-left text-xs">
                     <thead className="border-b border-[#e5e5ea] text-[#86868b] font-semibold">
                       <tr>
-                        <th className="py-3 px-3">Practitioner</th>
+                        <th className="py-3 px-3">Doctor</th>
                         <th className="py-3 px-3">Specialty</th>
                         <th className="py-3 px-3">Checking Shift</th>
                         <th className="py-3 px-3">Fee</th>
-                        <th className="py-3 px-3">Verification Status</th>
+                        <th className="py-3 px-3">Status</th>
                         <th className="py-3 px-3 text-right">Action</th>
                       </tr>
                     </thead>
@@ -94,7 +95,7 @@ export const DoctorsTab: React.FC = () => {
                       {filteredDoctors.length === 0 ? (
                         <tr>
                           <td colSpan={6} className="py-8 text-center text-xs text-[#86868b]">
-                            No practitioners match the current search or status filter.
+                            No doctors match.
                           </td>
                         </tr>
                       ) : (
@@ -107,11 +108,7 @@ export const DoctorsTab: React.FC = () => {
                                 onClick={() => setSelectedDoctor(doc)}
                               >
                                 {doc.user.avatarUrl ? (
-                                  <img
-                                    src={getFileUrl(doc.user.avatarUrl)}
-                                    alt={doc.user.fullName}
-                                    className="w-full h-full object-cover"
-                                  />
+                                  <AvatarImage src={getFileUrl(doc.user.avatarUrl)} name={doc.user.fullName} className="w-full h-full object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center font-semibold text-[#0066cc]">
                                     {doc.user.fullName[0]}

@@ -1,3 +1,4 @@
+import { AvatarImage } from '../ui/AvatarImage';
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -106,17 +107,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const getPortalLabel = () => {
     switch (portalType) {
       case 'DOCTOR':
-        return 'Doctor Portal';
+        return 'Doctor';
       case 'CLINIC':
-        return 'Clinic Portal';
+        return 'Clinic';
       case 'RECEPTIONIST':
-        return 'Reception Desk';
+        return 'Front Desk';
       case 'PATIENT':
-        return 'Patient Portal';
+        return 'Patient';
       case 'ADMIN':
         return 'Admin';
       default:
-        return 'Health Portal';
+        return 'MediArca';
     }
   };
 
@@ -168,11 +169,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           const capsuleContent = (
             <div className={`bg-[#f5f5f7] border border-[#e5e5ea] rounded-2xl p-3 flex items-center gap-3 transition-colors ${profilePath ? 'hover:bg-[#ebebed] group cursor-pointer' : ''}`}>
               {user?.avatarUrl ? (
-                <img
-                  src={getFileUrl(user.avatarUrl)}
-                  alt={formattedDisplayName}
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-[#e5e5ea]"
-                />
+                <AvatarImage src={getFileUrl(user.avatarUrl)} name={formattedDisplayName} className="w-9 h-9 rounded-full object-cover flex-shrink-0 border border-[#e5e5ea]" />
               ) : (
                 <div className="w-9 h-9 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
                   {initialLetter}
@@ -196,7 +193,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               to={profilePath}
               onClick={() => setMobileDrawerOpen(false)}
               className="block"
-              title="View Profile Settings"
+              title="Profile"
             >
               {capsuleContent}
             </Link>

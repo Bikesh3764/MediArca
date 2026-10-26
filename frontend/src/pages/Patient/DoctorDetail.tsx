@@ -1,3 +1,4 @@
+import { formatClinicAddress } from '../../utils/address';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -72,6 +73,9 @@ export const DoctorDetail: React.FC = () => {
   }, [id, paramClinicId]);
 
   useEffect(() => {
+    // Ignore answers that arrive after the selection changed (a slow first request
+    // without a clinic used to overwrite the right answer and show "closed").
+    let stale = false;
     const fetchQueue = async () => {
       if (!id || !selectedDate) return;
       setLoadingQueue(true);
@@ -82,6 +86,7 @@ export const DoctorDetail: React.FC = () => {
           selectedSlotId || undefined,
           selectedClinicId || undefined
         );
+        if (stale) return;
         setQueuePreview(preview);
         if (preview.selectedSlotId && (!selectedSlotId || (preview.isPassed && preview.selectedSlotId !== selectedSlotId))) {
           setSelectedSlotId(preview.selectedSlotId);
@@ -89,10 +94,13 @@ export const DoctorDetail: React.FC = () => {
       } catch (err) {
         console.error('Failed to calculate queue preview:', err);
       } finally {
-        setLoadingQueue(false);
+        if (!stale) setLoadingQueue(false);
       }
     };
     fetchQueue();
+    return () => {
+      stale = true;
+    };
   }, [id, selectedDate, selectedSlotId, selectedClinicId]);
 
   if (loading) {
@@ -110,9 +118,9 @@ export const DoctorDetail: React.FC = () => {
         <div className="text-center p-8 bg-white rounded-2xl  border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
-          <p className="text-xs text-[#86868b] mb-6">The requested doctor profile is unavailable or inactive.</p>
+          <p className="text-xs text-[#86868b] mb-6">This doctor isn’t available.</p>
           <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
-            Back to Directory
+            Find Doctors
           </AppleButton>
         </div>
       </div>
@@ -209,7 +217,7 @@ export const DoctorDetail: React.FC = () => {
           <div className="py-6 border-b border-[#f0f0f2]">
             <h3 className="text-sm font-semibold text-[#1d1d1f] mb-2 tracking-tight">About</h3>
             <p className="text-sm leading-relaxed text-[#48484a]">
-              {doctor.bio || 'Consultant specialist providing clinical care and outpatient consultations.'}
+              {doctor.bio || `${doctor.specialty || 'Doctor'} consultations.`}
             </p>
           </div>
 
@@ -239,7 +247,7 @@ export const DoctorDetail: React.FC = () => {
                           <p className="text-xs text-[#86868b] mt-0.5 flex items-center gap-1 truncate">
                             <MapPin className="w-3 h-3 shrink-0 text-[#86868b]" />
                             <span className="truncate">
-                              {cd.clinic.address}{cd.clinic.city ? `, ${cd.clinic.city}` : ''}
+                              {formatClinicAddress(cd.clinic, { withState: false })}
                             </span>
                           </p>
                         </div>
@@ -274,10 +282,10 @@ export const DoctorDetail: React.FC = () => {
             <div className="mb-4 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
               <div className="flex items-center gap-1.5 font-semibold mb-1">
                 <AlertCircle className="w-4 h-4 text-[#86868b] shrink-0" />
-                <span>Booking Unavailable</span>
+                <span>Booking closed</span>
               </div>
               <p className="text-xs text-[#86868b]">
-                No clinic affiliation active for this doctor.
+                This doctor isn’t linked to a clinic yet.
               </p>
             </div>
           ) : (
@@ -302,7 +310,7 @@ export const DoctorDetail: React.FC = () => {
                           <span>{cd.clinic.clinicName}</span>
                           {cd.hasReceptionist === false && (
                             <span className="text-[11px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea]">
-                              No Desk Staff
+                              Closed
                             </span>
                           )}
                         </span>
@@ -319,7 +327,7 @@ export const DoctorDetail: React.FC = () => {
                   <p className="text-xs font-semibold text-[#1d1d1f] truncate">{selectedClinic?.clinic.clinicName}</p>
                   {selectedClinic?.hasReceptionist === false && (
                     <span className="text-[11px] text-[#86868b] bg-[#f5f5f7] px-2 py-0.5 rounded-full border border-[#e5e5ea] shrink-0">
-                      No Desk Staff
+                      Closed
                     </span>
                   )}
                 </div>
@@ -416,7 +424,7 @@ export const DoctorDetail: React.FC = () => {
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] mb-4">
                   <div className="flex items-baseline justify-between mb-2">
                     <div>
-                      <span className="text-[11px] text-[#86868b] block font-normal">Est. Token</span>
+                      <span className="text-[11px] text-[#86868b] block font-normal">Token</span>
                       <span className="text-2xl font-semibold tracking-tight text-[#0066cc]">
                         #{queuePreview.nextQueueNumber}
                       </span>
@@ -432,7 +440,7 @@ export const DoctorDetail: React.FC = () => {
                     <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
                     <span>
                       {queuePreview.patientsAhead === 0
-                        ? 'Next in line'
+                        ? 'You’d be next'
                         : `${queuePreview.patientsAhead} ahead`}
                     </span>
                   </div>
@@ -444,13 +452,12 @@ export const DoctorDetail: React.FC = () => {
           {/* Fee & Confirmation Notice */}
           <div className="pt-3 border-t border-[#f0f0f2] mb-4 space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#86868b]">Fee (Pay Receptionist to Confirm)</span>
+              <span className="text-[#86868b]">Fee</span>
               <span className="text-base font-semibold text-[#1d1d1f]">₹{activeFee}</span>
             </div>
-            <div className="p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] text-[#86868b] leading-relaxed">
-              <span className="font-semibold text-[#1d1d1f] block mb-0.5">Pay receptionist to confirm token</span>
-              Pay the receptionist by UPI over a call, or at the desk, to confirm your token. Whoever pays first is confirmed first.
-            </div>
+            <p className="text-[11px] text-[#86868b] leading-relaxed">
+              Pay the receptionist by UPI over a call or at the desk to confirm your token.
+            </p>
           </div>
 
           {queuePreview?.hasReceptionist === false ? (
@@ -460,11 +467,11 @@ export const DoctorDetail: React.FC = () => {
             </div>
           ) : queuePreview?.isPassed ? (
             <div className="mb-3 p-3 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs">
-              Shift ended. Pick upcoming shift or date.
+              This shift has ended. Pick another shift or date.
             </div>
           ) : queuePreview?.isFull ? (
             <div className="mb-3 p-3 rounded-xl bg-danger-soft/80 border border-danger-line/80 text-danger text-xs">
-              Shift is full. Select another slot or date.
+              This shift is full. Pick another shift or date.
             </div>
           ) : null}
 
@@ -479,14 +486,14 @@ export const DoctorDetail: React.FC = () => {
             className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {!doctor.clinics || doctor.clinics.length === 0
-              ? 'Booking Unavailable'
+              ? 'Booking closed'
               : queuePreview?.hasReceptionist === false
-              ? 'No Desk Staff at Clinic'
+              ? 'Booking closed'
               : queuePreview?.isPassed
-              ? 'Shift Ended'
+              ? 'Shift ended'
               : queuePreview?.isFull
-              ? 'Shift Full'
-              : 'Continue'}
+              ? 'Shift full'
+              : 'Book Token'}
           </button>
         </UtilityCard>
       </div>

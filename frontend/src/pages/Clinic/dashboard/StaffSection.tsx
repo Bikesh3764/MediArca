@@ -41,7 +41,7 @@ export const StaffSection: React.FC = () => {
                   </h3>
                 </div>
                 <span className="text-xs font-normal text-[#86868b]">
-                  Staff requesting front desk access
+                  Requests to join
                 </span>
               </div>
 
@@ -55,13 +55,13 @@ export const StaffSection: React.FC = () => {
                       <div className="font-semibold text-[14px] text-[#1d1d1f] flex items-center gap-2">
                         <span>{rec.fullName}</span>
                         <span className="px-2.5 py-0.5 rounded-full text-[11px] font-normal bg-[#0066cc]/10 text-[#0066cc]">
-                          Pending Approval
+                          Pending
                         </span>
                       </div>
                       <div className="text-xs text-[#86868b] mt-0.5">
                         <span className="font-normal text-[#1d1d1f]">{rec.email}</span>
                         {rec.phone && <span> • {rec.phone}</span>}
-                        <span> • Applied {new Date(rec.createdAt).toLocaleDateString()}</span>
+                        <span> • Applied {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
 
@@ -85,7 +85,7 @@ export const StaffSection: React.FC = () => {
                         className="h-9 px-4 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0071e3] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Review & Assign Doctors
+                        Approve
                       </button>
                     </div>
                   </div>
@@ -97,9 +97,9 @@ export const StaffSection: React.FC = () => {
           {(!data?.receptionists || data.receptionists.length === 0) ? (
             <EmptyState
               icon={UserCheck}
-              title="No Receptionists Provisioned"
+              title="No receptionists yet"
               description="Add a receptionist to run the front desk."
-              actionText="Provision First Receptionist"
+              actionText="Add Receptionist"
               onAction={() => setShowRecModal(true)}
             />
           ) : (
@@ -115,13 +115,13 @@ export const StaffSection: React.FC = () => {
                         {rec.phone && <div className="text-xs text-[#86868b]">{rec.phone}</div>}
                       </div>
                       <div className="text-[11px] text-[#86868b] shrink-0">
-                        {new Date(rec.createdAt).toLocaleDateString()}
+                        {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </div>
 
                     {/* Assigned Doctors */}
                     <div className="pt-2.5 border-t border-[#e5e5ea]">
-                      <div className="text-xs text-[#86868b] mb-1.5 font-normal">Assigned Practitioners</div>
+                      <div className="text-xs text-[#86868b] mb-1.5 font-normal">Doctors</div>
                       {(!rec.doctors || rec.doctors.length === 0) ? (
                         <span className="text-xs text-[#86868b] bg-white border border-[#e5e5ea] px-2.5 py-0.5 rounded-full font-normal">
                           No doctors assigned
@@ -146,7 +146,7 @@ export const StaffSection: React.FC = () => {
                         onClick={() => handleOpenEditAssignments(rec)}
                         className="h-8 px-3.5 rounded-full text-xs font-normal text-[#1d1d1f] bg-white hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all active:scale-[0.98] cursor-pointer"
                       >
-                        Manage Doctors
+                        Doctors
                       </button>
                       <button
                         onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}
@@ -167,7 +167,7 @@ export const StaffSection: React.FC = () => {
                   <tr className="border-b border-[#e5e5ea] text-[#86868b] font-normal">
                     <th className="pb-3 pl-2">Receptionist</th>
                     <th className="pb-3">Contact</th>
-                    <th className="pb-3">Assigned Doctors</th>
+                    <th className="pb-3">Doctors</th>
                     <th className="pb-3 text-right pr-2">Actions</th>
                   </tr>
                 </thead>
@@ -177,7 +177,7 @@ export const StaffSection: React.FC = () => {
                       <td className="py-4 pl-2">
                         <div className="font-semibold text-[14px] text-[#1d1d1f]">{rec.fullName}</div>
                         <div className="text-[11px] text-[#86868b]">
-                          Added {new Date(rec.createdAt).toLocaleDateString()}
+                          Added {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
                       </td>
                       <td className="py-4 text-[#86868b]">
@@ -208,7 +208,7 @@ export const StaffSection: React.FC = () => {
                             onClick={() => handleOpenEditAssignments(rec)}
                             className="h-8 px-3.5 rounded-full text-xs font-normal text-[#1d1d1f] bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] transition-all active:scale-[0.98] cursor-pointer"
                           >
-                            Manage Doctors
+                            Doctors
                           </button>
                           <button
                             onClick={() => handleRemoveReceptionist(rec.id, rec.fullName)}

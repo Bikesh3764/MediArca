@@ -43,7 +43,7 @@ export const ProfileModal: React.FC = () => {
                 <MapPin className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">Clinic Location & Details</h3>
+                <h3 className="text-[19px] font-semibold text-[#1d1d1f] tracking-tight">Clinic location</h3>
                 <p className="text-xs text-[#86868b]">Add your address so patients can find you.</p>
               </div>
             </div>
@@ -65,7 +65,7 @@ export const ProfileModal: React.FC = () => {
                   required
                   value={profileAddress}
                   onChange={(e) => setProfileAddress(e.target.value)}
-                  placeholder="e.g. Plot 42, Civil Township, Near Hanuman Mandir"
+                  placeholder="e.g. Plot 42, near Hanuman Mandir"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -84,7 +84,7 @@ export const ProfileModal: React.FC = () => {
                     }}
                     className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   >
-                    <option value="">Select State</option>
+                    <option value="">Choose state</option>
                     {INDIAN_STATES.map((s) => (
                       <option key={s} value={s}>
                         {s}
@@ -104,7 +104,7 @@ export const ProfileModal: React.FC = () => {
                       onChange={(e) => setProfileCity(e.target.value)}
                       className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                     >
-                      <option value="">Select City</option>
+                      <option value="">Choose city</option>
                       {getCitiesForState(profileState).map((c) => (
                         <option key={c} value={c}>
                           {c}
@@ -127,7 +127,7 @@ export const ProfileModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Facility Contact Phone (Optional)
+                  Phone (optional)
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white overflow-hidden focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center text-xs font-semibold text-[#1d1d1f]">

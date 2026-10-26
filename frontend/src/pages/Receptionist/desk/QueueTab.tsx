@@ -42,7 +42,7 @@ export const QueueTab: React.FC = () => {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
                 <div className="flex items-center gap-2.5">
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Live Patient Queue
+                    Queue
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
                     {queueAppointments.length}
@@ -76,7 +76,7 @@ export const QueueTab: React.FC = () => {
                       value={queueShiftFilter}
                       onChange={(e) => setQueueShiftFilter(e.target.value)}
                       className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
-                      title="Filter queue by clinical shift"
+                      title="Filter by shift"
                     >
                       <option value="ALL">All Shifts</option>
                       {availableQueueShifts.map((shiftName) => (
@@ -184,7 +184,7 @@ export const QueueTab: React.FC = () => {
                     type="text"
                     value={queueSearch}
                     onChange={(e) => setQueueSearch(e.target.value)}
-                    placeholder="Search patient, phone, token..."
+                    placeholder="Search patient, phone or token"
                     className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
                   />
                   {queueSearch && (
@@ -261,7 +261,7 @@ export const QueueTab: React.FC = () => {
               {linkedDoctors.length === 0 ? (
                 <EmptyState
                   icon={Users}
-                  title="No Doctors Assigned"
+                  title="No doctors yet"
                   description="Ask your clinic to assign doctors to you."
                 />
               ) : queueLoading && !hasLoadedInitialQueue ? (
@@ -269,7 +269,7 @@ export const QueueTab: React.FC = () => {
               ) : queueAppointments.length === 0 ? (
                 <EmptyState
                   icon={Clock}
-                  title="No Patients in Queue"
+                  title="No patients"
                   description={`No appointments scheduled for ${queueDate}.`}
                   actionText="Issue Walk-in Token"
                   onAction={() => setActiveTab('walkin')}
@@ -294,7 +294,7 @@ export const QueueTab: React.FC = () => {
                   if (queueSearch.trim()) {
                     return (
                       <div className="py-14 text-center">
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No Results Found</p>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No matches</p>
                         <p className="text-xs text-[#86868b] mt-1 mb-2">
                           No patients match &ldquo;{queueSearch}&rdquo;.
                         </p>
@@ -315,9 +315,9 @@ export const QueueTab: React.FC = () => {
                         <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
                           <Clock className="w-5 h-5 text-[#86868b]" />
                         </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No Patients in Waiting Queue</p>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No one waiting</p>
                         <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          There are currently no patients waiting for consultation{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                          New patients show up here.{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
                         </p>
                       </div>
                     );
@@ -329,7 +329,7 @@ export const QueueTab: React.FC = () => {
                         <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
                           <Stethoscope className="w-5 h-5 text-[#86868b]" />
                         </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No Patient in Cabin</p>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">No one in cabin</p>
                         <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                           Doctor cabin is currently clear{queueShiftFilter !== 'ALL' ? ` for ${queueShiftFilter}` : ''}.
                         </p>
@@ -343,7 +343,7 @@ export const QueueTab: React.FC = () => {
                         <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
                           <CheckCircle2 className="w-5 h-5 text-[#86868b]" />
                         </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No Completed Consultations</p>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">None completed</p>
                         <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
                           No completed visits yet{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
                         </p>
@@ -354,9 +354,9 @@ export const QueueTab: React.FC = () => {
                   if (statusFilter === 'CANCELLED') {
                     return (
                       <div className="py-14 text-center">
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No Cancelled Appointments</p>
+                        <p className="text-sm font-semibold text-[#1d1d1f]">None cancelled</p>
                         <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          There are no cancelled appointments for this date{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
+                          Nothing cancelled on this date.{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
                         </p>
                       </div>
                     );
@@ -602,7 +602,7 @@ export const QueueTab: React.FC = () => {
 
                               {appt.status === 'WAITING' && appt.isCheckedIn && isDoctorAway && isTodayQueue && (
                                 <span className="h-8 px-3 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-normal inline-flex items-center">
-                                  Doctor Away
+                                  Doctor away
                                 </span>
                               )}
 
@@ -634,7 +634,7 @@ export const QueueTab: React.FC = () => {
                                     setRescheduleError(null);
                                   }}
                                   className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
-                                  title="Reschedule to another date"
+                                  title="Move to another date"
                                 >
                                   Move
                                 </button>
@@ -669,7 +669,7 @@ export const QueueTab: React.FC = () => {
                                   });
                                 }}
                                 className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"
-                                title="Print Token Slip"
+                                title="Print slip"
                               >
                                 <Printer className="w-3.5 h-3.5" />
                               </button>

@@ -195,7 +195,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             type="button"
             disabled={loading}
             onClick={() => updateStatus('IN_CABIN')}
-            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-9 sm:h-8 px-2 sm:px-3.5 whitespace-nowrap rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'IN_CABIN'
                 ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -213,7 +213,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             type="button"
             disabled={loading}
             onClick={() => updateStatus('STEPPED_OUT', 15)}
-            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-9 sm:h-8 px-2 sm:px-3.5 whitespace-nowrap rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'STEPPED_OUT'
                 ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -231,7 +231,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
             type="button"
             disabled={loading}
             onClick={() => updateStatus('NOT_IN_CABIN')}
-            className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 sm:flex-initial h-9 sm:h-8 px-2 sm:px-3.5 whitespace-nowrap rounded-full text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${
               status === 'NOT_IN_CABIN'
                 ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
                 : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -272,7 +272,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                   type="button"
                   disabled={loading}
                   onClick={() => updateStatus('STEPPED_OUT', mins)}
-                  className={`h-6 px-2.5 rounded-full text-[11px] transition-all active:scale-95 cursor-pointer ${
+                  className={`h-8 px-3 rounded-full text-xs transition-all active:scale-95 cursor-pointer ${
                     isSelected
                       ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
                       : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
@@ -287,7 +287,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
                 type="button"
                 disabled={loading}
                 onClick={() => updateStatus('STEPPED_OUT', null, null)}
-                className="h-6 px-2.5 rounded-full text-[11px] font-normal text-[#86868b] hover:text-[#1d1d1f] transition-all active:scale-95 cursor-pointer"
+                className="h-8 px-3 rounded-full text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] transition-all active:scale-95 cursor-pointer"
               >
                 Clear
               </button>

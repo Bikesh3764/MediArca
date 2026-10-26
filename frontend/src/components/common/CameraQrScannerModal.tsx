@@ -76,7 +76,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     setCameraError(null);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
-        throw new Error('Camera access is not supported on this browser/device.');
+        throw new Error('This browser can’t use the camera.');
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -93,9 +93,9 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       }
     } catch (err: any) {
       console.error('Camera access error:', err);
-      let msg = 'Could not access camera. Please allow camera permissions in your browser.';
+      let msg = 'Couldn’t open the camera. Allow camera access in your browser.';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        msg = 'Camera permission was denied. Please allow camera access in browser settings.';
+        msg = 'Camera is blocked. Allow it in your browser settings.';
       }
       setCameraError(msg);
     }
@@ -203,7 +203,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
         {/* Header */}
         <div className="mb-5">
           <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Scan Clinic QR Code
+            Scan QR Code
           </h2>
           <p className="text-xs text-[#86868b] mt-1 leading-relaxed">
             Scan the QR code at the front desk.
@@ -215,7 +215,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
           <div className="my-3 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-3">
             <AlertCircle className="w-8 h-8 text-[#86868b] mx-auto" />
             <div>
-              <p className="text-sm font-semibold text-[#1d1d1f]">Camera Access Required</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">Allow camera</p>
               <p className="text-xs text-[#86868b] mt-1 leading-relaxed">{cameraError}</p>
             </div>
             <div className="p-3 bg-white rounded-xl border border-[#e5e5ea] text-left">
@@ -244,7 +244,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
             {scannedFeedback && (
               <div className="absolute inset-0 bg-[#0066cc]/95 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-fadeIn">
                 <CheckCircle2 className="w-10 h-10 mb-2" />
-                <p className="text-sm font-semibold">Arrival Confirmed</p>
+                <p className="text-sm font-semibold">You’re checked in</p>
               </div>
             )}
           </div>
@@ -252,7 +252,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 
         <div className="mt-5 pt-3 border-t border-[#f0f0f2]">
           <p className="text-[11px] text-[#86868b]">
-            Physical clinic queue · Zero online code entry required
+            Point your camera at the QR code
           </p>
         </div>
       </div>

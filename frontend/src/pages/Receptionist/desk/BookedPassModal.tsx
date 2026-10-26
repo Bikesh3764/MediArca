@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../../services/api';
 import React from 'react';
 import { cleanSlotName } from '../../../services/api';
 import { X, Printer } from 'lucide-react';
@@ -21,9 +22,9 @@ export const BookedPassModal: React.FC = () => {
             <div className="flex items-start justify-between pb-4 border-b border-[#f0f0f2]">
               <div>
                 <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-                  Walk-in Token Issued
+                  Token issued
                 </h3>
-                <p className="text-xs text-[#86868b] mt-0.5">Live consultation queue pass</p>
+                <p className="text-xs text-[#86868b] mt-0.5">Walk-in</p>
               </div>
               <button aria-label="Close"
                 type="button"
@@ -35,17 +36,17 @@ export const BookedPassModal: React.FC = () => {
             </div>
 
             <div className="my-5 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-2.5">
-              <span className="text-xs font-normal text-[#86868b] block">Queue Token Number</span>
+              <span className="text-xs font-normal text-[#86868b] block">Token</span>
               <div className="text-5xl font-semibold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
               <div className="pt-2.5 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-[11px] text-[#86868b] block">Est. Consultation</span>
+                  <span className="text-[11px] text-[#86868b] block">Est. time</span>
                   <span className="font-semibold text-[#1d1d1f]">{bookedPass.estimatedTime || 'Active'}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-[#86868b] block">Checking Shift</span>
+                  <span className="text-[11px] text-[#86868b] block">Shift</span>
                   <span className="font-semibold text-[#1d1d1f]">{cleanSlotName(bookedPass.checkingWindow) || 'General'}</span>
                 </div>
               </div>
@@ -68,7 +69,7 @@ export const BookedPassModal: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Date</span>
-                <span className="font-semibold text-[#1d1d1f]">{bookedPass.appointmentDate}</span>
+                <span className="font-semibold text-[#1d1d1f]">{formatDisplayDate(bookedPass.appointmentDate)}</span>
               </div>
             </div>
 

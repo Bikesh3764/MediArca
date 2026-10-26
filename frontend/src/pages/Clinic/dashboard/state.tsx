@@ -68,7 +68,7 @@ export const useClinicDashboardState = () => {
       setData(res);
     } catch (err: any) {
       console.error('Failed to load clinic details:', err);
-      setError(err.message || 'Failed to load clinic statistics');
+      setError(err.message || 'Couldn’t load. Try again.');
     } finally {
       setLoading(false);
     }
@@ -101,12 +101,12 @@ export const useClinicDashboardState = () => {
     setSuccessMsg(null);
     try {
       const res = await api.addDoctorToClinic({ doctorEmail: doctorEmail.trim() });
-      setSuccessMsg(res.message || 'Doctor onboarded successfully');
+      setSuccessMsg(res.message || 'Doctor invited.');
       setDoctorEmail('');
       setShowAddModal(false);
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to onboard doctor');
+      setError(err.message || 'Couldn’t invite doctor. Try again.');
     } finally {
       setAdding(false);
     }
@@ -120,53 +120,53 @@ export const useClinicDashboardState = () => {
         doctorEmail: email?.trim() || undefined,
         doctorId: docId || undefined,
       });
-      setSuccessMsg(res.message || 'Doctor onboarded successfully');
+      setSuccessMsg(res.message || 'Doctor invited.');
       setShowAddModal(false);
       setDoctorEmail('');
       setDoctorSearchQuery('');
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to onboard doctor');
+      setError(err.message || 'Couldn’t invite doctor. Try again.');
     } finally {
       setAdding(false);
     }
   };
   const handleDetachDoctor = async (doctorId: string, docName: string) => {
     const ok = await confirm({
-      title: 'Detach Doctor?',
-      message: `Are you sure you want to detach Dr. ${docName} from your clinic? Their existing records will remain preserved.`,
-      confirmText: 'Detach Doctor',
+      title: 'Remove doctor?',
+      message: `Remove ${docName} from your clinic? Past records stay.`,
+      confirmText: 'Remove',
       isDestructive: true,
     });
     if (!ok) return;
 
     try {
       await api.removeDoctorFromClinic(doctorId);
-      toast.success(`Dr. ${docName} has been detached from your clinic`);
-      setSuccessMsg(`Dr. ${docName} has been detached from your clinic.`);
+      toast.success(`${docName} removed`);
+      setSuccessMsg(`${docName} removed.`);
       fetchClinicData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to detach doctor');
-      setError(err.message || 'Failed to detach doctor');
+      toast.error(err.message || 'Couldn’t remove doctor. Try again.');
+      setError(err.message || 'Couldn’t remove doctor. Try again.');
     }
   };
   const handleCancelInvitation = async (doctorId: string, docName: string) => {
     const ok = await confirm({
-      title: 'Cancel Invitation?',
-      message: `Are you sure you want to cancel the pending affiliation invitation to Dr. ${docName}?`,
-      confirmText: 'Cancel Invitation',
+      title: 'Cancel invite?',
+      message: `Cancel the invite to ${docName}?`,
+      confirmText: 'Cancel Invite',
       isDestructive: true,
     });
     if (!ok) return;
 
     try {
       await api.removeDoctorFromClinic(doctorId);
-      toast.success(`Invitation to Dr. ${docName} has been cancelled`);
-      setSuccessMsg(`Invitation to Dr. ${docName} has been cancelled.`);
+      toast.success('Invite cancelled');
+      setSuccessMsg('Invite cancelled.');
       fetchClinicData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to cancel invitation');
-      setError(err.message || 'Failed to cancel invitation');
+      toast.error(err.message || 'Couldn’t cancel invite. Try again.');
+      setError(err.message || 'Couldn’t cancel invite. Try again.');
     }
   };
   const handleRespondDoctorAffiliation = async (affiliationId: string, action: 'ACCEPT' | 'REJECT') => {
@@ -174,10 +174,10 @@ export const useClinicDashboardState = () => {
     setSuccessMsg(null);
     try {
       const res = await api.respondToDoctorAffiliation(affiliationId, action);
-      setSuccessMsg(res.message || `Doctor affiliation request ${action.toLowerCase()}ed successfully`);
+      setSuccessMsg(res.message || (action === 'ACCEPT' ? 'Doctor added.' : 'Request declined.'));
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to respond to doctor affiliation request');
+      setError(err.message || 'Couldn’t respond. Try again.');
     }
   };
   const handleProvisionReceptionist = async (e: React.FormEvent) => {
@@ -187,7 +187,7 @@ export const useClinicDashboardState = () => {
       return;
     }
     if (recPassword.trim().length < 8) {
-      setError('Receptionist password must be at least 8 characters long.');
+      setError('Password must be at least 8 characters.');
       return;
     }
     if (recPhone.trim() && !isValidIndianPhone(recPhone.trim())) {
@@ -215,7 +215,7 @@ export const useClinicDashboardState = () => {
         email: savedEmail,
         password: savedPass,
       });
-      setSuccessMsg(res.message || 'Receptionist staff provisioned successfully. Share credentials with staff.');
+      setSuccessMsg(res.message || 'Receptionist added. Share their login.');
       setShowRecModal(false);
       setRecFullName('');
       setRecEmail('');
@@ -224,7 +224,7 @@ export const useClinicDashboardState = () => {
       setRecDoctorIds([]);
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to provision receptionist staff');
+      setError(err.message || 'Couldn’t add receptionist. Try again.');
     } finally {
       setProvisioning(false);
     }
@@ -242,33 +242,33 @@ export const useClinicDashboardState = () => {
     setSuccessMsg(null);
     try {
       const res = await api.updateClinicReceptionistDoctors(editingRec.id, editDoctorIds);
-      setSuccessMsg(res?.message || 'Assigned doctor permissions updated successfully.');
+      setSuccessMsg(res?.message || 'Saved.');
       setEditingRec(null);
       setEditDoctorIds([]);
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to update receptionist assignments');
+      setError(err.message || 'Couldn’t save. Try again.');
     } finally {
       setSavingAssignments(false);
     }
   };
   const handleRemoveReceptionist = async (recId: string, recName: string) => {
     const ok = await confirm({
-      title: 'Remove Receptionist?',
-      message: `Are you sure you want to remove receptionist "${recName}"? Their portal credentials will be revoked immediately.`,
-      confirmText: 'Revoke & Remove',
+      title: 'Remove receptionist?',
+      message: `Remove ${recName}? They won’t be able to sign in.`,
+      confirmText: 'Remove',
       isDestructive: true,
     });
     if (!ok) return;
 
     try {
       await api.removeClinicReceptionist(recId);
-      toast.success(`Receptionist "${recName}" removed`);
-      setSuccessMsg(`Receptionist "${recName}" removed successfully.`);
+      toast.success(`${recName} removed`);
+      setSuccessMsg(`${recName} removed.`);
       fetchClinicData();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to remove receptionist');
-      setError(err.message || 'Failed to remove receptionist');
+      toast.error(err.message || 'Couldn’t remove receptionist. Try again.');
+      setError(err.message || 'Couldn’t remove receptionist. Try again.');
     }
   };
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -299,10 +299,10 @@ export const useClinicDashboardState = () => {
         phone: profilePhone.trim() ? formatIndianPhone(profilePhone.trim()) : undefined,
       });
       setShowProfileModal(false);
-      setSuccessMsg('Clinic location details updated successfully.');
+      setSuccessMsg('Location saved.');
       fetchClinicData(false);
     } catch (err: any) {
-      setProfileError(err.message || 'Failed to update clinic profile.');
+      setProfileError(err.message || 'Couldn’t update clinic profile. Try again.');
     } finally {
       setSavingProfile(false);
     }
@@ -340,12 +340,12 @@ export const useClinicDashboardState = () => {
     setSuccessMsg(null);
     try {
       const res = await api.respondToReceptionistRequest(receptionistId, action, doctorIds);
-      setSuccessMsg(res.message || `Receptionist application ${action.toLowerCase()}ed.`);
+      setSuccessMsg(res.message || (action === 'ACCEPT' ? 'Receptionist approved.' : 'Request declined.'));
       setApprovingRec(null);
       setApprovalDoctorIds([]);
       fetchClinicData();
     } catch (err: any) {
-      setError(err.message || 'Failed to process receptionist application');
+      setError(err.message || 'Couldn’t respond. Try again.');
     } finally {
       setProcessingRecId(null);
     }

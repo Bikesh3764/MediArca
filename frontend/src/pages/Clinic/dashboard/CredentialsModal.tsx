@@ -22,8 +22,8 @@ export const CredentialsModal: React.FC = () => {
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div>
-                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Desk Credentials Ready</h3>
-                <p className="text-[13px] text-[#86868b] mt-0.5">Provide these credentials to your front desk staff</p>
+                <h3 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight">Receptionist login</h3>
+                <p className="text-[13px] text-[#86868b] mt-0.5">Share these with your receptionist.</p>
               </div>
               <button aria-label="Close"
                 onClick={() => setCreatedCredentials(null)}
@@ -34,16 +34,16 @@ export const CredentialsModal: React.FC = () => {
             </div>
 
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs space-y-1 leading-relaxed">
-              <p className="font-semibold">Handover Notice</p>
+              <p className="font-semibold">Note</p>
               <p className="text-xs text-[#86868b]">
-                Share these details. They sign in from the Reception Desk link.
+                They sign in from the Receptionist link and set their own password.
               </p>
             </div>
 
             <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] space-y-3 text-xs">
               <div>
                 <span className="text-xs text-[#86868b] font-normal block mb-0.5">
-                  Staff Member Name
+                  Name
                 </span>
                 <span className="text-[#1d1d1f] font-semibold text-[14px]">
                   {createdCredentials.fullName}
@@ -52,7 +52,7 @@ export const CredentialsModal: React.FC = () => {
 
               <div>
                 <span className="text-xs text-[#86868b] font-normal block mb-1">
-                  Login Email (Desk ID)
+                  Email
                 </span>
                 <span className="text-[#0066cc] select-all bg-white px-3 py-2 rounded-xl border border-[#e5e5ea] block font-semibold">
                   {createdCredentials.email}
@@ -70,7 +70,7 @@ export const CredentialsModal: React.FC = () => {
 
               <div>
                 <span className="text-xs text-[#86868b] font-normal block mb-0.5">
-                  Portal Login URL
+                  Sign-in link
                 </span>
                 <span className="text-[#0066cc] text-xs block select-all font-normal break-all">
                   {`${window.location.origin}${window.location.pathname}#/receptionist/login`}
@@ -83,7 +83,7 @@ export const CredentialsModal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   const portalUrl = `${window.location.origin}${window.location.pathname}#/receptionist/login`;
-                  const text = `MediArca Receptionist Desk Credentials\nFacility: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail (Desk ID): ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nLogin Portal: ${portalUrl}`;
+                  const text = `MediArca receptionist login\nClinic: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nSign in at: ${portalUrl}`;
                   navigator.clipboard.writeText(text);
                   setCopiedCreds(true);
                   setTimeout(() => setCopiedCreds(false), 2500);
@@ -93,10 +93,10 @@ export const CredentialsModal: React.FC = () => {
                 {copiedCreds ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-[#0066cc]" />
-                    Copied to Clipboard
+                    Copied
                   </>
                 ) : (
-                  'Copy All Credentials'
+                  'Copy All'
                 )}
               </button>
 

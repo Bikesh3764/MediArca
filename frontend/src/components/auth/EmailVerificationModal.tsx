@@ -121,7 +121,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (fullOtp.length !== 6) {
-      setError('Please enter all 6 digits of your verification code.');
+      setError('Enter the 6-digit code.');
       return;
     }
 
@@ -161,7 +161,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
       if (err.cooldownSeconds) {
         setCountdown(err.cooldownSeconds);
       }
-      setError(err.message || 'Failed to resend verification code. Please try again.');
+      setError(err.message || 'Couldn’t send a new code. Try again.');
     } finally {
       setResending(false);
     }
@@ -226,10 +226,10 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             <div className="p-4 rounded-2xl bg-[#0066cc]/5 border border-[#0066cc]/20 text-[#1d1d1f] text-xs text-left">
               <div className="flex items-center gap-2 font-semibold text-[#0066cc] mb-1">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>Ready to Sign In</span>
+                <span>Already verified</span>
               </div>
               <p className="text-[#86868b] leading-relaxed">
-                This email is already verified. Sign in with your password.
+                Sign in with your password.
               </p>
             </div>
 
@@ -238,7 +238,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
               onClick={onClose}
               className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
             >
-              Sign In with Password
+              Sign In
             </button>
           </div>
         ) : (

@@ -76,11 +76,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidIndianPhone(phone)) {
-      setError('Please enter a valid 10-digit Indian mobile number.');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
     if (password.trim().length < 8) {
-      setError('Password must be at least 8 characters long.');
+      setError('Password must be at least 8 characters.');
       return;
     }
     setError(null);
@@ -200,7 +200,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
               {isGoogleConfigured ? (
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google sign-up failed')}
+                  onError={() => setError('Google sign-up didn’t work. Try again or use email.')}
                   shape="pill"
                   size="large"
                   text="signup_with"
@@ -237,7 +237,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
             <div>
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Email Address
+                Email
               </label>
               <input
                 type="email"
@@ -251,7 +251,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
             <div>
               <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Mobile Number
+                Mobile
               </label>
               <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                 <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
@@ -302,7 +302,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
               <>
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Medical Qualifications
+                    Qualifications
                   </label>
                   <input
                     type="text"
@@ -316,7 +316,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Medical Specialty
+                    Specialty
                   </label>
                   <SearchableSpecialtySelect
                     value={specialty}
@@ -324,13 +324,13 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                     customValue={customSpecialty}
                     onCustomChange={setCustomSpecialty}
                     allowOther={true}
-                    placeholder="Select specialty..."
+                    placeholder="Choose specialty"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Years of Clinical Experience
+                    Experience (years)
                   </label>
                   <input
                     type="number"
@@ -355,7 +355,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 {submitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Creating Account...</span>
+                    <span>Creating...</span>
                   </>
                 ) : (
                   `Create ${role === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}`

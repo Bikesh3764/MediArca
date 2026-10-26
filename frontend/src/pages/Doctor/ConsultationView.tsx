@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../services/api';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Appointment, cleanSlotName, getLocalDateString } from '../../services/api';
@@ -97,7 +98,7 @@ export const ConsultationView: React.FC = () => {
             }
           }
         } else {
-          setError('Encounter record could not be retrieved.');
+          setError('Couldn’t load this visit.');
         }
       } catch (err: any) {
         setError(err.message || 'Error loading appointment details');
@@ -143,8 +144,8 @@ export const ConsultationView: React.FC = () => {
       toast.success('Consultation notes saved');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to save notes');
-      toast.error(err.message || 'Failed to save notes');
+      setError(err.message || 'Couldn’t save notes. Try again.');
+      toast.error(err.message || 'Couldn’t save notes. Try again.');
     } finally {
       setSavingNotes(false);
     }
@@ -167,11 +168,11 @@ export const ConsultationView: React.FC = () => {
       const updated = await api.callPatient(appointment.id);
       setAppointment(updated);
       setSuccessMsg(`Token #${updated.queueNumber} called into cabin.`);
-      toast.success(`Token #${updated.queueNumber} called into cabin`);
+      toast.success(`Token #${updated.queueNumber} called`);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to call patient into cabin');
-      toast.error(err.message || 'Failed to call patient into cabin');
+      setError(err.message || 'Couldn’t call patient. Try again.');
+      toast.error(err.message || 'Couldn’t call patient. Try again.');
     } finally {
       setCallingPatient(false);
     }
@@ -185,11 +186,11 @@ export const ConsultationView: React.FC = () => {
       await api.checkInAppointmentDirect(appointment.id, true);
       setAppointment((prev) => (prev ? { ...prev, isCheckedIn: true, checkedInAt: new Date().toISOString() } : null));
       setSuccessMsg('Patient marked as arrived at clinic.');
-      toast.success('Patient marked as arrived at clinic');
+      toast.success('Marked as arrived');
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to mark patient arrived');
-      toast.error(err.message || 'Failed to mark patient arrived');
+      setError(err.message || 'Couldn’t mark patient arrived. Try again.');
+      toast.error(err.message || 'Couldn’t mark patient arrived. Try again.');
     } finally {
       setTogglingCheckin(false);
     }
@@ -203,11 +204,11 @@ export const ConsultationView: React.FC = () => {
       const updated = await api.holdConsultation(appointment.id);
       setAppointment(updated);
       setSuccessMsg(`Token #${updated.queueNumber} placed on hold and returned to waiting queue.`);
-      toast.info(`Token #${updated.queueNumber} placed on hold`);
+      toast.info(`Token #${updated.queueNumber} on hold`);
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to place consultation on hold');
-      toast.error(err.message || 'Failed to place consultation on hold');
+      setError(err.message || 'Couldn’t put on hold. Try again.');
+      toast.error(err.message || 'Couldn’t put on hold. Try again.');
     } finally {
       setHoldingPatient(false);
     }
@@ -235,11 +236,11 @@ export const ConsultationView: React.FC = () => {
         clinicalNotes: clinicalNotes.trim(),
         vitals: currentVitals,
       });
-      toast.success(`Consultation completed for Token #${appointment.queueNumber}`);
+      toast.success(`Token #${appointment.queueNumber} done`);
       navigate('/doctor/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Failed to complete consultation');
-      toast.error(err.message || 'Failed to complete consultation');
+      setError(err.message || 'Couldn’t complete consultation. Try again.');
+      toast.error(err.message || 'Couldn’t complete consultation. Try again.');
       setSubmitting(false);
     }
   };
@@ -257,17 +258,17 @@ export const ConsultationView: React.FC = () => {
       <DashboardLayout
         portalType="DOCTOR"
         navItems={navItems}
-        title="Consultation Desk"
+        title="Consultation"
       >
         <div className="bg-white rounded-2xl p-8 max-w-md border border-[#e5e5ea] text-center ">
-          <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">Unable to Load Encounter</h2>
+          <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">Couldn’t load this visit</h2>
           <p className="text-[13px] text-[#86868b] mt-1 mb-5">{error}</p>
           <button
             type="button"
             onClick={() => navigate('/doctor/dashboard')}
             className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer"
           >
-            Return to Queue
+            Back to Queue
           </button>
         </div>
       </DashboardLayout>
@@ -286,7 +287,7 @@ export const ConsultationView: React.FC = () => {
     <DashboardLayout
       portalType="DOCTOR"
       navItems={navItems}
-      title="Patient Consultation"
+      title="Consultation"
       subtitle={`Token #${appointment.queueNumber} • ${patientName}`}
       headerAction={
         <button
@@ -351,7 +352,7 @@ export const ConsultationView: React.FC = () => {
           {/* Patient & Booking Details Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 text-xs">
             <div className="space-y-1">
-              <span className="text-[#86868b] font-normal block">Patient Info</span>
+              <span className="text-[#86868b] font-normal block">Patient</span>
               <p className="font-semibold text-[#1d1d1f] text-[13px]">
                 {appointment.patientAge ? `${appointment.patientAge} Yrs` : 'Age N/A'}
                 {appointment.patientGender ? ` • ${appointment.patientGender}` : ''}
@@ -370,7 +371,7 @@ export const ConsultationView: React.FC = () => {
             <div className="space-y-1">
               <span className="text-[#86868b] font-normal block">Date & Shift</span>
               <p className="font-semibold text-[#1d1d1f] text-[13px]">
-                {appointment.appointmentDate}
+                {formatDisplayDate(appointment.appointmentDate)}
               </p>
               <p className="text-xs text-[#86868b]">
                 {cleanSlotName(appointment.checkingWindow, 'Shift 1')}
@@ -378,7 +379,7 @@ export const ConsultationView: React.FC = () => {
             </div>
 
             <div className="space-y-1">
-              <span className="text-[#86868b] font-normal block">Clinic Venue</span>
+              <span className="text-[#86868b] font-normal block">Clinic</span>
               <p className="font-semibold text-[#1d1d1f] text-[13px] truncate">
                 {appointment.clinic?.clinicName || 'Direct Facility'}
               </p>
@@ -390,13 +391,13 @@ export const ConsultationView: React.FC = () => {
             <div className="mt-5 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1.5 text-[13px]">
               {appointment.reasonForVisit && (
                 <div>
-                  <span className="font-semibold text-[#1d1d1f]">Reason for Visit: </span>
+                  <span className="font-semibold text-[#1d1d1f]">Reason: </span>
                   <span className="text-[#48484a] whitespace-pre-wrap break-words">{appointment.reasonForVisit}</span>
                 </div>
               )}
               {appointment.symptoms && (
                 <div>
-                  <span className="font-semibold text-[#1d1d1f]">Reported Symptoms: </span>
+                  <span className="font-semibold text-[#1d1d1f]">Symptoms: </span>
                   <span className="text-[#48484a] whitespace-pre-wrap break-words">{appointment.symptoms}</span>
                 </div>
               )}
@@ -444,16 +445,16 @@ export const ConsultationView: React.FC = () => {
           <UtilityCard className="p-6">
             <div className="flex items-center gap-2 mb-1.5">
               <CheckCircle2 className="w-5 h-5 text-[#0066cc]" />
-              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Consultation Completed</h2>
+              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Consultation done</h2>
             </div>
             <p className="text-[13px] text-[#86868b] mb-5">
-              Completed on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString() : (appointment as any).updatedAt ? new Date((appointment as any).updatedAt).toLocaleString() : appointment.appointmentDate}.
+              Completed on {appointment.completedAt ? new Date(appointment.completedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : (appointment as any).updatedAt ? new Date((appointment as any).updatedAt).toLocaleString() : appointment.appointmentDate}.
             </p>
 
             {clinicalNotes && (
               <div className="mb-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <span className="text-xs font-normal text-[#86868b] block mb-1.5">
-                  Consultation Notes
+                  Notes
                 </span>
                 <p className="text-[14px] text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed">
                   {clinicalNotes}
@@ -466,12 +467,12 @@ export const ConsultationView: React.FC = () => {
               onClick={() => navigate('/doctor/dashboard')}
               className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center cursor-pointer"
             >
-              Return to Live Queue
+              Back to Queue
             </button>
           </UtilityCard>
         ) : isCancelled ? (
           <UtilityCard className="p-6 text-center">
-            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Appointment Cancelled</h2>
+            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Cancelled</h2>
             <p className="text-[13px] text-[#86868b] mt-1 mb-5">
               This visit was cancelled.
             </p>
@@ -480,12 +481,12 @@ export const ConsultationView: React.FC = () => {
               onClick={() => navigate('/doctor/dashboard')}
               className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all inline-flex items-center justify-center cursor-pointer"
             >
-              Return to Live Queue
+              Back to Queue
             </button>
           </UtilityCard>
         ) : isPendingApproval ? (
           <UtilityCard className="p-6 text-center">
-            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Appointment Pending Approval</h2>
+            <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Not confirmed yet</h2>
             <p className="text-[13px] text-[#86868b] mt-1 mb-5">
               Waiting for the front desk to confirm.
             </p>
@@ -494,14 +495,14 @@ export const ConsultationView: React.FC = () => {
               onClick={() => navigate('/doctor/dashboard')}
               className="w-full sm:w-auto h-10 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all inline-flex items-center justify-center cursor-pointer"
             >
-              Return to Live Queue
+              Back to Queue
             </button>
           </UtilityCard>
         ) : isWaiting ? (
           <UtilityCard className="p-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-[#86868b]" />
-              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Patient in Waiting Queue</h2>
+              <h2 className="text-[16px] font-semibold text-[#1d1d1f] tracking-tight">Patient is waiting</h2>
             </div>
             <p className="text-[13px] text-[#86868b] mb-5">
               Token #{appointment.queueNumber} is waiting. Call them in when you’re ready.
@@ -513,7 +514,7 @@ export const ConsultationView: React.FC = () => {
                   onClick={() => navigate('/doctor/dashboard')}
                   className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
                 >
-                  Return to Live Queue
+                  Back to Queue
                 </button>
                 <button
                   type="button"
@@ -536,7 +537,7 @@ export const ConsultationView: React.FC = () => {
                     onClick={() => navigate('/doctor/dashboard')}
                     className="w-full sm:w-auto h-10 px-5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all inline-flex items-center justify-center cursor-pointer"
                   >
-                    Return to Live Queue
+                    Back to Queue
                   </button>
                   <button
                     type="button"
@@ -555,7 +556,7 @@ export const ConsultationView: React.FC = () => {
           <form onSubmit={handleCompleteConsultation} className="space-y-6">
             <UtilityCard className="p-6">
               <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight block mb-3">
-                Patient Vitals <span className="text-[#86868b] font-normal">(Optional)</span>
+                Vitals <span className="text-[#86868b] font-normal">(Optional)</span>
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 <div>
@@ -569,7 +570,7 @@ export const ConsultationView: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-normal text-[#86868b] mb-1">Pulse Rate (bpm)</label>
+                  <label className="block text-[11px] font-normal text-[#86868b] mb-1">Pulse (bpm)</label>
                   <input
                     type="text"
                     placeholder="e.g. 72"
@@ -602,7 +603,7 @@ export const ConsultationView: React.FC = () => {
 
               <div className="flex items-center justify-between gap-2 mb-3">
                 <label className="text-xs font-normal text-[#1d1d1f] tracking-tight">
-                  Consultation Notes <span className="text-[#86868b] font-normal">(Optional)</span>
+                  Notes <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
                 <button
                   type="button"
@@ -619,7 +620,7 @@ export const ConsultationView: React.FC = () => {
                 value={clinicalNotes}
                 onChange={(e) => setClinicalNotes(e.target.value)}
                 rows={4}
-                placeholder="Add clinical observations, findings, or follow-up notes..."
+                placeholder="Findings, advice, follow-up"
                 className="w-full rounded-xl border border-[#d2d2d7] bg-white p-3.5 text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-y"
               />
 
@@ -628,11 +629,11 @@ export const ConsultationView: React.FC = () => {
                   type="button"
                   disabled={holdingPatient}
                   onClick={handleHoldConsultation}
-                  className="w-full sm:w-auto h-10 px-4 rounded-full bg-warning-soft hover:bg-warning-soft text-warning border border-warning-line text-xs font-normal transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
-                  title="Pause and return patient to waiting queue"
+                  className="w-full sm:w-auto h-10 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  title="Send back to the waiting list"
                 >
                   <PauseCircle className="w-3.5 h-3.5" />
-                  <span>{holdingPatient ? 'Holding...' : 'Put on Hold'}</span>
+                  <span>{holdingPatient ? 'Holding...' : 'Hold'}</span>
                 </button>
 
                 <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto justify-end">

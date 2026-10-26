@@ -51,7 +51,7 @@ export const NotFound: React.FC = () => {
         {/* Helpful Shortcut Links */}
         <div className="pt-6 border-t border-[#f0f0f2] space-y-3">
           <p className="text-xs font-normal text-[#86868b] uppercase tracking-wider">
-            Helpful Portals & Assistance
+            Other pages
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#0066cc]">
             <button
@@ -64,11 +64,11 @@ export const NotFound: React.FC = () => {
             </button>
             <span className="text-[#d2d2d7]">•</span>
             <Link to="/patient/appointments" className="hover:underline">
-              Live Queue Passes
+              Appointments
             </Link>
             <span className="text-[#d2d2d7]">•</span>
             <Link to="/how-it-works" className="hover:underline">
-              How Queue Works
+              How It Works
             </Link>
             <span className="text-[#d2d2d7]">•</span>
             <Link to="/contact" className="hover:underline inline-flex items-center gap-1">

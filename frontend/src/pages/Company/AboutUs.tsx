@@ -12,7 +12,7 @@ export const AboutUs: React.FC = () => {
             About MediArca
           </h1>
           <p className="text-sm sm:text-base text-[#6e6e73] leading-relaxed">
-            A real-time clinic queue management system built to end the frustration of long, unpredictable waits in hospital and clinic waiting rooms.
+            Live clinic queues, so you don’t wait for hours.
           </p>
         </div>
 
@@ -20,32 +20,32 @@ export const AboutUs: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 sm:p-10 border border-[#e5e5ea]  space-y-8">
           <div>
             <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-              What We Do
+              What we do
             </h2>
             <p className="text-sm text-[#48484a] mt-2 leading-relaxed">
-              Visiting a doctor should not mean sitting for hours in a crowded waiting area without knowing when you will be called. MediArca connects patients directly with clinic queues in real time.
+              Seeing a doctor shouldn’t mean sitting in a crowded room without knowing when you’ll be called. MediArca shows you the clinic’s queue live.
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
             <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">Live Queue Tokens</h3>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">Live tokens</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
-                Receive an official queue number and track your live turn directly from your phone as patients are called.
+                Get a token number and follow your turn on your phone.
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">Zero Advance Fees</h3>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">No booking fee</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
-                Booking a token is completely free on MediArca. You pay the doctor's consultation fee directly at the clinic desk.
+                You only pay the doctor’s fee to the clinic.
               </p>
             </div>
 
             <div className="p-5 rounded-2xl bg-[#fbfbfd] border border-[#e5e5ea] space-y-2">
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">Cabin Presence Status</h3>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">Doctor status</h3>
               <p className="text-xs text-[#6e6e73] leading-relaxed">
-                Know when the doctor is in-cabin or stepped out, so you never wait blindly in an empty lobby.
+                See if the doctor is in or has stepped out.
               </p>
             </div>
           </div>
@@ -54,16 +54,16 @@ export const AboutUs: React.FC = () => {
         {/* Who It Helps */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-2.5">
-            <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For Patients</h3>
+            <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For patients</h3>
             <p className="text-xs sm:text-sm text-[#6e6e73] leading-relaxed">
-              Find verified doctors across specialties, book a token without paying anything upfront, and reach the clinic comfortably when your turn approaches.
+              Find verified doctors, book a token and reach the clinic when your turn is close.
             </p>
           </div>
 
           <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-2.5">
-            <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For Clinics & Doctors</h3>
+            <h3 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">For clinics and doctors</h3>
             <p className="text-xs sm:text-sm text-[#6e6e73] leading-relaxed">
-              Manage physical walk-ins and digital bookings in a single unified queue. Reduce crowded waiting rooms and keep daily OPD running smoothly.
+              Walk-ins and online bookings in one queue. Fewer crowds, smoother OPD.
             </p>
           </div>
         </div>
@@ -72,9 +72,9 @@ export const AboutUs: React.FC = () => {
         <div className="text-center pt-2">
           <Link
             to="/doctors"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#0066cc] hover:underline"
+            className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all"
           >
-            Find and consult doctors near you <ArrowRight className="w-4 h-4" />
+            Find Doctors <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>

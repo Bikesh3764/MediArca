@@ -1,3 +1,4 @@
+import { AvatarImage } from '../../components/ui/AvatarImage';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -104,10 +105,10 @@ export const ClinicProfile: React.FC = () => {
       const res = await api.uploadAvatar(result.file);
       updateUser(res.user);
       await refreshUser();
-      setSuccessMsg('Clinic logo/photo updated successfully.');
+      setSuccessMsg('Photo saved.');
       setTimeout(() => setAvatarOptimization(null), 5000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to update clinic photo.');
+      setErrorMsg(err.message || 'Couldn’t update clinic photo. Try again.');
       setAvatarOptimization(null);
     } finally {
       setAvatarLoading(false);
@@ -166,10 +167,10 @@ export const ClinicProfile: React.FC = () => {
 
       await refreshUser();
 
-      setSuccessMsg('Clinic profile and location details saved successfully.');
-      toast.success('Clinic profile details saved successfully');
+      setSuccessMsg('Saved.');
+      toast.success('Clinic saved');
     } catch (err: any) {
-      const msg = err.message || 'Failed to update clinic profile.';
+      const msg = err.message || 'Couldn’t update clinic profile. Try again.';
       setErrorMsg(msg);
       toast.error(msg);
     } finally {
@@ -214,9 +215,9 @@ export const ClinicProfile: React.FC = () => {
   return (
     <DashboardLayout
       portalType="CLINIC"
-      portalSubtitle="Clinic Portal"
+      portalSubtitle="Clinic"
       navItems={navItems}
-      title="Clinic Profile & Settings"
+      title="Clinic Settings"
       subtitle={clinicName || 'Facility Details & Location'}
       headerAction={
         <div className="flex items-center gap-2">
@@ -225,7 +226,7 @@ export const ClinicProfile: React.FC = () => {
             className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] active:scale-[0.98] text-[#1d1d1f] border border-[#d2d2d7] text-xs font-normal flex items-center gap-2  transition-all cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
-            <span>Return to Dashboard</span>
+            <span>Back</span>
           </Link>
         </div>
       }
@@ -246,16 +247,12 @@ export const ClinicProfile: React.FC = () => {
         )}
 
         {/* Clinic Photo & Brand Identity Card */}
-        <UtilityCard title="Facility Photo & Brand Identity">
+        <UtilityCard title="Photo">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className="relative group">
               <div className="w-24 h-24 rounded-2xl overflow-hidden border border-[#e5e5ea] bg-[#f5f5f7] flex items-center justify-center ">
                 {user?.avatarUrl ? (
-                  <img
-                    src={getFileUrl(user.avatarUrl)}
-                    alt={clinicName}
-                    className="w-full h-full object-cover"
-                  />
+                  <AvatarImage src={getFileUrl(user.avatarUrl)} name={clinicName} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-3xl">
                     {initialLetter}
@@ -267,7 +264,7 @@ export const ClinicProfile: React.FC = () => {
                 disabled={avatarLoading}
                 onClick={() => avatarInputRef.current?.click()}
                 className="absolute -bottom-1 -right-1 bg-[#0066cc] hover:bg-[#0071e3] text-white p-2 rounded-full  transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-                title="Change clinic logo or photo"
+                title="Change photo"
               >
                 <Camera className="w-3.5 h-3.5" />
               </button>
@@ -310,15 +307,15 @@ export const ClinicProfile: React.FC = () => {
         </UtilityCard>
 
         {/* Operational & Verification Overview Card */}
-        <UtilityCard title="Verification & Facility Credentials">
+        <UtilityCard title="Status">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-1">
-              <span className="text-xs font-normal text-[#86868b]">Accreditation Status</span>
+              <span className="text-xs font-normal text-[#86868b]">Verification</span>
               <div className="flex items-center gap-1.5 pt-0.5">
                 {isVerified ? (
                   <>
                     <ShieldCheck className="w-4 h-4 text-success shrink-0" />
-                    <span className="text-xs font-semibold text-success">Verified Clinical Facility</span>
+                    <span className="text-xs font-semibold text-success">Verified</span>
                   </>
                 ) : verificationStatus === 'SUSPENDED' ? (
                   <>
@@ -328,7 +325,7 @@ export const ClinicProfile: React.FC = () => {
                 ) : (
                   <>
                     <Clock className="w-4 h-4 text-warning shrink-0" />
-                    <span className="text-xs font-semibold text-warning">Pending Verification</span>
+                    <span className="text-xs font-semibold text-warning">Under review</span>
                   </>
                 )}
               </div>
@@ -336,10 +333,10 @@ export const ClinicProfile: React.FC = () => {
 
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex flex-col justify-between sm:flex-row sm:items-center gap-3">
               <div className="space-y-0.5 min-w-0">
-                <span className="text-xs font-normal text-[#86868b]">Arrival Check-In</span>
+                <span className="text-xs font-normal text-[#86868b]">Check-in</span>
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <QrCode className="w-4 h-4 text-[#0066cc] shrink-0" />
-                  <span className="text-xs font-semibold text-[#1d1d1f]">Front-Desk QR Code</span>
+                  <span className="text-xs font-semibold text-[#1d1d1f]">Front desk QR code</span>
                 </div>
               </div>
               <button
@@ -356,7 +353,7 @@ export const ClinicProfile: React.FC = () => {
 
         {/* Profile Details Edit Form */}
         <form onSubmit={handleSave} className="space-y-6">
-          <UtilityCard title="Facility Details">
+          <UtilityCard title="Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
@@ -374,7 +371,7 @@ export const ClinicProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Contact Phone
+                  Phone
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-[13px] font-semibold text-[#1d1d1f]">
@@ -406,7 +403,7 @@ export const ClinicProfile: React.FC = () => {
             </div>
           </UtilityCard>
 
-          <UtilityCard title="Physical Clinic Location">
+          <UtilityCard title="Location">
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
@@ -436,7 +433,7 @@ export const ClinicProfile: React.FC = () => {
                     }}
                     className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   >
-                    <option value="">Select State</option>
+                    <option value="">Choose state</option>
                     {INDIAN_STATES.map((s) => (
                       <option key={s} value={s}>
                         {s}
@@ -456,7 +453,7 @@ export const ClinicProfile: React.FC = () => {
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full h-11 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                     >
-                      <option value="">Select City</option>
+                      <option value="">Choose city</option>
                       {getCitiesForState(state).map((c) => (
                         <option key={c} value={c}>
                           {c}

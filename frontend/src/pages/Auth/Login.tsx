@@ -174,7 +174,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
               {isGoogleConfigured ? (
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
-                  onError={() => setError('Google Sign-In was cancelled or origin not authorized')}
+                  onError={() => setError('Google sign-in didn’t work. Try again or use email.')}
                   shape="pill"
                   size="large"
                   text="continue_with"
@@ -274,13 +274,13 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
             </div>
 
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#86868b]">
-              <span>Staff portals:</span>
+              <span>Staff:</span>
               <Link to="/receptionist/login" className="text-[#0066cc] hover:underline font-normal">
-                Reception Desk
+                Receptionist
               </Link>
               <span>•</span>
               <Link to="/clinic/login" className="text-[#0066cc] hover:underline font-normal">
-                Clinic Portal
+                Clinic
               </Link>
             </div>
           </div>

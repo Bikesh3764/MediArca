@@ -1,3 +1,4 @@
+import { AvatarImage } from '../../../components/ui/AvatarImage';
 import React from 'react';
 import { api, getFileUrl } from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
@@ -20,7 +21,7 @@ export const DoctorsTab: React.FC = () => {
               <div className="flex items-center justify-between gap-3 pb-4 border-b border-[#f0f0f2]">
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Assigned Practitioners
+                    My Doctors
                   </h3>
                 </div>
                 <span className="text-xs font-normal px-3 py-1 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
@@ -31,7 +32,7 @@ export const DoctorsTab: React.FC = () => {
               {linkedDoctors.length === 0 ? (
                 <EmptyState
                   icon={Users}
-                  title="No Doctors Assigned Yet"
+                  title="No doctors yet"
                   description="Ask your clinic to assign doctors to you."
                 />
               ) : (
@@ -44,7 +45,7 @@ export const DoctorsTab: React.FC = () => {
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
                           {doc.avatarUrl ? (
-                            <img src={getFileUrl(doc.avatarUrl)} alt={doc.fullName} className="w-full h-full object-cover" />
+                            <AvatarImage src={getFileUrl(doc.avatarUrl)} name={doc.fullName} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center font-semibold text-base text-[#0066cc]">
                               {doc.fullName[0]}
@@ -59,17 +60,17 @@ export const DoctorsTab: React.FC = () => {
                             {doc.isOnLeaveToday ? (
                               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger border border-danger-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarX className="w-3 h-3" />
-                                On Leave Today
+                                On leave
                               </span>
                             ) : doc.isWorkingToday === false ? (
                               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-warning-soft text-warning border border-warning-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarOff className="w-3 h-3" />
-                                Off Today
+                                Day off
                               </span>
                             ) : (
                               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-success-soft text-success border border-success-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarCheck className="w-3 h-3" />
-                                Sitting Today
+                                Available
                               </span>
                             )}
                           </div>
@@ -118,7 +119,7 @@ export const DoctorsTab: React.FC = () => {
                                 doctorName: cleanDoctorName(doc.fullName),
                               })
                             }
-                            className="text-xs font-normal text-[#0066cc] hover:underline cursor-pointer"
+                            className="h-8 px-2 inline-flex items-center text-xs font-normal text-[#0066cc] hover:underline cursor-pointer"
                           >
                             Edit
                           </button>
@@ -157,13 +158,13 @@ export const DoctorsTab: React.FC = () => {
                                 }
                                 fetchDeskData();
                               } catch (err: any) {
-                                setError(err?.message || 'Failed to toggle doctor leave');
+                                setError(err?.message || 'Couldn’t update leave. Try again.');
                               }
                             }}
-                            className={`h-7 px-3 rounded-full text-[11px] font-normal transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
+                            className={`h-8 px-3.5 rounded-full text-xs font-normal transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1 shrink-0 ${
                               doc.isOnLeaveToday
-                                ? 'bg-success-dot hover:bg-success-dot text-white'
-                                : 'bg-danger-soft hover:bg-danger-soft text-danger border border-danger-line'
+                                ? 'bg-[#0066cc] hover:bg-[#0071e3] text-white'
+                                : 'bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
                             }`}
                           >
                             {doc.isOnLeaveToday ? (

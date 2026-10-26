@@ -35,7 +35,7 @@ export const ContactUs: React.FC = () => {
       setMessage('');
     } catch (err: any) {
       console.error('Contact form submission error:', err);
-      const errMsg = err?.message || 'Failed to send message. Please email us at contact@mediarca.in.';
+      const errMsg = err?.message || 'Couldn’t send. Please email contact@mediarca.in.';
       setError(errMsg);
       toast.error(errMsg);
     } finally {
@@ -59,7 +59,7 @@ export const ContactUs: React.FC = () => {
         {/* Email Direct Card */}
         <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e5e5ea]  flex items-center justify-between gap-4">
           <div>
-            <p className="text-xs text-[#86868b] font-normal">Direct Email Support</p>
+            <p className="text-xs text-[#86868b] font-normal">Email</p>
             <a
               href="mailto:contact@mediarca.in"
               className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors mt-0.5 inline-block"
@@ -77,13 +77,13 @@ export const ContactUs: React.FC = () => {
 
         {/* Contact Message Form */}
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-6">
-          <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Send a Message</h2>
+          <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Send a message</h2>
 
           {submitted && (
             <div className="p-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
               <div>
-                <p className="font-semibold text-sm">Message Sent</p>
+                <p className="font-semibold text-sm">Message sent</p>
                 <p className="text-[#6e6e73] mt-0.5">
                   Thanks. We’ll reply by email soon.
                 </p>
@@ -95,7 +95,7 @@ export const ContactUs: React.FC = () => {
             <div className="p-4 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-3">
               <AlertCircle className="w-5 h-5 text-danger shrink-0" />
               <div>
-                <p className="font-semibold text-sm">Failed to Send</p>
+                <p className="font-semibold text-sm">Couldn’t send</p>
                 <p className="text-danger mt-0.5">{error}</p>
               </div>
             </div>
@@ -103,7 +103,7 @@ export const ContactUs: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Your Name *</label>
+              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Name *</label>
               <input
                 type="text"
                 required
@@ -116,7 +116,7 @@ export const ContactUs: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Your Email *</label>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Email *</label>
                 <input
                   type="email"
                   required
@@ -128,7 +128,7 @@ export const ContactUs: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Mobile Number (Optional)</label>
+                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Mobile (optional)</label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                     +91
@@ -157,9 +157,9 @@ export const ContactUs: React.FC = () => {
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                 >
-                  <option value="General Inquiry">General Inquiry</option>
-                  <option value="Appointment Issue">Appointment / Queue Issue</option>
-                  <option value="Doctor or Clinic Onboarding">Doctor or Clinic Inquiry</option>
+                  <option value="General Inquiry">General</option>
+                  <option value="Appointment Issue">Appointment problem</option>
+                  <option value="Doctor or Clinic Onboarding">For doctors and clinics</option>
                   <option value="Feedback">Feedback</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#86868b] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
@@ -173,7 +173,7 @@ export const ContactUs: React.FC = () => {
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write your message here..."
+                placeholder="How can we help?"
                 className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
               />
             </div>

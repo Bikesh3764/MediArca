@@ -106,7 +106,7 @@ export const doctorsApi = {
         throw error;
       }
       if (!res.ok || json?.success === false) {
-        const error: any = new Error(json?.message || 'Failed to fetch doctors');
+        const error: any = new Error(json?.message || 'Couldn’t fetch doctors. Try again.');
         error.status = res.status;
         throw error;
       }

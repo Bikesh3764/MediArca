@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../services/api';
 import React from 'react';
 import { cleanSlotName } from '../../services/api';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -46,7 +47,7 @@ export const ReceptionistDashboard: React.FC = () => {
     <ReceptionistDashboardContext.Provider value={state}>
 <DashboardLayout
       portalType="RECEPTIONIST"
-      portalSubtitle="Reception Desk"
+      portalSubtitle="Front Desk"
       navItems={navItems}
       title={titleText}
       subtitle={subtitleText}
@@ -154,12 +155,12 @@ export const ReceptionistDashboard: React.FC = () => {
               <p className="text-[11px] text-[#48484a] mt-0.5">{bookedPass.clinicAddress}</p>
             )}
             <p className="text-[11px] text-[#6e6e73] mt-1 uppercase tracking-wider">
-              Consultation Queue Token
+              Token
             </p>
           </div>
 
           <div className="py-4 text-center">
-            <div className="text-xs uppercase text-[#86868b] tracking-wider">Token Number</div>
+            <div className="text-xs uppercase text-[#86868b] tracking-wider">Token</div>
             <div className="text-5xl font-semibold tracking-tight my-1">
               #{bookedPass.queueNumber}
             </div>
@@ -185,7 +186,7 @@ export const ReceptionistDashboard: React.FC = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-[#6e6e73]">Date:</span>
-              <span>{bookedPass.appointmentDate}</span>
+              <span>{formatDisplayDate(bookedPass.appointmentDate)}</span>
             </div>
             {bookedPass.estimatedTime && (
               <div className="flex justify-between">
@@ -196,7 +197,7 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
 
           <div className="pt-3 text-center text-[11px] text-[#6e6e73] leading-tight">
-            Please retain this slip and wait for your token call.
+            Keep this slip. Wait for your number.
           </div>
         </div>
       )}

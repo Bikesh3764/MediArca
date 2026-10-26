@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../../services/api';
 import React from 'react';
 import { cleanSlotName } from '../../../services/api';
 import { Calendar } from 'lucide-react';
@@ -13,16 +14,16 @@ export const BookingsSection: React.FC = () => {
 <div id="appointments-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-6 sm:p-8 ">
           <div className="pb-5 border-b border-[#f0f0f2] mb-6">
             <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
-              Recent Consultations at this Facility
+              Recent bookings
             </h2>
             <p className="text-[13px] text-[#86868b] mt-0.5">
-              Appointments booked across affiliated practitioners at {clinic?.clinicName || 'this clinic'}.
+              All bookings at {clinic?.clinicName || 'this clinic'}.
             </p>
           </div>
           {(!data?.recentAppointments || data.recentAppointments.length === 0) ? (
             <EmptyState
               icon={Calendar}
-              title="No Facility Consultations Recorded Yet"
+              title="No bookings yet"
               description="New bookings show up here live."
             />
           ) : (
@@ -57,7 +58,7 @@ export const BookingsSection: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] text-[#86868b]">
-                      <div>{appt.date}</div>
+                      <div>{formatDisplayDate(appt.date)}</div>
                       <div>{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
                     </div>
                   </div>
@@ -72,7 +73,7 @@ export const BookingsSection: React.FC = () => {
                     <th className="pb-3 pl-2">Token #</th>
                     <th className="pb-3">Patient</th>
                     <th className="pb-3">Doctor</th>
-                    <th className="pb-3">Date & Time</th>
+                    <th className="pb-3">Date</th>
                     <th className="pb-3">Status</th>
                     <th className="pb-3 text-right pr-2">Fee</th>
                   </tr>
@@ -91,7 +92,7 @@ export const BookingsSection: React.FC = () => {
                       </td>
                       <td className="py-3.5 font-normal text-[#1d1d1f]">{appt.doctorName}</td>
                       <td className="py-3.5 text-[#86868b]">
-                        <div>{appt.date}</div>
+                        <div>{formatDisplayDate(appt.date)}</div>
                         <div className="text-[11px]">{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
                       </td>
                       <td className="py-3.5">

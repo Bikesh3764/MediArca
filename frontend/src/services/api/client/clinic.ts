@@ -182,7 +182,7 @@ export const clinicApi = {
         throw error;
       }
       if (!res.ok || json?.success === false) {
-        const error: any = new Error(json?.message || 'Failed to retrieve clinics');
+        const error: any = new Error(json?.message || 'Couldn’t retrieve clinics. Try again.');
         error.status = res.status;
         throw error;
       }

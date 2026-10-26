@@ -152,7 +152,7 @@ export const MyAppointments: React.FC = () => {
 
     try {
       await api.cancelAppointment(id);
-      toast.success('Appointment cancelled successfully');
+      toast.success('Appointment cancelled');
       await fetchActiveAppointments(true);
       if (hasLoadedPast) {
         const data = await api.getPatientAppointments({ status: 'past', page: 1, limit: 10 });
@@ -162,7 +162,7 @@ export const MyAppointments: React.FC = () => {
         setHasMorePast(list.length === 10);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to cancel appointment');
+      toast.error(err.message || 'Couldn’t cancel appointment. Try again.');
     }
   };
 
@@ -199,15 +199,15 @@ export const MyAppointments: React.FC = () => {
         text:
           res?.message ||
           (res?.alreadyCheckedIn
-            ? 'You are already checked in at the clinic desk.'
-            : 'Checked in successfully! You are marked as present at the clinic desk.'),
+            ? 'You’re already checked in.'
+            : 'You’re checked in.'),
       });
 
       await fetchActiveAppointments(true);
     } catch (err: any) {
       setCheckinMessage({
         type: 'error',
-        text: err.message || 'Failed to complete clinic check-in. Please verify code or speak with reception desk.',
+        text: err.message || 'Couldn’t check you in. Please ask the front desk.',
       });
     } finally {
       selectedApptRef.current = null;
@@ -293,7 +293,7 @@ export const MyAppointments: React.FC = () => {
             <EmptyState
               icon={Calendar}
               title="No upcoming appointments"
-              description="Your scheduled visits and queue tokens will appear here."
+              description="Your bookings will show up here."
               actionText="Book Doctor"
               onAction={() => navigate('/doctors')}
             />

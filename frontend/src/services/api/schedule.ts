@@ -320,6 +320,25 @@ export const getTomorrowDateString = (d: Date = new Date()): string => {
   return getLocalDateString(tomorrow);
 };
 
+/** "2026-10-27" → "Today", "Tomorrow" or "Tue, 27 Oct" (adds the year only when it isn't this year). */
+export const formatDisplayDate = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return dateStr;
+  const today = getLocalDateString();
+  if (match[0] === today) return 'Today';
+  if (match[0] === getTomorrowDateString()) return 'Tomorrow';
+  const d = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  const sameYear = match[1] === today.slice(0, 4);
+  return d.toLocaleDateString('en-IN', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  });
+};
+
 export const getDayOfWeekCode = (dateStr?: string): WeekdayCode => {
   const targetStr = dateStr || getLocalDateString();
   const match = targetStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);

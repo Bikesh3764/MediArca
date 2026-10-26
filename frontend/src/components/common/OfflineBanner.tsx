@@ -45,13 +45,13 @@ export const OfflineBanner: React.FC = () => {
         <div className="bg-[#1d1d1f]/95 text-white backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10  flex items-center justify-center gap-2.5 text-xs sm:text-sm font-normal pointer-events-auto">
           <div className="w-2 h-2 rounded-full bg-warning-dot animate-pulse flex-shrink-0" />
           <WifiOff className="w-4 h-4 text-warning flex-shrink-0" />
-          <span className="truncate">You are currently offline. Check connection.</span>
+          <span className="truncate">You’re offline. Check your internet.</span>
         </div>
       ) : showRestored ? (
         <div className="bg-success/95 text-white backdrop-blur-md px-4 py-2.5 rounded-full border border-white/10  flex items-center justify-center gap-2.5 text-xs sm:text-sm font-normal pointer-events-auto animate-out fade-out duration-500">
           <CheckCircle2 className="w-4 h-4 text-success-line flex-shrink-0" />
           <Wifi className="w-4 h-4 text-success-line flex-shrink-0" />
-          <span>Connection restored.</span>
+          <span>Back online.</span>
         </div>
       ) : null}
     </div>

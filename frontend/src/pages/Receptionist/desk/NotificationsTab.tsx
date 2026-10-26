@@ -17,7 +17,7 @@ export const NotificationsTab: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Desk Notifications
+                    Notifications
                   </h3>
                   <p className="text-xs text-[#86868b] mt-0.5">
                     New bookings and arrivals.
@@ -49,7 +49,7 @@ export const NotificationsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setNotifFilter('UNREAD')}
-                      className={`px-3 py-1 rounded-full text-xs transition-all cursor-pointer ${
+                      className={`h-8 px-3.5 rounded-full text-xs transition-all cursor-pointer ${
                         notifFilter === 'UNREAD'
                           ? 'bg-white text-[#1d1d1f] font-semibold '
                           : 'text-[#86868b] hover:text-[#1d1d1f]'

@@ -1,3 +1,4 @@
+import { AvatarImage } from '../ui/AvatarImage';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -161,7 +162,7 @@ export const GlobalNav: React.FC = () => {
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-[#86868b]">
               <p className="text-xs font-normal text-[#1d1d1f]">No notifications yet</p>
-              <p className="text-[11px] text-[#86868b] mt-0.5">Queue updates and alerts will appear here.</p>
+              <p className="text-[11px] text-[#86868b] mt-0.5">Updates will show up here.</p>
             </div>
           ) : (
             notifications.map((notif) => {
@@ -211,7 +212,7 @@ export const GlobalNav: React.FC = () => {
                               }}
                               className="text-[11px] font-semibold text-[#0066cc] hover:underline cursor-pointer"
                             >
-                              Go to Passes →
+                              Open →
                             </button>
                           )}
                         </div>
@@ -275,7 +276,7 @@ export const GlobalNav: React.FC = () => {
                 className={getNavLinkClass(isActive('/patient/appointments'))}
               >
                 <Calendar className="w-3.5 h-3.5 text-current opacity-80" />
-                My Appointments
+                Appointments
               </Link>
               <Link
                 to="/patient/profile"
@@ -293,19 +294,19 @@ export const GlobalNav: React.FC = () => {
                 className={getNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
               >
                 <Stethoscope className="w-3.5 h-3.5 text-current opacity-80" />
-                Doctor Console
+                Queue
               </Link>
               <Link
                 to="/doctor/dashboard?tab=affiliations"
                 className={getNavLinkClass(isActive('/doctor/dashboard') && location.search.includes('tab=affiliations'))}
               >
-                Clinics & Schedule
+                Clinics
               </Link>
               <Link
                 to="/doctor/profile"
                 className={getNavLinkClass(isActive('/doctor/profile'))}
               >
-                Profile & Settings
+                Profile
               </Link>
             </>
           )}
@@ -316,7 +317,7 @@ export const GlobalNav: React.FC = () => {
               className={getNavLinkClass(isActive('/admin'))}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-current opacity-80" />
-              Admin Portal
+              Admin
             </Link>
           )}
 
@@ -326,7 +327,7 @@ export const GlobalNav: React.FC = () => {
               className={getNavLinkClass(isActive('/clinic/dashboard'))}
             >
               <Building2 className="w-3.5 h-3.5 text-current opacity-80" />
-              Clinic Dashboard
+              Dashboard
             </Link>
           )}
 
@@ -336,7 +337,7 @@ export const GlobalNav: React.FC = () => {
               className={getNavLinkClass(isActive('/receptionist/dashboard'))}
             >
               <Users className="w-3.5 h-3.5 text-current opacity-80" />
-              Reception Desk
+              Front Desk
             </Link>
           )}
 
@@ -379,7 +380,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <Info className="w-4 h-4 text-[#86868b]" />
-                    <span>About MediArca</span>
+                    <span>About</span>
                   </Link>
 
                   <Link
@@ -405,7 +406,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <FileQuestion className="w-4 h-4 text-[#86868b]" />
-                    <span>FAQs & Help</span>
+                    <span>FAQ</span>
                   </Link>
 
                   <Link
@@ -418,7 +419,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <Mail className="w-4 h-4 text-[#86868b]" />
-                    <span>Contact Support</span>
+                    <span>Contact</span>
                   </Link>
                 </div>
               </div>
@@ -463,11 +464,11 @@ export const GlobalNav: React.FC = () => {
                     : '/admin'
                 }
                 className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] transition-all hover:border-[#d2d2d7]"
-                title="Manage Profile & Settings"
+                title="Profile"
               >
                 <div className="w-6 h-6 rounded-full bg-[#0066cc] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden flex-shrink-0">
                   {user.avatarUrl ? (
-                    <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
+                    <AvatarImage src={getFileUrl(user.avatarUrl)} name={user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{getInitials(user.fullName)}</span>
                   )}
@@ -496,7 +497,7 @@ export const GlobalNav: React.FC = () => {
                 to="/signup"
                 className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-normal active:scale-95 transition-all"
               >
-                Register
+                Sign Up
               </Link>
             </div>
           )}
@@ -544,7 +545,7 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
               <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-semibold text-white  overflow-hidden flex-shrink-0">
                 {user.avatarUrl ? (
-                  <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
+                  <AvatarImage src={getFileUrl(user.avatarUrl)} name={user.fullName} className="w-full h-full object-cover" />
                 ) : (
                   <span>{getInitials(user.fullName)}</span>
                 )}
@@ -594,14 +595,14 @@ export const GlobalNav: React.FC = () => {
                   className={getMobileNavLinkClass(isActive('/patient/appointments'))}
                 >
                   <Calendar className="w-4 h-4 text-current opacity-80" />
-                  My Appointments
+                  Appointments
                 </Link>
                 <Link
                   to="/patient/profile"
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/patient/profile'))}
                 >
-                  Profile & Settings
+                  Profile
                 </Link>
               </>
             )}
@@ -614,21 +615,21 @@ export const GlobalNav: React.FC = () => {
                   className={getMobileNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
                 >
                   <Stethoscope className="w-4 h-4 text-current opacity-80" />
-                  Doctor Console
+                  Queue
                 </Link>
                 <Link
                   to="/doctor/dashboard?tab=affiliations"
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/doctor/dashboard') && location.search.includes('tab=affiliations'))}
                 >
-                  Clinics & Schedule
+                  Clinics
                 </Link>
                 <Link
                   to="/doctor/profile"
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/doctor/profile'))}
                 >
-                  Doctor Profile
+                  Profile
                 </Link>
               </>
             )}
@@ -640,7 +641,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/admin'))}
               >
                 <ShieldCheck className="w-4 h-4 text-current opacity-80" />
-                Admin Portal
+                Admin
               </Link>
             )}
 
@@ -651,7 +652,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/clinic/dashboard'))}
               >
                 <Building2 className="w-4 h-4 text-current opacity-80" />
-                Clinic Dashboard
+                Dashboard
               </Link>
             )}
 
@@ -662,7 +663,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/receptionist/dashboard'))}
               >
                 <Users className="w-4 h-4 text-current opacity-80" />
-                Reception Desk
+                Front Desk
               </Link>
             )}
 
@@ -677,7 +678,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/about'))}
               >
                 <Info className="w-4 h-4 text-current opacity-80" />
-                About MediArca
+                About
               </Link>
               <Link
                 to="/how-it-works"
@@ -693,7 +694,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/faq'))}
               >
                 <FileQuestion className="w-4 h-4 text-current opacity-80" />
-                FAQs & Help
+                FAQ
               </Link>
               <Link
                 to="/contact"
@@ -701,7 +702,7 @@ export const GlobalNav: React.FC = () => {
                 className={getMobileNavLinkClass(isActive('/contact'))}
               >
                 <Mail className="w-4 h-4 text-current opacity-80" />
-                Contact Support
+                Contact
               </Link>
             </div>
           </div>
@@ -729,7 +730,7 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className="py-2.5 text-center rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-normal text-xs active:scale-95 transition-all"
                 >
-                  Register
+                  Sign Up
                 </Link>
               </div>
             )}

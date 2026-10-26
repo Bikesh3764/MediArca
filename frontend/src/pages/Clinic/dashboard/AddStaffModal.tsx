@@ -93,7 +93,7 @@ export const AddStaffModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Mobile Number <span className="text-[#86868b] font-normal">(Optional)</span>
+                  Mobile <span className="text-[#86868b] font-normal">(Optional)</span>
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none">
@@ -108,7 +108,7 @@ export const AddStaffModal: React.FC = () => {
                       const digits = sanitizeIndianPhone(e.target.value);
                       setRecPhone(digits ? `+91 ${digits}` : '');
                     }}
-                    placeholder="10-digit mobile number"
+                    placeholder="98765 43210"
                     maxLength={10}
                     className="w-full h-full px-3.5 bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6] focus:outline-none tracking-wide"
                   />
@@ -122,7 +122,7 @@ export const AddStaffModal: React.FC = () => {
                 </label>
                 {doctors.length === 0 ? (
                   <div className="p-3.5 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl text-xs text-[#86868b] text-center">
-                    No affiliated doctors yet.
+                    No doctors yet.
                   </div>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">

@@ -109,7 +109,7 @@ export const useAdminDashboardState = () => {
     }
     return {
       id: 'direct',
-      name: 'Direct / Independent Practice',
+      name: 'Own practice',
       city: null,
       address: null,
     };
@@ -123,7 +123,7 @@ export const useAdminDashboardState = () => {
       const day = parseInt(parts[2], 10);
       const d = new Date(year, month, day);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
       }
     }
     return dateStr;
@@ -170,7 +170,7 @@ export const useAdminDashboardState = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc]"></span>
-            In Consultation
+            In cabin
           </span>
         );
       case 'COMPLETED':
@@ -198,7 +198,7 @@ export const useAdminDashboardState = () => {
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
             <Clock className="w-3 h-3 text-[#86868b]" />
-            Pending Approval
+            Not paid
           </span>
         );
       default:
@@ -417,7 +417,7 @@ export const useAdminDashboardState = () => {
         prev.map((m) => (m.id === id ? { ...m, status: 'READ' } : m))
       );
     } catch (err) {
-      console.error('Failed to mark contact message as read:', err);
+      console.error('Failed to mark message as read:', err);
     }
   };
   useEffect(() => {
@@ -462,7 +462,7 @@ export const useAdminDashboardState = () => {
         return (
           <span className="inline-flex items-center gap-1 bg-[#f5f5f7] text-[#1d1d1f] px-2.5 py-1 rounded-full text-xs font-semibold border border-[#e5e5ea]">
             <Clock className="w-3.5 h-3.5 text-[#86868b]" />
-            Pending Review
+            Under review
           </span>
         );
     }
@@ -503,19 +503,19 @@ export const useAdminDashboardState = () => {
   };
   const handleDeleteContactMessage = async (id: string) => {
     const ok = await confirm({
-      title: 'Delete Contact Inquiry?',
+      title: 'Delete message?',
       message: 'Delete this message? This can’t be undone.',
-      confirmText: 'Delete Inquiry',
+      confirmText: 'Delete',
       isDestructive: true,
     });
     if (!ok) return;
 
     try {
       await api.deleteContactMessage(id);
-      toast.success('Inquiry deleted successfully');
+      toast.success('Message deleted');
       setContactMessages((prev) => prev.filter((m) => m.id !== id));
     } catch (err: any) {
-      toast.error(err.message || 'Failed to delete contact inquiry');
+      toast.error(err.message || 'Couldn’t delete message. Try again.');
     }
   };
   return {

@@ -1,3 +1,4 @@
+import { formatDisplayDate } from '../../services/api';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   X,
@@ -114,7 +115,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
       setReportData(data);
     } catch (err: any) {
       console.error('Failed to load report:', err);
-      setError(err.message || 'Failed to generate report for selected criteria.');
+      setError(err.message || 'Couldn’t make report. Try again.');
     } finally {
       setLoading(false);
     }
@@ -187,9 +188,9 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
       'Checking Shift',
       'Patient Name',
       'Patient Mobile',
-      'Practitioner',
+      'Doctor',
       'Specialty',
-      'Facility / Clinic',
+      'Clinic',
       'Visit Status',
       'Consultation Fee (INR)',
       'Earned Revenue (INR)',
@@ -295,12 +296,12 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
 
   const headerTitle =
     role === 'CLINIC'
-      ? `${reportData?.facility?.name || clinicName || 'Clinic'} — Clinical & Revenue Audit`
+      ? `${reportData?.facility?.name || clinicName || 'Clinic'} — Report`
       : role === 'DOCTOR'
-      ? `${reportData?.doctor?.name || doctorName || 'Doctor'} — Practice & Revenue Audit`
-      : `${reportData?.facility?.name || clinicName || 'Desk'} — Front Desk Audit Report`;
+      ? `${reportData?.doctor?.name || doctorName || 'Doctor'} — Report`
+      : `${reportData?.facility?.name || clinicName || 'Desk'} — Report`;
 
-  const reportSubtitle = `Reporting Period: ${startDate} to ${endDate} (Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })})`;
+  const reportSubtitle = `${startDate} to ${endDate} · Made on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
 
   return (
     <div
@@ -334,7 +335,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               type="button"
               onClick={handleExportCsv}
               disabled={loading || !reportData || reportData.appointments.length === 0}
-              title="Download raw spreadsheet data (.csv)"
+              title="Download as CSV"
               className="h-9 px-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
               <Download className="w-3.5 h-3.5 text-[#86868b]" />
@@ -345,11 +346,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               type="button"
               onClick={handlePrint}
               disabled={loading || !reportData}
-              title="Print or Save official PDF Report"
+              title="Print or save as PDF"
               className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-xs font-semibold text-white transition-all duration-150 flex items-center gap-1.5 cursor-pointer  disabled:opacity-40"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Print / Save PDF</span>
+              <span>Print / PDF</span>
             </button>
 
             <button aria-label="Close"
@@ -462,7 +463,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   onChange={(e) => setSelectedDoctorId(e.target.value)}
                   className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
-                  <option value="all">All Affiliated Practitioners</option>
+                  <option value="all">All doctors</option>
                   {availableDoctors.map((doc, idx) => {
                     const id = doc.doctorId || doc.id || `doc-${idx}`;
                     const name = doc.fullName || doc.name || 'Practitioner';
@@ -485,7 +486,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   onChange={(e) => setSelectedClinicId(e.target.value)}
                   className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
                 >
-                  <option value="all">All Affiliated Clinics</option>
+                  <option value="all">All clinics</option>
                   {availableClinics.map((c, idx) => {
                     const id = c.clinicId || c.id || `clinic-${idx}`;
                     const name = c.clinicName || c.name || 'Clinic';
@@ -526,11 +527,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="h-9 sm:h-8 pl-3 pr-7 rounded-lg border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] appearance-none cursor-pointer focus:outline-none focus:border-[#0066cc]"
               >
-                <option value="ALL">All Visit Statuses</option>
-                <option value="COMPLETED">Completed Consultations</option>
-                <option value="IN_CONSULTATION">In Cabin (Consultation)</option>
-                <option value="WAITING">Waiting Queue</option>
-                <option value="PENDING_APPROVAL">Pending Approval</option>
+                <option value="ALL">All statuses</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="IN_CONSULTATION">In cabin</option>
+                <option value="WAITING">Waiting</option>
+                <option value="PENDING_APPROVAL">Not paid yet</option>
                 <option value="CANCELLED">Cancelled</option>
                 <option value="REJECTED">Rejected</option>
                 <option value="EXPIRED">Expired</option>
@@ -546,7 +547,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               className="h-8 px-3 rounded-lg bg-[#1d1d1f] hover:bg-[#333336] text-white text-xs font-normal transition-all cursor-pointer ml-auto flex items-center gap-1.5"
             >
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Filter className="w-3 h-3" />}
-              <span>Apply Filters</span>
+              <span>Apply</span>
             </button>
           </div>
         </div>
@@ -556,8 +557,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
           {loading && !reportData ? (
             <div className="py-24 text-center">
               <Loader2 className="w-8 h-8 text-[#0066cc] animate-spin mx-auto mb-3" />
-              <p className="text-sm font-semibold text-[#1d1d1f]">Compiling Clinical Audit Report...</p>
-              <p className="text-xs text-[#86868b] mt-1">Analyzing appointments, consultations, and revenue</p>
+              <p className="text-sm font-semibold text-[#1d1d1f]">Making report...</p>
+              <p className="text-xs text-[#86868b] mt-1">This takes a few seconds.</p>
             </div>
           ) : error ? (
             <div className="py-16 text-center">
@@ -577,7 +578,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
                   <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
                     <Users className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span>Total Bookings</span>
+                    <span>Bookings</span>
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] mt-1.5 tracking-tight">
                     {filteredSummary.total}
@@ -611,20 +612,20 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                     {filteredSummary.cancelled}
                   </div>
                   <div className="text-[11px] text-[#86868b] mt-0.5">
-                    No-shows or cancelled
+                    Cancelled or no-show
                   </div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
                   <div className="flex items-center gap-1.5 text-xs font-normal text-[#86868b]">
                     <IndianRupee className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span>Total Revenue</span>
+                    <span>Revenue</span>
                   </div>
                   <div className="text-2xl sm:text-3xl font-semibold text-[#0066cc] mt-1.5 tracking-tight">
                     ₹{filteredSummary.revenue.toLocaleString('en-IN')}
                   </div>
                   <div className="text-[11px] text-[#86868b] mt-0.5">
-                    Completed & paid visits
+                    From completed visits
                   </div>
                 </div>
               </div>
@@ -636,7 +637,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-[#0066cc]" />
-                      <span>Practitioner Breakdown</span>
+                      <span>By doctor</span>
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
@@ -672,7 +673,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Building2 className="w-3.5 h-3.5 text-[#0066cc]" />
-                      <span>Facility Breakdown</span>
+                      <span>By clinic</span>
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
@@ -709,7 +710,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <div className="p-4 rounded-2xl bg-white border border-[#e5e5ea] ">
                     <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase mb-3 flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#0066cc]" />
-                      <span>Shift Breakdown</span>
+                      <span>By shift</span>
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
@@ -744,16 +745,16 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs font-semibold text-[#1d1d1f] tracking-tight uppercase flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-[#0066cc]" />
-                    <span>Itemized Consultation Register ({filteredAppointments.length} Visits)</span>
+                    <span>All visits ({filteredAppointments.length})</span>
                   </h3>
                   <span className="text-[11px] text-[#86868b]">
-                    Sorted by consultation date
+                    Newest first
                   </span>
                 </div>
 
                 {filteredAppointments.length === 0 ? (
                   <div className="py-12 text-center text-xs text-[#86868b]">
-                    No appointments match the selected date range and filters.
+                    No visits match these filters.
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -761,12 +762,12 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                       <thead>
                         <tr className="border-b border-[#e5e5ea] text-[#86868b] pb-2.5 font-normal">
                           <th className="pb-2.5 pl-2">Token #</th>
-                          <th className="pb-2.5">Date & Shift</th>
-                          <th className="pb-2.5">Patient Details</th>
+                          <th className="pb-2.5">Date</th>
+                          <th className="pb-2.5">Patient</th>
                           {role !== 'DOCTOR' && <th className="pb-2.5">Doctor</th>}
-                          {role === 'DOCTOR' && <th className="pb-2.5">Facility</th>}
+                          {role === 'DOCTOR' && <th className="pb-2.5">Clinic</th>}
                           <th className="pb-2.5">Status</th>
-                          <th className="pb-2.5 text-right pr-2">Fee / Revenue</th>
+                          <th className="pb-2.5 text-right pr-2">Fee</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#f0f0f2]">
@@ -776,7 +777,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                               #{appt.queueNumber}
                             </td>
                             <td className="py-3">
-                              <div className="font-semibold text-[#1d1d1f]">{appt.appointmentDate}</div>
+                              <div className="font-semibold text-[#1d1d1f]">{formatDisplayDate(appt.appointmentDate)}</div>
                               <div className="text-[11px] text-[#86868b]">{appt.checkingWindow}</div>
                             </td>
                             <td className="py-3">
@@ -830,8 +831,8 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
               {/* Print Footer / Verification Seal (Visible on Print) */}
               <div className="hidden print:block pt-6 border-t-2 border-[#1d1d1f] mt-8 text-xs text-[#86868b] space-y-1">
                 <div className="flex justify-between items-center text-[#1d1d1f] font-semibold">
-                  <span>MediArca Outpatient Clinical Network</span>
-                  <span>Computer-Generated Audit Statement</span>
+                  <span>MediArca</span>
+                  <span>Auto-generated report</span>
                 </div>
                 <p>
                   All visits and fees for this period, generated by MediArca.

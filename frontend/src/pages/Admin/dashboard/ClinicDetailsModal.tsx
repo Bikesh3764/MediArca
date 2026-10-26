@@ -24,7 +24,7 @@ export const ClinicDetailsModal: React.FC = () => {
               <div>
                 <h3 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">{selectedClinic.clinicName}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-[13px] text-[#86868b]">Clinical Healthcare Facility Verification</p>
+                  <p className="text-[13px] text-[#86868b]">Clinic details</p>
                   {renderStatusBadge(getPractitionerStatus(selectedClinic))}
                 </div>
               </div>
@@ -39,7 +39,7 @@ export const ClinicDetailsModal: React.FC = () => {
             <div className="space-y-3.5 text-xs text-[#1d1d1f]">
               <div className="grid grid-cols-2 gap-3 p-3.5 bg-[#f5f5f7] rounded-xl border border-[#e5e5ea]">
                 <div>
-                  <span className="text-xs font-normal text-[#86868b] block">Facility Address</span>
+                  <span className="text-xs font-normal text-[#86868b] block">Address</span>
                   <p className="font-normal mt-0.5">{selectedClinic.address}</p>
                 </div>
                 <div>
@@ -93,34 +93,34 @@ export const ClinicDetailsModal: React.FC = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-[#86868b]">No practitioner affiliations recorded yet.</p>
+                  <p className="text-xs text-[#86868b]">No doctors yet.</p>
                 )}
               </div>
 
               <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-2">
-                <span className="text-xs font-semibold text-[#1d1d1f] block">Primary Administrative Contact</span>
+                <span className="text-xs font-semibold text-[#1d1d1f] block">Contact</span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Admin Full Name</span>
+                    <span className="text-[#86868b] block text-[11px]">Name</span>
                     <span className="font-normal mt-0.5 block">{selectedClinic.user?.fullName || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Direct Email</span>
+                    <span className="text-[#86868b] block text-[11px]">Email</span>
                     <span className="font-normal text-[#1d1d1f] mt-0.5 block">{selectedClinic.user?.email || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Facility Phone</span>
+                    <span className="text-[#86868b] block text-[11px]">Phone</span>
                     <span className="mt-0.5 block">{selectedClinic.phone || selectedClinic.user?.phone || 'N/A'}</span>
                   </div>
                   <div>
-                    <span className="text-[#86868b] block text-[11px]">Registration Date</span>
-                    <span className="mt-0.5 block">{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString() : 'N/A'}</span>
+                    <span className="text-[#86868b] block text-[11px]">Joined</span>
+                    <span className="mt-0.5 block">{selectedClinic.createdAt ? new Date(selectedClinic.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center justify-between p-3.5 rounded-xl border border-[#e5e5ea] bg-[#f5f5f7]">
-                <span className="text-[#86868b] font-normal">Platform Verification State</span>
+                <span className="text-[#86868b] font-normal">Status</span>
                 {renderStatusBadge(getPractitionerStatus(selectedClinic))}
               </div>
             </div>
@@ -142,7 +142,7 @@ export const ClinicDetailsModal: React.FC = () => {
                     className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                   >
                     <Ban className="w-3.5 h-3.5 mr-1" />
-                    Suspend Verification
+                    Suspend
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedClinic) === 'SUSPENDED' && (
@@ -156,7 +156,7 @@ export const ClinicDetailsModal: React.FC = () => {
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Re-activate Facility
+                    Reactivate
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedClinic) === 'REJECTED' && (
@@ -170,7 +170,7 @@ export const ClinicDetailsModal: React.FC = () => {
                     }}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                    Re-evaluate & Approve
+                    Approve
                   </AppleButton>
                 )}
                 {getPractitionerStatus(selectedClinic) === 'PENDING' && (
@@ -186,7 +186,7 @@ export const ClinicDetailsModal: React.FC = () => {
                       className="text-danger hover:text-danger hover:bg-danger-soft border border-danger-line"
                     >
                       <XCircle className="w-3.5 h-3.5 mr-1" />
-                      Reject Application
+                      Reject
                     </AppleButton>
                     <AppleButton
                       variant="primary"
@@ -198,7 +198,7 @@ export const ClinicDetailsModal: React.FC = () => {
                       }}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      {clinicActionId === selectedClinic.id ? 'Approving...' : 'Approve Facility'}
+                      {clinicActionId === selectedClinic.id ? 'Approving...' : 'Approve'}
                     </AppleButton>
                   </>
                 )}

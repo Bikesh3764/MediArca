@@ -26,7 +26,7 @@ export const ClinicsGridSection: React.FC = () => {
                     type="text"
                     value={clinicSearchQuery}
                     onChange={(e) => setClinicSearchQuery(e.target.value)}
-                    placeholder="Search clinics by name or address..."
+                    placeholder="Search clinics"
                     className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                   />
                   {clinicSearchQuery && (
@@ -108,7 +108,7 @@ export const ClinicsGridSection: React.FC = () => {
               {clinicMobileFiltersOpen && (
                 <div className="sm:hidden w-full bg-white rounded-2xl border border-[#e5e5ea] p-3.5  space-y-3 animate-fadeIn">
                   <div className="flex items-center justify-between pb-2 border-b border-[#e5e5ea]">
-                    <span className="text-xs font-semibold text-[#1d1d1f]">Location Filters</span>
+                    <span className="text-xs font-semibold text-[#1d1d1f]">Location</span>
                     <button
                       type="button"
                       onClick={() => setClinicMobileFiltersOpen(false)}
@@ -118,7 +118,7 @@ export const ClinicsGridSection: React.FC = () => {
                     </button>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-normal text-[#86868b]">Select State</label>
+                    <label className="text-[11px] font-normal text-[#86868b]">State</label>
                     <div className="w-full h-10">
                       <AppleFilterSelect
                         value={clinicSelectedState}
@@ -136,7 +136,7 @@ export const ClinicsGridSection: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-normal text-[#86868b]">Select City</label>
+                    <label className="text-[11px] font-normal text-[#86868b]">City</label>
                     <div className="w-full h-10">
                       <AppleFilterSelect
                         value={clinicSelectedCity}

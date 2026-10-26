@@ -171,7 +171,7 @@ export const ProfileCompletionModal: React.FC = () => {
     // Validate phone
     const rawDigits = sanitizeIndianPhone(phone);
     if (!rawDigits || !isValidIndianPhone(phone)) {
-      setError('Please enter a valid 10-digit Indian mobile number (+91).');
+      setError('Enter a valid 10-digit mobile number.');
       return;
     }
 
@@ -182,11 +182,11 @@ export const ProfileCompletionModal: React.FC = () => {
 
     if (user.role === 'PATIENT') {
       if (!gender) {
-        setError('Please select your gender.');
+        setError('Choose your gender.');
         return;
       }
       if (!dateOfBirth) {
-        setError('Please enter your date of birth.');
+        setError('Enter your date of birth.');
         return;
       }
       payload.gender = gender;
@@ -194,12 +194,12 @@ export const ProfileCompletionModal: React.FC = () => {
       payload.bloodGroup = bloodGroup;
     } else if (user.role === 'DOCTOR') {
       if (!qualifications.trim()) {
-        setError('Please enter your medical qualifications (e.g. MBBS, MD).');
+        setError('Enter your qualifications, e.g. MBBS, MD.');
         return;
       }
       const finalSpecialty = specialty === 'Other' ? customSpecialty.trim() : specialty;
       if (!finalSpecialty) {
-        setError('Please select or specify your primary medical specialty.');
+        setError('Choose your specialty.');
         return;
       }
       payload.qualifications = qualifications.trim();
@@ -207,20 +207,20 @@ export const ProfileCompletionModal: React.FC = () => {
       payload.experienceYears = Number(experienceYears) || 1;
     } else if (user.role === 'CLINIC') {
       if (!clinicName.trim()) {
-        setError('Please enter your official clinic facility name.');
+        setError('Enter your clinic name.');
         return;
       }
       if (!state) {
-        setError('Please select the state where your clinic is located.');
+        setError('Choose your state.');
         return;
       }
       const finalCity = isCustomCity ? customCity.trim() : city.trim();
       if (!finalCity) {
-        setError('Please select or enter your clinic city.');
+        setError('Choose your city.');
         return;
       }
       if (!address.trim()) {
-        setError('Please enter the clinic street address.');
+        setError('Enter the clinic address.');
         return;
       }
       payload.clinicName = clinicName.trim();
@@ -241,7 +241,7 @@ export const ProfileCompletionModal: React.FC = () => {
         setIsOpen(false);
       }, 1200);
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile. Please try again.');
+      setError(err.message || 'Couldn’t save. Try again.');
     } finally {
       setSubmitting(false);
     }
@@ -260,9 +260,9 @@ export const ProfileCompletionModal: React.FC = () => {
           </div>
 
           <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            {user.role === 'PATIENT' && 'Activate Your Patient Profile'}
-            {user.role === 'DOCTOR' && 'Set Up Practitioner Credentials'}
-            {user.role === 'CLINIC' && 'Complete Clinic Facility Details'}
+            {user.role === 'PATIENT' && 'Complete Your Profile'}
+            {user.role === 'DOCTOR' && 'Complete Your Profile'}
+            {user.role === 'CLINIC' && 'Add Clinic Details'}
           </h2>
         </div>
 
@@ -276,7 +276,7 @@ export const ProfileCompletionModal: React.FC = () => {
         {success && (
           <div className="mb-4 p-3.5 rounded-xl bg-success-soft border border-success-line text-success text-xs flex items-center gap-2.5 font-normal animate-fadeIn">
             <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-            <span>Profile setup complete! Loading your console...</span>
+            <span>All set! Loading...</span>
           </div>
         )}
 
@@ -291,7 +291,7 @@ export const ProfileCompletionModal: React.FC = () => {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full legal name"
+              placeholder="Full name"
               className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
             />
           </div>
@@ -299,7 +299,7 @@ export const ProfileCompletionModal: React.FC = () => {
           {/* Mobile Number (+91 Locked) */}
           <div>
             <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-              Mobile Number
+              Mobile
             </label>
             <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
               <div className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
@@ -389,7 +389,7 @@ export const ProfileCompletionModal: React.FC = () => {
             <>
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Medical Qualifications
+                  Qualifications
                 </label>
                 <input
                   type="text"
@@ -403,7 +403,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Medical Specialty
+                  Specialty
                 </label>
                 <SearchableSpecialtySelect
                   value={specialty}
@@ -416,7 +416,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Years of Clinical Experience
+                  Experience (years)
                 </label>
                 <input
                   type="number"
@@ -437,14 +437,14 @@ export const ProfileCompletionModal: React.FC = () => {
             <>
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Official Clinic Facility Name
+                  Clinic name
                 </label>
                 <input
                   type="text"
                   required
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
-                  placeholder="e.g. City Health PolyClinic & Diagnostics"
+                  placeholder="e.g. City Clinic"
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />
               </div>
@@ -452,7 +452,7 @@ export const ProfileCompletionModal: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    State / UT
+                    State
                   </label>
                   <div className="relative">
                     <select
@@ -461,7 +461,7 @@ export const ProfileCompletionModal: React.FC = () => {
                       onChange={(e) => handleStateChange(e.target.value)}
                       className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
-                      <option value="">Select State</option>
+                      <option value="">Choose state</option>
                       {INDIAN_STATES.map((s) => (
                         <option key={s} value={s}>
                           {s}
@@ -474,7 +474,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    City / Town
+                    City
                   </label>
                   <div className="relative">
                     <select
@@ -484,13 +484,13 @@ export const ProfileCompletionModal: React.FC = () => {
                       onChange={(e) => handleCitySelect(e.target.value)}
                       className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] disabled:opacity-50  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
                     >
-                      <option value="">Select City</option>
+                      <option value="">Choose city</option>
                       {stateCities.map((c) => (
                         <option key={c} value={c}>
                           {c}
                         </option>
                       ))}
-                      <option value="__custom__">+ Other / Not Listed</option>
+                      <option value="__custom__">Other</option>
                     </select>
                     <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -500,14 +500,14 @@ export const ProfileCompletionModal: React.FC = () => {
               {isCustomCity && (
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Enter City Name
+                    City name
                   </label>
                   <input
                     type="text"
                     required
                     value={customCity}
                     onChange={(e) => setCustomCity(e.target.value)}
-                    placeholder="Enter your town or city"
+                    placeholder="Your city"
                     className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                   />
                 </div>
@@ -515,7 +515,7 @@ export const ProfileCompletionModal: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Street Address
+                  Address
                 </label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -542,15 +542,15 @@ export const ProfileCompletionModal: React.FC = () => {
               {submitting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Saving Profile...</span>
+                  <span>Saving...</span>
                 </>
               ) : success ? (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Profile Saved!</span>
+                  <span>Saved</span>
                 </>
               ) : (
-                'Save & Complete Setup'
+                'Save'
               )}
             </button>
           </div>

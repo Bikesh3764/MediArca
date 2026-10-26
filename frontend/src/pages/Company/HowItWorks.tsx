@@ -6,21 +6,18 @@ export const HowItWorks: React.FC = () => {
   const steps = [
     {
       step: '1',
-      title: 'Find Doctor & Select Shift',
-      description:
-        'Search verified doctors by specialty or clinic. Choose the date and practice shift that suits you best.',
+      title: 'Find a doctor',
+      description: 'Search by name, specialty or clinic. Pick a date and shift.',
     },
     {
       step: '2',
-      title: 'Get Free Queue Token',
-      description:
-        'Book your consultation token instantly with zero advance charges. No platform markup or payment required.',
+      title: 'Book and pay the clinic',
+      description: 'Book a token. Pay the receptionist by UPI over a call or at the desk to confirm it.',
     },
     {
       step: '3',
-      title: 'Track Live Turn & Arrive on Time',
-      description:
-        'Open your live queue pass to see how many patients are ahead. Arrive at the clinic when your turn is close, pay the consultation fee at the front desk, and see the doctor without hours of waiting.',
+      title: 'Track your turn',
+      description: 'See how many people are ahead of you. Reach the clinic when your turn is close.',
     },
   ];
 
@@ -33,7 +30,7 @@ export const HowItWorks: React.FC = () => {
             How MediArca Works
           </h1>
           <p className="text-sm sm:text-base text-[#6e6e73] leading-relaxed">
-            3 simple steps to see your doctor without sitting for hours in crowded clinic waiting rooms.
+            See your doctor without waiting for hours.
           </p>
         </div>
 
@@ -64,24 +61,24 @@ export const HowItWorks: React.FC = () => {
         {/* What Makes It Different */}
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-4">
           <h2 className="text-[20px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Important Things to Know
+            Good to know
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm text-[#48484a] pt-1">
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
-              <span><strong>Zero Upfront Charges:</strong> Booking is 100% free on MediArca. You only pay the consultation fee in-person at the clinic desk.</span>
+              <span><strong className="font-semibold">No booking fee.</strong> You only pay the doctor’s fee to the clinic.</span>
             </div>
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
-              <span><strong>Easy Free Cancellation:</strong> Plans changed? Cancel your pass anytime before consultation with zero penalty.</span>
+              <span><strong className="font-semibold">Free cancellation.</strong> Cancel any time before your visit.</span>
             </div>
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
-              <span><strong>Book for Family:</strong> Easily book tokens for parents, children, or dependents under their name.</span>
+              <span><strong className="font-semibold">Book for family.</strong> Book for parents or children in their name.</span>
             </div>
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0 mt-0.5" />
-              <span><strong>Live Cabin Status:</strong> Check if the doctor is currently in the cabin or temporarily stepped out.</span>
+              <span><strong className="font-semibold">Doctor status.</strong> See if the doctor is in or has stepped out.</span>
             </div>
           </div>
         </div>
@@ -90,9 +87,9 @@ export const HowItWorks: React.FC = () => {
         <div className="text-center pt-2">
           <Link
             to="/doctors"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-[#0066cc] hover:underline"
+            className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all"
           >
-            Find and consult doctors near you <ArrowRight className="w-4 h-4" />
+            Find Doctors <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>

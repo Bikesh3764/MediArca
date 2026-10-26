@@ -24,7 +24,7 @@ export const DoctorsIntroSection: React.FC = () => {
                   type="text"
                   value={doctorSearchQuery}
                   onChange={(e) => setDoctorSearchQuery(e.target.value)}
-                  placeholder="Search doctors by name or specialty..."
+                  placeholder="Search doctors"
                   className="w-full h-full bg-transparent text-xs sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none truncate"
                 />
                 {doctorSearchQuery && (

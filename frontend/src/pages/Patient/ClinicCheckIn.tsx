@@ -47,14 +47,14 @@ export const ClinicCheckIn: React.FC = () => {
         const apptData = res?.id ? res : (res?.data || null);
         if (apptData) {
           setSuccessData(apptData);
-          setSuccessMessage(res?.message || 'Arrival confirmed! You are checked in at the clinic desk.');
+          setSuccessMessage(res?.message || 'You’re checked in.');
         } else {
-          setErrorMessage(res?.message || 'Failed to check in.');
+          setErrorMessage(res?.message || 'Couldn’t check in. Try again.');
         }
       } catch (err: any) {
         if (!mounted) return;
         console.error('Check-in error:', err);
-        setErrorMessage(err.message || 'Unable to verify arrival. Please ask reception desk to check you in.');
+        setErrorMessage(err.message || 'Couldn’t check you in. Please ask the front desk.');
       } finally {
         if (mounted) {
           setCheckingIn(false);
@@ -82,13 +82,13 @@ export const ClinicCheckIn: React.FC = () => {
       const apptData = res?.id ? res : (res?.data || null);
       if (apptData) {
         setSuccessData(apptData);
-        setSuccessMessage(res?.message || 'Arrival confirmed! You are checked in at the clinic desk.');
+        setSuccessMessage(res?.message || 'You’re checked in.');
       } else {
-        setErrorMessage(res?.message || 'Failed to check in.');
+        setErrorMessage(res?.message || 'Couldn’t check in. Try again.');
       }
     } catch (err: any) {
       console.error('Check-in error:', err);
-      setErrorMessage(err.message || 'Unable to verify arrival. Please ask reception desk to check you in.');
+      setErrorMessage(err.message || 'Couldn’t check you in. Please ask the front desk.');
     } finally {
       setCheckingIn(false);
     }
@@ -102,10 +102,10 @@ export const ClinicCheckIn: React.FC = () => {
         <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-8">
           <div className="mb-6">
             <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-              Clinic Check-In
+              Check In
             </h1>
             <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
-              Confirm your physical arrival at the clinic.
+              Let the clinic know you’ve arrived.
             </p>
           </div>
 
@@ -119,8 +119,8 @@ export const ClinicCheckIn: React.FC = () => {
                     1
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1d1d1f]">Arrive at the Clinic</p>
-                    <p className="text-[11px] text-[#86868b] mt-0.5">Reach the front desk before your time.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Reach the clinic</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">Get there before your turn.</p>
                   </div>
                 </div>
 
@@ -129,8 +129,8 @@ export const ClinicCheckIn: React.FC = () => {
                     2
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1d1d1f]">Scan QR Code</p>
-                    <p className="text-[11px] text-[#86868b] mt-0.5">Open your phone camera to scan the reception desk display.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">Scan the QR code</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">It’s at the front desk.</p>
                   </div>
                 </div>
 
@@ -139,8 +139,8 @@ export const ClinicCheckIn: React.FC = () => {
                     3
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-[#1d1d1f]">Arrival Verified</p>
-                    <p className="text-[11px] text-[#86868b] mt-0.5">Your queue token updates to Arrived automatically.</p>
+                    <p className="text-xs font-semibold text-[#1d1d1f]">You’re checked in</p>
+                    <p className="text-[11px] text-[#86868b] mt-0.5">Your token shows you’ve arrived.</p>
                   </div>
                 </div>
               </div>
@@ -152,7 +152,7 @@ export const ClinicCheckIn: React.FC = () => {
                     onClick={() => navigate('/patient/appointments')}
                     className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
                   >
-                    <span>View My Active Passes</span>
+                    <span>My Appointments</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
@@ -161,7 +161,7 @@ export const ClinicCheckIn: React.FC = () => {
                     onClick={() => navigate('/login?redirect=/patient/appointments')}
                     className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
                   >
-                    <span>Sign In to View Passes</span>
+                    <span>Sign In</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
@@ -171,7 +171,7 @@ export const ClinicCheckIn: React.FC = () => {
                   onClick={() => navigate('/doctors')}
                   className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
-                  Find Doctors & Clinics
+                  Find Doctors
                 </button>
               </div>
             </div>
@@ -192,7 +192,7 @@ export const ClinicCheckIn: React.FC = () => {
                   }}
                   className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
                 >
-                  <span>Sign In & Verify</span>
+                  <span>Sign In</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <button
@@ -203,7 +203,7 @@ export const ClinicCheckIn: React.FC = () => {
                   }}
                   className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
-                  New Patient? Create Account
+                  Create Account
                 </button>
               </div>
             </div>
@@ -213,8 +213,8 @@ export const ClinicCheckIn: React.FC = () => {
           {hasQueryParams && checkingIn && (
             <div className="text-center py-8">
               <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mx-auto mb-3"></div>
-              <h3 className="text-sm font-semibold text-[#1d1d1f]">Verifying Check-In...</h3>
-              <p className="text-xs text-[#86868b] mt-1">Connecting to clinic reception desk...</p>
+              <h3 className="text-sm font-semibold text-[#1d1d1f]">Checking you in...</h3>
+              <p className="text-xs text-[#86868b] mt-1">One moment.</p>
             </div>
           )}
 
@@ -224,14 +224,14 @@ export const ClinicCheckIn: React.FC = () => {
               <div className="p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center gap-2.5 text-xs text-[#1d1d1f]">
                 <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />
                 <span className="font-normal">
-                  {successMessage || 'Arrival confirmed! Doctor and front desk have been notified.'}
+                  {successMessage || 'You’re checked in. The clinic has been told.'}
                 </span>
               </div>
 
               {/* Ticket Capsule */}
               <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#86868b]">Queue Token</span>
+                  <span className="text-xs text-[#86868b]">Token</span>
                   <span className="text-lg font-semibold text-[#0066cc]">#{successData.queueNumber}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
@@ -246,7 +246,7 @@ export const ClinicCheckIn: React.FC = () => {
                 </div>
                 {successData.clinic && (
                   <div className="flex items-center justify-between text-xs pt-2 border-t border-[#e5e5ea]">
-                    <span className="text-[#86868b]">Clinic Venue</span>
+                    <span className="text-[#86868b]">Clinic</span>
                     <span className="font-normal text-[#1d1d1f] truncate max-w-[200px]">
                       {successData.clinic.clinicName}
                     </span>
@@ -259,7 +259,7 @@ export const ClinicCheckIn: React.FC = () => {
                 onClick={() => navigate('/patient/appointments')}
                 className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
               >
-                <span>View Live Queue Pass</span>
+                <span>View Appointment</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -286,7 +286,7 @@ export const ClinicCheckIn: React.FC = () => {
                   onClick={() => navigate('/patient/appointments')}
                   className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
-                  Go to My Appointments
+                  My Appointments
                 </button>
               </div>
             </div>

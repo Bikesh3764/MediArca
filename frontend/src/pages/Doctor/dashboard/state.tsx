@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, DoctorAffiliationsData, ClinicProfile } from '../../../services/api';
+import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, DoctorAffiliationsData, ClinicProfile, cleanSlotName, formatDisplayDate } from '../../../services/api';
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../../utils/liveEvents';
@@ -169,14 +169,14 @@ export const useDoctorDashboardState = () => {
       return;
     }
     if (walkinPhone.trim() && !isValidIndianPhone(walkinPhone)) {
-      setWalkinError('Please enter a valid 10-digit mobile number');
+      setWalkinError('Enter a valid 10-digit mobile number');
       return;
     }
 
     if (walkinAge.trim()) {
       const parsedAge = parseInt(walkinAge.trim(), 10);
       if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
-        setWalkinError('Please enter a valid age between 0 and 125');
+        setWalkinError('Enter an age between 0 and 125');
         return;
       }
     }
@@ -192,7 +192,7 @@ export const useDoctorDashboardState = () => {
       (affiliations.clinics.length === 1 ? affiliations.clinics[0].clinicId : undefined);
 
     if (affiliations.clinics.length > 1 && !effectiveClinicId) {
-      setWalkinError('Please select which clinic venue to book the walk-in at');
+      setWalkinError('Choose a clinic');
       return;
     }
 
@@ -212,7 +212,7 @@ export const useDoctorDashboardState = () => {
         patientPhone: walkinPhone.trim() ? formatIndianPhone(walkinPhone) : undefined,
         clinicId: effectiveClinicId,
       });
-      setWalkinSuccess(`Patient ${walkinName} successfully queued!`);
+      setWalkinSuccess(`${walkinName} added to the queue`);
       setWalkinName('');
       setWalkinAge('');
       setWalkinPhone('');
@@ -225,7 +225,7 @@ export const useDoctorDashboardState = () => {
         setWalkinSuccess(null);
       }, 1200);
     } catch (err: any) {
-      setWalkinError(err.message || 'Failed to queue walk-in patient');
+      setWalkinError(err.message || 'Couldn’t add walk-in. Try again.');
     } finally {
       setWalkinSubmitting(false);
     }
@@ -236,11 +236,11 @@ export const useDoctorDashboardState = () => {
     setAffiliatingClinicId(clinicId);
     try {
       const res = await api.addDoctorClinic({ clinicId });
-      setFeedbackSuccess(res.message || 'Clinic affiliated successfully');
+      setFeedbackSuccess(res.message || 'Request sent to the clinic.');
       await fetchAffiliations();
       await fetchQueue(false);
     } catch (err: any) {
-      setFeedbackError(err.message || 'Failed to affiliate clinic');
+      setFeedbackError(err.message || 'Couldn’t join clinic. Try again.');
     } finally {
       setAffiliatingClinicId(null);
     }
@@ -248,7 +248,7 @@ export const useDoctorDashboardState = () => {
   const handleRemoveClinic = async (clinicId: string, clinicName: string) => {
     const ok = await confirm({
       title: 'Detach Clinic?',
-      message: `Are you sure you want to detach your profile from ${clinicName}?`,
+      message: `Leave ${clinicName}?`,
       confirmText: 'Detach Clinic',
       isDestructive: true,
     });
@@ -265,8 +265,8 @@ export const useDoctorDashboardState = () => {
       await fetchAffiliations();
       await fetchQueue(false);
     } catch (err: any) {
-      setFeedbackError(err.message || 'Failed to detach clinic');
-      toast.error(err.message || 'Failed to detach clinic');
+      setFeedbackError(err.message || 'Couldn’t leave clinic. Try again.');
+      toast.error(err.message || 'Couldn’t leave clinic. Try again.');
     }
   };
   const handleRespondClinicAffiliation = async (affiliationId: string, action: 'ACCEPT' | 'REJECT') => {
@@ -274,19 +274,19 @@ export const useDoctorDashboardState = () => {
     setFeedbackSuccess(null);
     try {
       const res = await api.respondToClinicAffiliation(affiliationId, action);
-      setFeedbackSuccess(res.message || `Clinic request ${action.toLowerCase()}ed successfully`);
+      setFeedbackSuccess(res.message || `Request ${action === 'ACCEPT' ? 'accepted' : 'declined'}`);
       toast.success(res.message || `Clinic request ${action.toLowerCase()}ed`);
       await fetchAffiliations();
       await fetchQueue(false);
     } catch (err: any) {
-      setFeedbackError(err.message || 'Failed to respond to affiliation request');
-      toast.error(err.message || 'Failed to respond to affiliation request');
+      setFeedbackError(err.message || 'Couldn’t respond. Try again.');
+      toast.error(err.message || 'Couldn’t respond. Try again.');
     }
   };
   const handleRemoveReceptionist = async (receptionistId: string, name: string) => {
     const ok = await confirm({
       title: 'Unlink Receptionist?',
-      message: `Are you sure you want to unlink ${name} from your receptionist staff?`,
+      message: `Remove ${name} from your staff?`,
       confirmText: 'Unlink Staff',
       isDestructive: true,
     });
@@ -299,8 +299,8 @@ export const useDoctorDashboardState = () => {
       toast.success(`Unlinked ${name}`);
       await fetchAffiliations();
     } catch (err: any) {
-      setFeedbackError(err.message || 'Failed to unlink receptionist');
-      toast.error(err.message || 'Failed to unlink receptionist');
+      setFeedbackError(err.message || 'Couldn’t unlink receptionist. Try again.');
+      toast.error(err.message || 'Couldn’t unlink receptionist. Try again.');
     }
   };
   const [holdingId, setHoldingId] = useState<string | null>(null);
@@ -311,7 +311,7 @@ export const useDoctorDashboardState = () => {
       toast.info('Consultation placed on hold');
       await fetchQueue(false);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to put consultation on hold');
+      toast.error(err.message || 'Couldn’t put on hold. Try again.');
     } finally {
       setHoldingId(null);
     }
@@ -319,8 +319,8 @@ export const useDoctorDashboardState = () => {
   const handleCallPatient = async (appointmentId: string) => {
     if (user?.doctorProfile?.cabinStatus && user.doctorProfile.cabinStatus !== 'IN_CABIN') {
       const awayMsg = user.doctorProfile.cabinStatus === 'STEPPED_OUT'
-        ? `You are currently marked as 'Stepped Out'${user.doctorProfile.expectedReturnTime ? ` (expected return ~${user.doctorProfile.expectedReturnTime})` : ''}. Please set your presence to 'In Cabin' before calling a patient.`
-        : "You are currently marked as 'Not in Cabin'. Please set your presence to 'In Cabin' before calling a patient.";
+        ? `You’re marked as Stepped Out. Set your status to In Cabin first.`
+        : "You’re marked as Not in Cabin. Set your status to In Cabin first.";
       toast.warning(awayMsg);
       return;
     }
@@ -331,7 +331,7 @@ export const useDoctorDashboardState = () => {
       const yesterdayStr = getYesterdayDateString();
       const isValidDate = target.appointmentDate === todayStr || (target.appointmentDate === yesterdayStr && target.isCheckedIn);
       if (!isValidDate) {
-        toast.warning(`Cannot call patient scheduled for ${target.appointmentDate}. Only patients scheduled for today or active overnight shifts can be called into the active cabin.`);
+        toast.warning(`This patient is booked for ${formatDisplayDate(target.appointmentDate)}. You can only call today’s patients.`);
         return;
       }
       if (!target.isCheckedIn) {
@@ -345,7 +345,7 @@ export const useDoctorDashboardState = () => {
       await fetchQueue();
       navigate(`/doctor/consultation/${appointmentId}`);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to call patient');
+      toast.error(err.message || 'Couldn’t call patient. Try again.');
     } finally {
       setCallingId(null);
     }
@@ -355,10 +355,10 @@ export const useDoctorDashboardState = () => {
     setCompletingId(appointmentId);
     try {
       await api.completeConsultation({ appointmentId });
-      toast.success('Consultation completed successfully');
+      toast.success('Consultation done');
       await fetchQueue();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to complete consultation');
+      toast.error(err.message || 'Couldn’t complete consultation. Try again.');
     } finally {
       setCompletingId(null);
     }
@@ -372,7 +372,7 @@ export const useDoctorDashboardState = () => {
       toast.success(nextStatus ? 'Patient marked arrived' : 'Arrival status removed');
       await fetchQueue();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to update patient arrival status');
+      toast.error(err.message || 'Couldn’t update arrival. Try again.');
     } finally {
       setTogglingCheckinId(null);
     }
@@ -381,7 +381,7 @@ export const useDoctorDashboardState = () => {
   const handleCancelAppointment = async (appointmentId: string, patientName: string) => {
     const ok = await confirm({
       title: 'Cancel Queue Appointment?',
-      message: `Are you sure you want to cancel the queue appointment for ${patientName}? This action cannot be undone.`,
+      message: `Cancel ${patientName}’s appointment? This can’t be undone.`,
       confirmText: 'Yes, Cancel',
       isDestructive: true,
     });
@@ -393,7 +393,7 @@ export const useDoctorDashboardState = () => {
       toast.success(`Appointment for ${patientName} cancelled`);
       await fetchQueue(false);
     } catch (err: any) {
-      toast.error(err.message || 'Failed to cancel appointment');
+      toast.error(err.message || 'Couldn’t cancel appointment. Try again.');
     } finally {
       setCancellingId(null);
     }
@@ -444,13 +444,13 @@ export const useDoctorDashboardState = () => {
       });
       const newQueueNum = res?.queueNumber ?? res?.data?.queueNumber ?? res?.data?.appointment?.queueNumber;
       setRescheduleSuccess(
-        `Appointment for ${rescheduleTarget.patientName} shifted to ${rescheduleDate}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
+        `${rescheduleTarget.patientName} moved to ${formatDisplayDate(rescheduleDate)}${newQueueNum ? ` (Token #${newQueueNum})` : ''}.`
       );
       setTimeout(() => setRescheduleSuccess(null), 5000);
       setRescheduleTarget(null);
       await fetchQueue(false);
     } catch (err: any) {
-      setRescheduleError(err.message || 'Failed to reschedule appointment');
+      setRescheduleError(err.message || 'Couldn’t reschedule appointment. Try again.');
     } finally {
       setRescheduling(false);
     }
@@ -595,7 +595,7 @@ export const useDoctorDashboardState = () => {
         ? ` (${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)})`
         : '';
       return {
-        label: `Shift ${idx + 1}${timeRange}`,
+        label: `${cleanSlotName(slot.name, `Shift ${idx + 1}`)}${timeRange}`,
         value: slot.id,
         count: slotWaitingCounts[slot.id] || 0,
       };
