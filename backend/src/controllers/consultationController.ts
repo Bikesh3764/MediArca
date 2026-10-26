@@ -439,7 +439,14 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('callPatient error:', error);
-    if (error?.message?.includes('Cannot call patient into consultation')) {
+    const msg = String(error?.message || '');
+    // State changed between the checks and the locked update: a normal conflict, not a server fault
+    if (
+      msg.includes('Cannot call patient') ||
+      msg.includes('Patient check-in was removed') ||
+      msg.includes('Appointment no longer exists') ||
+      msg.includes('Appointment does not belong')
+    ) {
       res.status(400).json({
         success: false,
         message: error.message,

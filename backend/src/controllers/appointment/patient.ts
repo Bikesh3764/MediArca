@@ -98,6 +98,11 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
     const recContact = resolveReceptionistContact(appointment.clinic, appointment.doctorId, appointment.doctor);
     const sanitizedDoctor = { ...appointment.doctor };
     delete (sanitizedDoctor as any).receptionists;
+    // Patients reach the clinic through the receptionist, never the doctor's own login email or mobile
+    if (isPatient && !isDoctor && !isAdmin && sanitizedDoctor.user) {
+      const { email: _email, phone: _phone, ...publicDoctorUser } = sanitizedDoctor.user;
+      (sanitizedDoctor as any).user = publicDoctorUser;
+    }
     const sanitizedClinic = appointment.clinic ? { ...appointment.clinic } : null;
     if (sanitizedClinic) {
       delete (sanitizedClinic as any).receptionists;

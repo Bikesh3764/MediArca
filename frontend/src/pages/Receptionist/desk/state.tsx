@@ -483,23 +483,28 @@ export const useReceptionistDashboardState = () => {
   // Handle rapid walk-in booking
   const handleWalkinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // The form sits below the page banner, so also show the problem as a toast
+    const fail = (msg: string) => {
+      setError(msg);
+      toast.error(msg);
+    };
     if (!selectedDoctorId || !patientName.trim() || !patientPhone.trim()) {
-      setError('Enter the doctor, name and mobile.');
+      fail('Enter the doctor, name and mobile.');
       return;
     }
 
     if (!isValidIndianPhone(patientPhone)) {
-      setError('Enter a valid 10-digit mobile number.');
+      fail('Enter a valid 10-digit mobile number.');
       return;
     }
 
     if (bookingFor === 'other') {
       if (!patientName.trim()) {
-        setError('Enter the patient’s name.');
+        fail('Enter the patient’s name.');
         return;
       }
       if (!patientAge.trim()) {
-        setError('Enter the patient’s age.');
+        fail('Enter the patient’s age.');
         return;
       }
     }
@@ -507,18 +512,18 @@ export const useReceptionistDashboardState = () => {
     if (patientAge.trim()) {
       const parsedAge = parseInt(patientAge.trim(), 10);
       if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
-        setError('Enter an age between 0 and 125.');
+        fail('Enter an age between 0 and 125.');
         return;
       }
     }
 
     if (isSelectedShiftEnded) {
-      setError('This shift has ended. Pick another shift or day.');
+      fail('This shift has ended. Pick another shift or day.');
       return;
     }
 
     if (isSelectedShiftFull) {
-      setError('This shift is full. Pick another shift or day.');
+      fail('This shift is full. Pick another shift or day.');
       return;
     }
 
@@ -570,7 +575,7 @@ export const useReceptionistDashboardState = () => {
       fetchDeskData();
       fetchWalkinPreview();
     } catch (err: any) {
-      setError(err.message || 'Couldn’t add walk-in. Try again.');
+      fail(err.message || 'Couldn’t add walk-in. Try again.');
     } finally {
       setBookingLoading(false);
     }

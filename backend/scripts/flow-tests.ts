@@ -243,6 +243,41 @@ async function main() {
     check(reCall.status >= 400, 'A completed visit cannot be called again', reCall.status);
     live.close();
 
+    // ---- Audit 2026-10-27: privacy and input checks ---------------------------
+    const patientDetail = await call('GET', `/api/appointments/${appointmentId}`, patientToken);
+    const docUser = patientDetail.json?.data?.doctor?.user || {};
+    check(
+      patientDetail.status === 200 && docUser.fullName && docUser.email === undefined && docUser.phone === undefined,
+      "Patient's visit details never include the doctor's own email or mobile",
+      docUser
+    );
+    const doctorDetail = await call('GET', `/api/appointments/${appointmentId}`, doctorToken);
+    check(doctorDetail.status === 200 && doctorDetail.json?.data?.doctor?.user?.email, 'The doctor still sees their own details on the visit', doctorDetail.status);
+
+    const toDecline = await call('POST', '/api/appointments/book', patientToken, {
+      doctorId: s.doctor.id,
+      clinicId: s.clinic.id,
+      appointmentDate: s.today,
+      slotId: 'slot_all_day',
+    });
+    const declineId: string = toDecline.json?.data?.id;
+    const objReason = await call('POST', `/api/receptionist/appointments/${declineId}/reject`, deskToken, { reason: { x: 1 } });
+    check(objReason.status === 400, 'Declining with a non-text reason returns 400', objReason.json);
+    const hugeReason = await call('POST', `/api/receptionist/appointments/${declineId}/reject`, deskToken, { reason: 'x'.repeat(600) });
+    check(hugeReason.status === 400, 'Declining with a 600-character reason returns 400', hugeReason.json);
+    const declined = await call('POST', `/api/receptionist/appointments/${declineId}/reject`, deskToken, { reason: 'Doctor away' });
+    check(declined.status === 200, 'Declining with a short reason works', declined.json);
+
+    const longSignup = await call('POST', '/api/auth/register', undefined, {
+      email: email('longclinic'),
+      password: 'Long-Clinic-123',
+      fullName: 'Long Clinic',
+      role: 'CLINIC',
+      clinicName: 'C'.repeat(400),
+      address: 'Somewhere',
+    });
+    check(longSignup.status === 400, 'Sign-up refuses a 400-character clinic name', longSignup.json);
+
     // ---- Demo account lock ---------------------------------------------------
     // The lock runs before any database work, so a token carrying the demo email is enough
     const demoToken = sign({ id: `demo-${RUN}`, email: 'john.doe@gmail.com', role: 'PATIENT', fullName: 'Demo Patient' });

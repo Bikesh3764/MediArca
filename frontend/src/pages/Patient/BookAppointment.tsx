@@ -422,7 +422,7 @@ export const BookAppointment: React.FC = () => {
                 onClick={() => navigate('/patient/appointments')}
                 className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer select-none"
               >
-                View My Passes
+                View Appointments
               </button>
               <button
                 type="button"

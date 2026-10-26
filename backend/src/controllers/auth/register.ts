@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../../config/database';
-import { findTooLong, LIMITS } from '../../utils/inputLimits';
+import { findTooLong, findTooLongInBody, LIMITS } from '../../utils/inputLimits';
 import { hashOtp } from '../../utils/otpHash';
 import { isValidDobDate, timeToMinutes, validateDoctorNumericBounds } from '../../utils/scheduleUtils';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
@@ -27,6 +27,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
     if (tooLong) {
       res.status(400).json({ success: false, message: tooLong });
+      return;
+    }
+
+    // Profile fields sent with sign-up (clinic name, address, bio...) get the same caps as profile edits
+    const { turnstileToken: _botToken, ...profileText } = profileData;
+    const tooLongProfile = findTooLongInBody({ ...profileText, ...(phone !== undefined ? { phone } : {}) });
+    if (tooLongProfile) {
+      res.status(400).json({ success: false, message: tooLongProfile });
       return;
     }
 

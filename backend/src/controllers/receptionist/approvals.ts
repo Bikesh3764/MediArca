@@ -6,6 +6,7 @@ import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
+import { LIMITS } from '../../utils/inputLimits';
 
 /**
  * Get all pending booking requests awaiting payment and receptionist verification
@@ -666,7 +667,16 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
     }
 
     const appointmentId = String(req.params.appointmentId);
-    const { reason } = req.body;
+    const rawReason = req.body?.reason;
+    if (rawReason !== undefined && rawReason !== null && typeof rawReason !== 'string') {
+      res.status(400).json({ success: false, message: 'Reason must be text.' });
+      return;
+    }
+    const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
+    if (reason.length > LIMITS.reason) {
+      res.status(400).json({ success: false, message: `Reason is too long (max ${LIMITS.reason} characters).` });
+      return;
+    }
 
     const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
@@ -723,7 +733,7 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
 
     if (appointment?.patient?.userId) {
       const docName = withDr(appointment.doctor?.user?.fullName);
-      const declineMsg = reason ? `Reason: ${String(reason).trim()}` : 'Call the clinic for details.';
+      const declineMsg = reason ? `Reason: ${reason}` : 'Call the clinic for details.';
       createNotification(
         appointment.patient.userId,
         'Booking declined',
