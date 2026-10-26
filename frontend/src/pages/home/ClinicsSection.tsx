@@ -116,7 +116,7 @@ export const ClinicsSection: React.FC = () => {
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
                               onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                              className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                              className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                             >
                               {doctor.user?.avatarUrl ? (
                                 <img
@@ -257,7 +257,7 @@ export const ClinicsSection: React.FC = () => {
                           className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
-                          <div className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
+                          <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
                             <img
                               src={clinic.avatarUrl ? getFileUrl(clinic.avatarUrl) : clinicLobbyBg}
                               alt={clinic.clinicName}

@@ -313,7 +313,7 @@ export const DoctorsSection: React.FC = () => {
                         {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div
                           onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                          className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                          className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                         >
                           {doctor.user?.avatarUrl ? (
                             <img
