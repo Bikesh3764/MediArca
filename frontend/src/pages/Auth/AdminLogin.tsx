@@ -52,12 +52,16 @@ export const AdminLogin: React.FC = () => {
   };
 
   const handleQuickDemoLogin = async () => {
-    setEmail('admin@mediarca.com');
-    setPassword('admin123');
+    if (!import.meta.env.DEV) return;
+    // Local seed account only. The live build drops this code (import.meta.env.DEV is false there)
+    const demoEmail = 'admin@mediarca.com';
+    const demoPassword = 'admin123';
+    setEmail(demoEmail);
+    setPassword(demoPassword);
     setError(null);
     setSubmitting(true);
     try {
-      const loggedUser = await login({ email: 'admin@mediarca.com', password: 'admin123', role: 'ADMIN' });
+      const loggedUser = await login({ email: demoEmail, password: demoPassword, role: 'ADMIN' });
       if (loggedUser.role?.toUpperCase() !== 'ADMIN') {
         logout();
         setError('This account isn’t an admin account.');
@@ -104,11 +108,13 @@ export const AdminLogin: React.FC = () => {
 
           <form onSubmit={handleAdminSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="admin-email" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Email
               </label>
               <input
-                type="text"
+                id="admin-email"
+                autoComplete="username"
+                type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -119,11 +125,18 @@ export const AdminLogin: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="admin-password" className="block text-xs font-normal text-[#1d1d1f] tracking-tight">
+                  Password
+                </label>
+                <Link to="/forgot-password?role=ADMIN" state={{ email: email.trim() }} className="text-xs text-[#0066cc] hover:underline py-1">
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <input
+                  id="admin-password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -159,7 +172,8 @@ export const AdminLogin: React.FC = () => {
               </button>
             </div>
 
-            {/* Quick Demo Root Admin Access */}
+            {/* Demo admin: local development only (no public admin login on the live site) */}
+            {import.meta.env.DEV && (
             <div className="pt-3 border-t border-[#f0f0f2]">
               <div className="flex items-center justify-between text-xs text-[#86868b] mb-2">
                 <span>Demo</span>
@@ -174,13 +188,14 @@ export const AdminLogin: React.FC = () => {
                 <span>Try demo admin</span>
               </button>
             </div>
+            )}
           </form>
         </div>
 
         <div className="mt-5 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+            className="inline-flex items-center gap-1.5 py-2 text-xs font-normal text-[#86868b] hover:text-[#1d1d1f] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Home</span>

@@ -62,14 +62,14 @@ export const ContactUs: React.FC = () => {
             <p className="text-xs text-[#86868b] font-normal">Email</p>
             <a
               href="mailto:contact@mediarca.in"
-              className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors mt-0.5 inline-block"
+              className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors mt-0.5 inline-block py-1"
             >
               contact@mediarca.in
             </a>
           </div>
           <a
             href="mailto:contact@mediarca.in"
-            className="text-xs font-semibold text-[#0066cc] hover:underline shrink-0"
+            className="inline-block py-2 text-xs font-semibold text-[#0066cc] hover:underline shrink-0"
           >
             Send Email →
           </a>
@@ -103,8 +103,9 @@ export const ContactUs: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Name *</label>
+              <label htmlFor="contact-f-1" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Name *</label>
               <input
+                id="contact-f-1" maxLength={100} autoComplete="name"
                 type="text"
                 required
                 value={fullName}
@@ -116,8 +117,9 @@ export const ContactUs: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Email *</label>
+                <label htmlFor="contact-f-2" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Email *</label>
                 <input
+                  id="contact-f-2" autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -128,12 +130,13 @@ export const ContactUs: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Mobile (optional)</label>
+                <label htmlFor="contact-f-3" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Mobile (optional)</label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
                   <span className="h-full px-3.5 bg-[#f5f5f7] border-r border-[#d2d2d7] flex items-center justify-center select-none text-base sm:text-xs font-semibold text-[#1d1d1f]">
                     +91
                   </span>
                   <input
+                    id="contact-f-3" autoComplete="tel-national"
                     type="tel"
                     inputMode="numeric"
                     value={sanitizeIndianPhone(phone)}
@@ -150,9 +153,10 @@ export const ContactUs: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Subject</label>
+              <label htmlFor="contact-f-4" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Subject</label>
               <div className="relative">
                 <select
+                  id="contact-f-4"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
@@ -167,8 +171,10 @@ export const ContactUs: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Message</label>
+              <label htmlFor="contact-f-5" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">Message</label>
               <textarea
+                maxLength={3000}
+                id="contact-f-5"
                 required
                 rows={4}
                 value={message}

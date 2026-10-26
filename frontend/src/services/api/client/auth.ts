@@ -32,6 +32,33 @@ export const authApi = {
     return handleResponse(res);
   },
 
+  async requestPasswordReset(email: string, role: string): Promise<{ cooldownSeconds?: number; devOtp?: string }> {
+    const res = await safeFetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    });
+    return handleResponse(res);
+  },
+
+  async resetPassword(body: { email: string; role: string; otp: string; newPassword: string }): Promise<unknown> {
+    const res = await safeFetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ user: User; token: string }> {
+    const res = await safeFetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return handleResponse(res);
+  },
+
   async login(body: any): Promise<{ user: User; token: string }> {
     const res = await safeFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',

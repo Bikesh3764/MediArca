@@ -1,4 +1,5 @@
 import { AvatarImage } from '../../components/ui/AvatarImage';
+import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api, getFileUrl, ALL_SPECIALTIES } from '../../services/api';
@@ -362,6 +363,7 @@ export const DoctorProfile: React.FC = () => {
                 Bio
               </label>
               <textarea
+                maxLength={2000}
                 rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -381,6 +383,8 @@ export const DoctorProfile: React.FC = () => {
             </button>
           </div>
         </form>
+
+        <ChangePasswordCard />
       </div>
 
       <AvatarCropModal

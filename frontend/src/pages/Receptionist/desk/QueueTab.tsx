@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import { ReceptionistQueueItem, getLocalDateString, WEEKDAY_NAMES, getDayOfWeekCode } from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
 import { Clock, CheckCircle2, X, Printer, Stethoscope, Search, ChevronDown, CalendarX, CalendarOff, Users } from 'lucide-react';
@@ -541,7 +542,7 @@ export const QueueTab: React.FC = () => {
                               </div>
 
                               <div className="flex items-center gap-2.5 text-xs text-[#86868b] mt-1 flex-wrap">
-                                {appt.patientPhone && <span>{appt.patientPhone}</span>}
+                                {appt.patientPhone && <span>{formatDisplayPhone(appt.patientPhone)}</span>}
                                 {appt.estimatedTime && (
                                   <>
                                     <span>•</span>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import { AppleButton } from '../../../components/ui/AppleButton';
 import { UtilityCard } from '../../../components/ui/UtilityCard';
 import { X, Search } from 'lucide-react';
@@ -112,7 +113,7 @@ export const ClinicsTab: React.FC = () => {
                                 <div className="text-[#86868b]">
                                   {c.user?.fullName} • {c.user?.email}
                                 </div>
-                                {c.phone && <div className="text-[11px] text-[#86868b]">{c.phone}</div>}
+                                {c.phone && <div className="text-[11px] text-[#86868b]">{formatDisplayPhone(c.phone)}</div>}
                               </div>
                             </td>
                             <td data-label="Location" className="py-3.5 px-3 text-[#1d1d1f]">

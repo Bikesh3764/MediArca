@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { Response } from 'express';
 import prisma from '../../config/database';
+import { findTooLongInBody } from '../../utils/inputLimits';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { isClinicActive } from '../../utils/authGuards';
@@ -108,7 +109,8 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
     const totalBookings = await prisma.appointment.count({
       where: {
         clinicId: clinic.id,
-        status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+        // Unpaid requests aren't bookings yet
+        status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED', 'PENDING_APPROVAL'] },
       },
     });
 
@@ -148,7 +150,7 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           where: {
             clinicId: clinic.id,
             doctorId: cd.doctorId,
-            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED'] },
+            status: { notIn: ['CANCELLED', 'REJECTED', 'EXPIRED', 'PENDING_APPROVAL'] },
           },
         });
         const completedCount = await prisma.appointment.count({
@@ -299,6 +301,11 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
  */
 export const updateClinicProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const tooLongField = findTooLongInBody(req.body);
+    if (tooLongField) {
+      res.status(400).json({ success: false, message: tooLongField });
+      return;
+    }
     if (!req.user || req.user.role !== 'CLINIC') {
       res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
       return;

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/database';
+import { findTooLong, LIMITS } from '../utils/inputLimits';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots, cleanSlotName } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
@@ -460,10 +461,28 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const { appointmentId, vitals, clinicalNotes, diagnosis, medicines, advice, followUpDate } = req.body;
+    const { appointmentId, vitals, clinicalNotes, diagnosis, advice, followUpDate } = req.body;
 
     if (!appointmentId) {
       res.status(400).json({ success: false, message: 'appointmentId is required' });
+      return;
+    }
+
+    const textFields = { clinicalNotes, diagnosis, advice, followUpDate };
+    for (const [key, value] of Object.entries(textFields)) {
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        res.status(400).json({ success: false, message: `${key} must be text.` });
+        return;
+      }
+    }
+    const tooLong = findTooLong({
+      clinicalNotes: [clinicalNotes, LIMITS.notes],
+      diagnosis: [diagnosis, LIMITS.symptoms],
+      advice: [advice, LIMITS.message],
+      followUpDate: [followUpDate, 40],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
       return;
     }
 
@@ -501,29 +520,14 @@ export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Pro
     }
 
     let finalNotes = clinicalNotes;
-    if (diagnosis || advice || followUpDate || (Array.isArray(medicines) && medicines.length > 0) || (typeof medicines === 'string' && medicines.trim())) {
+    // Clinic notes only: MediArca does not build prescriptions (paper scripts are given at the clinic)
+    if (diagnosis || advice || followUpDate) {
       const notesParts: string[] = [];
       if (diagnosis && diagnosis.trim()) {
         notesParts.push(`Diagnosis: ${diagnosis.trim()}`);
       }
       if (clinicalNotes && clinicalNotes.trim()) {
         notesParts.push(clinicalNotes.trim());
-      }
-      if (Array.isArray(medicines) && medicines.length > 0) {
-        const medLines = medicines.map((m: any, idx: number) => {
-          if (typeof m === 'string') return `${idx + 1}. ${m}`;
-          const name = m.name || m.medicineName || '';
-          const dosage = m.dosage ? ` - ${m.dosage}` : '';
-          const freq = m.frequency ? ` (${m.frequency})` : '';
-          const dur = m.duration ? ` for ${m.duration}` : '';
-          const inst = m.instructions ? ` [${m.instructions}]` : '';
-          return `${idx + 1}. ${name}${dosage}${freq}${dur}${inst}`.trim();
-        }).filter(Boolean);
-        if (medLines.length > 0) {
-          notesParts.push(`Prescribed Medications:\n${medLines.join('\n')}`);
-        }
-      } else if (typeof medicines === 'string' && medicines.trim()) {
-        notesParts.push(`Prescribed Medications:\n${medicines.trim()}`);
       }
       if (advice && advice.trim()) {
         notesParts.push(`Advice: ${advice.trim()}`);
@@ -597,7 +601,6 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     const {
       appointmentId,
       diagnosis,
-      medicines,
       advice,
       followUpDate,
       clinicalNotes,
@@ -606,6 +609,23 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
 
     if (!appointmentId) {
       res.status(400).json({ success: false, message: 'appointmentId is required' });
+      return;
+    }
+
+    for (const [key, value] of Object.entries({ clinicalNotes, diagnosis, advice, followUpDate })) {
+      if (value !== undefined && value !== null && typeof value !== 'string') {
+        res.status(400).json({ success: false, message: `${key} must be text.` });
+        return;
+      }
+    }
+    const tooLongNote = findTooLong({
+      clinicalNotes: [clinicalNotes, LIMITS.notes],
+      diagnosis: [diagnosis, LIMITS.symptoms],
+      advice: [advice, LIMITS.message],
+      followUpDate: [followUpDate, 40],
+    });
+    if (tooLongNote) {
+      res.status(400).json({ success: false, message: tooLongNote });
       return;
     }
 
@@ -678,22 +698,6 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
     }
     if (clinicalNotes && clinicalNotes.trim()) {
       notesParts.push(clinicalNotes.trim());
-    }
-    if (Array.isArray(medicines) && medicines.length > 0) {
-      const medLines = medicines.map((m: any, idx: number) => {
-        if (typeof m === 'string') return `${idx + 1}. ${m}`;
-        const name = m.name || m.medicineName || '';
-        const dosage = m.dosage ? ` - ${m.dosage}` : '';
-        const freq = m.frequency ? ` (${m.frequency})` : '';
-        const dur = m.duration ? ` for ${m.duration}` : '';
-        const inst = m.instructions ? ` [${m.instructions}]` : '';
-        return `${idx + 1}. ${name}${dosage}${freq}${dur}${inst}`.trim();
-      }).filter(Boolean);
-      if (medLines.length > 0) {
-        notesParts.push(`Prescribed Medications:\n${medLines.join('\n')}`);
-      }
-    } else if (typeof medicines === 'string' && medicines.trim()) {
-      notesParts.push(`Prescribed Medications:\n${medicines.trim()}`);
     }
     if (advice && advice.trim()) {
       notesParts.push(`Advice: ${advice.trim()}`);

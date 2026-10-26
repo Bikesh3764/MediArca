@@ -1,5 +1,5 @@
 import React from 'react';
-import { getLocalDateString } from '../../../services/api';
+import { getLocalDateString, getMaxBookingDateString } from '../../../services/api';
 import { AlertCircle, X, ChevronDown } from 'lucide-react';
 import { useDoctorDashboard } from './state';
 export const RescheduleModal: React.FC = () => {
@@ -61,6 +61,7 @@ export const RescheduleModal: React.FC = () => {
               <input
                 type="date"
                 min={getLocalDateString()}
+                max={getMaxBookingDateString()}
                 value={rescheduleDate}
                 onChange={(e) => setRescheduleDate(e.target.value)}
                 className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-sm bg-white text-[#1d1d1f]  focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc]"

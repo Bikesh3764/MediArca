@@ -1,4 +1,5 @@
 import React from 'react';
+import { appUrl } from '../../../utils/siteUrl';
 import { X, Check } from 'lucide-react';
 import { useClinicDashboard } from './state';
 export const CredentialsModal: React.FC = () => {
@@ -73,7 +74,7 @@ export const CredentialsModal: React.FC = () => {
                   Sign-in link
                 </span>
                 <span className="text-[#0066cc] text-xs block select-all font-normal break-all">
-                  {`${window.location.origin}${window.location.pathname}#/receptionist/login`}
+                  {appUrl('/receptionist/login')}
                 </span>
               </div>
             </div>
@@ -82,7 +83,7 @@ export const CredentialsModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  const portalUrl = `${window.location.origin}${window.location.pathname}#/receptionist/login`;
+                  const portalUrl = appUrl('/receptionist/login');
                   const text = `MediArca receptionist login\nClinic: ${clinic?.clinicName || 'Clinic'}\nName: ${createdCredentials.fullName}\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nSign in at: ${portalUrl}`;
                   navigator.clipboard.writeText(text);
                   setCopiedCreds(true);

@@ -115,4 +115,3 @@ export const toTelUri = (phone?: string | null): string => {
   const cleaned = phone.replace(/[\s()-]/g, '');
   return cleaned.startsWith('+') ? `tel:${cleaned}` : `tel:+91${cleaned}`;
 };
-

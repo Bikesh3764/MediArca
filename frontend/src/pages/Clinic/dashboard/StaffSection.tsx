@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import { Trash2, UserCheck, Check } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { cleanDoctorName } from './helpers';
@@ -60,7 +61,7 @@ export const StaffSection: React.FC = () => {
                       </div>
                       <div className="text-xs text-[#86868b] mt-0.5">
                         <span className="font-normal text-[#1d1d1f]">{rec.email}</span>
-                        {rec.phone && <span> • {rec.phone}</span>}
+                        {rec.phone && <span> • {formatDisplayPhone(rec.phone)}</span>}
                         <span> • Applied {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
@@ -112,7 +113,7 @@ export const StaffSection: React.FC = () => {
                       <div>
                         <h4 className="font-semibold text-[#1d1d1f] text-[14px]">{rec.fullName}</h4>
                         <div className="text-xs text-[#86868b]">{rec.email}</div>
-                        {rec.phone && <div className="text-xs text-[#86868b]">{rec.phone}</div>}
+                        {rec.phone && <div className="text-xs text-[#86868b]">{formatDisplayPhone(rec.phone)}</div>}
                       </div>
                       <div className="text-[11px] text-[#86868b] shrink-0">
                         {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -182,7 +183,7 @@ export const StaffSection: React.FC = () => {
                       </td>
                       <td className="py-4 text-[#86868b]">
                         <div className="text-xs text-[#1d1d1f] font-normal">{rec.email}</div>
-                        {rec.phone && <div className="text-[11px]">{rec.phone}</div>}
+                        {rec.phone && <div className="text-[11px]">{formatDisplayPhone(rec.phone)}</div>}
                       </td>
                       <td className="py-4">
                         {(!rec.doctors || rec.doctors.length === 0) ? (

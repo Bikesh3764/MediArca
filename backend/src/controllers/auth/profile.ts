@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import path from 'path';
 import { Response } from 'express';
 import prisma from '../../config/database';
+import { findTooLongInBody } from '../../utils/inputLimits';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { uploadToR2, deleteFromR2, isR2Configured } from '../../config/r2';
 import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumericBounds, cleanWorkingDays, parseDoctorWorkingDays } from '../../utils/scheduleUtils';
@@ -83,6 +84,11 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const tooLongField = findTooLongInBody(req.body);
+    if (tooLongField) {
+      res.status(400).json({ success: false, message: tooLongField });
+      return;
+    }
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Not authenticated' });
       return;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import { UtilityCard } from '../../../components/ui/UtilityCard';
 import { Trash2, MessageSquare } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
@@ -60,7 +61,7 @@ export const MessagesTab: React.FC = () => {
                                 <a href={`mailto:${msg.email}`} className="text-[#0066cc] hover:underline">
                                   {msg.email}
                                 </a>
-                                {msg.phone && <span>• {msg.phone}</span>}
+                                {msg.phone && <span>• {formatDisplayPhone(msg.phone)}</span>}
                               </div>
                             </div>
                           </div>
@@ -96,7 +97,7 @@ export const MessagesTab: React.FC = () => {
 
                         <div className="mt-3">
                           <p className="text-xs font-semibold text-[#1d1d1f]">Subject: {msg.subject}</p>
-                          <p className="text-xs text-[#48484a] mt-1 whitespace-pre-wrap leading-relaxed">
+                          <p className="text-xs text-[#48484a] mt-1 whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed">
                             {msg.message}
                           </p>
                         </div>

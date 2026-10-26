@@ -33,7 +33,7 @@ export const isDemoAccountEmail = (email?: string | null): boolean => {
   return getDemoAccountEmails().includes(String(email).trim().toLowerCase());
 };
 
-const isDemoLockEnabled = (): boolean => {
+export const isDemoLockEnabled = (): boolean => {
   const flag = process.env.DEMO_ACCOUNT_LOCK;
   if (flag === 'false') return false;
   if (flag === 'true') return true;

@@ -1,4 +1,5 @@
 import { formatDisplayDate } from '../../services/api';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   X,
@@ -782,7 +783,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                             </td>
                             <td className="py-3">
                               <div className="font-semibold text-[#1d1d1f]">{appt.patientName}</div>
-                              <div className="text-[11px] text-[#86868b]">{appt.patientPhone}</div>
+                              <div className="text-[11px] text-[#86868b]">{formatDisplayPhone(appt.patientPhone)}</div>
                             </td>
                             {role !== 'DOCTOR' && (
                               <td className="py-3">

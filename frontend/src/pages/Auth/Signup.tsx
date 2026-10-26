@@ -222,10 +222,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="signup-f-1" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Full Name
               </label>
               <input
+                id="signup-f-1"
                 type="text"
                 required
                 value={fullName}
@@ -236,10 +237,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="signup-f-2" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Email
               </label>
               <input
+                id="signup-f-2" autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -250,7 +252,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="signup-f-3" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Mobile
               </label>
               <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
@@ -258,6 +260,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                   +91
                 </div>
                 <input
+                  id="signup-f-3" autoComplete="tel-national"
                   type="tel"
                   inputMode="numeric"
                   required
@@ -274,11 +277,12 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="signup-f-4" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 Password
               </label>
               <div className="relative">
                 <input
+                  id="signup-f-4" autoComplete="new-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   minLength={8}
@@ -301,10 +305,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
             {role === 'DOCTOR' && (
               <>
                 <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label htmlFor="signup-f-5" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Qualifications
                   </label>
                   <input
+                    id="signup-f-5"
                     type="text"
                     required
                     value={qualifications}
@@ -329,10 +334,11 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label htmlFor="signup-f-6" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     Experience (years)
                   </label>
                   <input
+                    id="signup-f-6"
                     type="number"
                     required
                     min={0}

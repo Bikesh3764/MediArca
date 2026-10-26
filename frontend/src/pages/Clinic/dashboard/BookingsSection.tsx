@@ -1,4 +1,5 @@
 import { formatDisplayDate } from '../../../services/api';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
 import { cleanSlotName } from '../../../services/api';
 import { Calendar } from 'lucide-react';
@@ -39,7 +40,7 @@ export const BookingsSection: React.FC = () => {
                         </span>
                         <div>
                           <div className="font-semibold text-[14px] text-[#1d1d1f]">{appt.patientName}</div>
-                          <div className="text-[11px] text-[#86868b]">{appt.patientPhone}</div>
+                          <div className="text-[11px] text-[#86868b]">{formatDisplayPhone(appt.patientPhone)}</div>
                         </div>
                       </div>
                       {(() => {
@@ -88,7 +89,7 @@ export const BookingsSection: React.FC = () => {
                       </td>
                       <td className="py-3.5">
                         <div className="font-semibold text-[#1d1d1f]">{appt.patientName}</div>
-                        <div className="text-[11px] text-[#86868b]">{appt.patientPhone}</div>
+                        <div className="text-[11px] text-[#86868b]">{formatDisplayPhone(appt.patientPhone)}</div>
                       </td>
                       <td className="py-3.5 font-normal text-[#1d1d1f]">{appt.doctorName}</td>
                       <td className="py-3.5 text-[#86868b]">

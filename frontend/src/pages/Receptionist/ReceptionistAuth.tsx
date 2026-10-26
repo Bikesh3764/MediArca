@@ -8,6 +8,7 @@ import { api, ClinicProfile } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 import { useToast } from '../../context/ToastContext';
+import { safeStorage } from '../../utils/safeStorage';
 
 export const ReceptionistAuth: React.FC = () => {
   const { toast } = useToast();
@@ -96,7 +97,7 @@ export const ReceptionistAuth: React.FC = () => {
       });
 
       if (res?.token) {
-        localStorage.setItem('mediarca_token', res.token);
+        safeStorage.setItem('mediarca_token', res.token);
       }
       const targetUser = res?.user || res?.data;
       if (targetUser) {
@@ -235,10 +236,11 @@ export const ReceptionistAuth: React.FC = () => {
 
             <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-1" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Temporary Password
                 </label>
                 <input
+                  id="rec-f-1" autoComplete="current-password"
                   type="password"
                   required
                   value={tempPassword}
@@ -249,10 +251,11 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-2" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   New Password
                 </label>
                 <input
+                  id="rec-f-2" autoComplete="new-password"
                   type="password"
                   required
                   minLength={8}
@@ -264,10 +267,11 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-3" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Confirm Password
                 </label>
                 <input
+                  id="rec-f-3" autoComplete="new-password"
                   type="password"
                   required
                   minLength={8}
@@ -415,10 +419,11 @@ export const ReceptionistAuth: React.FC = () => {
           ) : authMode === 'apply' ? (
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-4" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Full Name
                 </label>
                 <input
+                  id="rec-f-4" autoComplete="name"
                   type="text"
                   required
                   value={applyFullName}
@@ -429,10 +434,11 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-5" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
+                  id="rec-f-5" autoComplete="email"
                   type="email"
                   required
                   value={applyEmail}
@@ -443,7 +449,7 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-6" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
@@ -451,6 +457,7 @@ export const ReceptionistAuth: React.FC = () => {
                     +91
                   </div>
                   <input
+                    id="rec-f-6" autoComplete="tel-national"
                     type="tel"
                     inputMode="numeric"
                     required
@@ -464,12 +471,13 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
+                <label htmlFor="rec-f-7" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight flex items-center justify-between">
                   <span>Clinic</span>
                   {clinicsLoading && <span className="text-[11px] font-normal text-[#86868b]">Loading…</span>}
                 </label>
                 <div className="relative">
                   <select
+                    id="rec-f-7"
                     required
                     value={applyClinicId}
                     onChange={(e) => setApplyClinicId(e.target.value)}
@@ -490,10 +498,11 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-8" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Password
                 </label>
                 <input
+                  id="rec-f-8" autoComplete="new-password"
                   type="password"
                   required
                   minLength={8}
@@ -524,10 +533,11 @@ export const ReceptionistAuth: React.FC = () => {
           ) : (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="rec-f-9" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
+                  id="rec-f-9" autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -538,11 +548,17 @@ export const ReceptionistAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="rec-f-10" className="block text-xs font-normal text-[#1d1d1f] tracking-tight">
+                    Password
+                  </label>
+                  <Link to="/forgot-password?role=RECEPTIONIST" state={{ email: email.trim() }} className="text-xs text-[#0066cc] hover:underline py-1">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <input
+                    id="rec-f-10" autoComplete="current-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
@@ -595,7 +611,7 @@ export const ReceptionistAuth: React.FC = () => {
         {/* Footer Link */}
         <p className="mt-5 text-center text-xs text-[#86868b]">
           Clinic administrator?{' '}
-          <Link to="/clinic/login" className="text-[#0066cc] font-semibold hover:underline">
+          <Link to="/clinic/login" className="inline-block py-2 text-[#0066cc] font-semibold hover:underline">
             Clinic sign in
           </Link>
         </p>

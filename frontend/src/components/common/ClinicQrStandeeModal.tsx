@@ -1,4 +1,6 @@
 import React from 'react';
+import QRCode from 'qrcode';
+import { appUrl } from '../../utils/siteUrl';
 import { X, Printer } from 'lucide-react';
 import { BrandLogo } from '../ui/BrandLogo';
 
@@ -31,12 +33,28 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  const checkinUrl = `${window.location.origin}${window.location.pathname}#/clinic-checkin?clinicId=${clinicId}${
+  const checkinUrl = `${appUrl('/clinic-checkin')}?clinicId=${clinicId}${
     checkinCode ? `&code=${encodeURIComponent(checkinCode)}` : ''
   }`;
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkinUrl)}`;
+
+  // Drawn in the browser: the check-in code is never sent to an outside QR service
+  const [qrImageUrl, setQrImageUrl] = React.useState<string>('');
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    QRCode.toDataURL(checkinUrl, { width: 600, margin: 1, errorCorrectionLevel: 'M' })
+      .then((url) => {
+        if (!cancelled) setQrImageUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrImageUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, checkinUrl]);
+
+  if (!isOpen) return null;
 
   const handlePrint = () => {
     window.print();
@@ -83,12 +101,15 @@ export const ClinicQrStandeeModal: React.FC<ClinicQrStandeeModalProps> = ({
 
           {/* QR Code Container */}
           <div className="w-48 h-48 mx-auto bg-white p-3 rounded-2xl border border-[#d2d2d7]  flex items-center justify-center mb-3.5">
-            <img
-              src={qrImageUrl}
-              alt={`${clinicName} Arrival QR Code`}
-              className="w-full h-full object-contain"
-              referrerPolicy="no-referrer"
-            />
+            {qrImageUrl ? (
+              <img
+                src={qrImageUrl}
+                alt={`${clinicName} Arrival QR Code`}
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin" aria-label="Loading QR code" />
+            )}
           </div>
 
           <p className="text-xs font-normal text-[#1d1d1f]">

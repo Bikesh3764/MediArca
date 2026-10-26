@@ -12,6 +12,7 @@ import { Clock, UserPlus, Stethoscope, ShieldCheck, Bell } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { TokenPassData, cleanDoctorName, cleanShiftDisplayName } from './helpers';
+import { safeStorage } from '../../../utils/safeStorage';
 
 /** All data, effects and actions for ReceptionistDashboard, shared with its parts through context. */
 export const useReceptionistDashboardState = () => {
@@ -465,7 +466,7 @@ export const useReceptionistDashboardState = () => {
         newPassword,
       });
       if (res?.token) {
-        localStorage.setItem('mediarca_token', res.token);
+        safeStorage.setItem('mediarca_token', res.token);
       }
       const updatedUser = res?.user || res?.data;
       if (updatedUser && updateUser) {

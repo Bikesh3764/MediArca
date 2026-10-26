@@ -617,6 +617,7 @@ export const ConsultationView: React.FC = () => {
               </div>
 
               <textarea
+                maxLength={10000}
                 value={clinicalNotes}
                 onChange={(e) => setClinicalNotes(e.target.value)}
                 rows={4}

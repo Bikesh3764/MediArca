@@ -3,6 +3,7 @@ import { API_BASE_URL } from '../config';
 import { DoctorSlot } from '../schedule';
 import { Appointment, ReceptionistDashboardData, ReceptionistQueueItem } from '../types';
 import { getHeaders, handleResponse } from '../http';
+import { safeStorage } from '../../../utils/safeStorage';
 
 export const receptionistApi = {
   // Receptionist Portal
@@ -128,7 +129,7 @@ export const receptionistApi = {
     }
     const token = json.token || json.data?.token;
     if (token) {
-      localStorage.setItem('mediarca_token', token);
+      safeStorage.setItem('mediarca_token', token);
     }
     const user = json.user || json.data?.user || (json.data && !json.data.token ? json.data : null);
     return {

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
+import { hashOtp, otpMatches } from '../../utils/otpHash';
 import { getJwtSecret } from '../../middleware/authMiddleware';
 import { findExistingAccountByPhone, getPhoneSearchVariants } from '../../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../../utils/emailService';
@@ -99,7 +100,7 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (!user.emailVerificationOtp || user.emailVerificationOtp !== cleanOtp) {
+    if (!otpMatches(user.emailVerificationOtp, cleanOtp)) {
       const attemptResult = await recordFailedVerificationAttemptAsync(cleanEmail, effectiveRole);
       if (attemptResult.isLocked) {
         res.status(429).json({
@@ -311,7 +312,7 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        emailVerificationOtp: otp,
+        emailVerificationOtp: hashOtp(otp),
         emailVerificationOtpExpiresAt: otpExpiresAt,
       },
     });

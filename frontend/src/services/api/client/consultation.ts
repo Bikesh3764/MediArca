@@ -51,7 +51,6 @@ export const consultationApi = {
     vitals?: any;
     clinicalNotes?: string;
     diagnosis?: string;
-    medicines?: any[];
     advice?: string;
     followUpDate?: string;
   }): Promise<Appointment> {
@@ -68,7 +67,6 @@ export const consultationApi = {
     vitals?: any;
     clinicalNotes?: string;
     diagnosis?: string;
-    medicines?: any[];
     advice?: string;
     followUpDate?: string;
   }): Promise<Appointment> {
@@ -82,7 +80,6 @@ export const consultationApi = {
     followUpDate?: string;
     clinicalNotes?: string;
     vitals?: any;
-    medicines?: any[];
   }): Promise<{ appointment: Appointment }> {
     const res = await safeFetch(`${API_BASE_URL}/consultations/complete`, {
       method: 'POST',

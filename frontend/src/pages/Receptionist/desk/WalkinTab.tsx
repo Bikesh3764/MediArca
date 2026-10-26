@@ -1,7 +1,7 @@
 import { formatDisplayDate } from '../../../services/api';
 import { AvatarImage } from '../../../components/ui/AvatarImage';
 import React from 'react';
-import { getLocalDateString, getFileUrl, formatShiftOption, WEEKDAY_NAMES } from '../../../services/api';
+import { getLocalDateString, getFileUrl, formatShiftOption, WEEKDAY_NAMES, getMaxBookingDateString } from '../../../services/api';
 import { sanitizeIndianPhone } from '../../../utils/phoneUtils';
 import { ChevronDown, CalendarX, CalendarOff } from 'lucide-react';
 import { cleanDoctorName } from './helpers';
@@ -126,6 +126,7 @@ export const WalkinTab: React.FC = () => {
                           type="date"
                           required
                           min={getLocalDateString()}
+                          max={getMaxBookingDateString()}
                           value={appointmentDate}
                           onChange={(e) => setAppointmentDate(e.target.value)}
                           className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
@@ -295,6 +296,7 @@ export const WalkinTab: React.FC = () => {
                             type="text"
                             required
                             value={patientName}
+                            maxLength={100}
                             onChange={(e) => setPatientName(e.target.value)}
                             placeholder="e.g. Rahul Ray"
                             className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"

@@ -1,4 +1,5 @@
 import { formatDisplayDate } from '../../services/api';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import React from 'react';
 import { cleanSlotName } from '../../services/api';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -177,7 +178,7 @@ export const ReceptionistDashboard: React.FC = () => {
             {bookedPass.patientPhone && (
               <div className="flex justify-between">
                 <span className="text-[#6e6e73]">Phone:</span>
-                <span>{bookedPass.patientPhone}</span>
+                <span>{formatDisplayPhone(bookedPass.patientPhone)}</span>
               </div>
             )}
             <div className="flex justify-between">

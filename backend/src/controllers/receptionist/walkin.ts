@@ -8,6 +8,9 @@ import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../.
 import { verifyReceptionistDoctorAccess } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
+import { pickWalkinAccount } from '../../utils/walkinMatch';
+import { findTooLong, LIMITS } from '../../utils/inputLimits';
+import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE } from '../../utils/scheduleUtils';
 
 /**
  * Rapid Walk-in Appointment Booking for linked doctors
@@ -87,6 +90,22 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         success: false,
         message: 'Cannot book appointments for past dates.',
       });
+      return;
+    }
+
+    if (!isWithinBookingWindow(appointmentDate, now)) {
+      res.status(400).json({ success: false, message: BOOKING_WINDOW_MESSAGE });
+      return;
+    }
+
+    const tooLong = findTooLong({
+      patientName: [patientName, LIMITS.name],
+      patientPhone: [patientPhone, LIMITS.phone],
+      reasonForVisit: [reasonForVisit, LIMITS.reason],
+      symptoms: [symptoms, LIMITS.symptoms],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
       return;
     }
 
@@ -177,22 +196,14 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         where: phoneLookupWhere,
         include: { patientProfile: true },
       });
-      if (Array.isArray(candidates) && candidates.length > 0) {
-        const isSynthetic = (u: any) => {
-          const em = String(u?.email || '').toLowerCase();
-          return em.endsWith('@mediarca.local') || em.startsWith('walkin.');
-        };
-        patientUser =
-          candidates.find((u: any) => !isSynthetic(u) && u.isEmailVerified !== false) ||
-          candidates.find((u: any) => !isSynthetic(u)) ||
-          candidates[0];
-      }
-    }
-    if (!patientUser) {
-      patientUser = await prisma.user.findFirst({
+      // Only reuse an account whose name matches what the desk typed (no phone-to-name lookup)
+      patientUser = pickWalkinAccount(candidates as any[], patientName);
+    } else {
+      const found = await prisma.user.findFirst({
         where: phoneLookupWhere,
         include: { patientProfile: true },
       });
+      patientUser = pickWalkinAccount(found ? [found as any] : [], patientName);
     }
 
     if (!patientUser) {

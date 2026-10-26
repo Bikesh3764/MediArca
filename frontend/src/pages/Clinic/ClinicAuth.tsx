@@ -247,10 +247,11 @@ export const ClinicAuth: React.FC = () => {
           {mode === 'login' ? (
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-1" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
+                  id="clinic-f-1" autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -261,11 +262,17 @@ export const ClinicAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="clinic-f-2" className="block text-xs font-normal text-[#1d1d1f] tracking-tight">
+                    Password
+                  </label>
+                  <Link to="/forgot-password?role=CLINIC" state={{ email: email.trim() }} className="text-xs text-[#0066cc] hover:underline py-1">
+                    Forgot password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <input
+                    id="clinic-f-2" autoComplete="current-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
@@ -315,10 +322,11 @@ export const ClinicAuth: React.FC = () => {
           ) : (
             <form onSubmit={handleSignupSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-3" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Clinic name
                 </label>
                 <input
+                  id="clinic-f-3"
                   type="text"
                   required
                   value={clinicName}
@@ -330,11 +338,12 @@ export const ClinicAuth: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label htmlFor="clinic-f-4" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     State
                   </label>
                   <div className="relative">
                     <select
+                      id="clinic-f-4"
                       required
                       value={state}
                       onChange={(e) => handleStateChange(e.target.value)}
@@ -352,11 +361,12 @@ export const ClinicAuth: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label htmlFor="clinic-f-5" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     City
                   </label>
                   <div className="relative">
                     <select
+                      id="clinic-f-5"
                       required={!isCustomCity}
                       disabled={!state}
                       value={isCustomCity ? '__custom__' : city}
@@ -378,10 +388,11 @@ export const ClinicAuth: React.FC = () => {
 
               {isCustomCity && (
                 <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                  <label htmlFor="clinic-f-6" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                     City name
                   </label>
                   <input
+                    id="clinic-f-6"
                     type="text"
                     required
                     value={customCity}
@@ -396,10 +407,11 @@ export const ClinicAuth: React.FC = () => {
               )}
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-7" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Address
                 </label>
                 <input
+                  id="clinic-f-7"
                   type="text"
                   required
                   value={address}
@@ -410,7 +422,7 @@ export const ClinicAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-8" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Mobile
                 </label>
                 <div className="flex items-center w-full h-11 rounded-xl border border-[#d2d2d7] bg-white  focus-within:border-[#0066cc] focus-within:ring-4 focus-within:ring-[#0066cc]/10 transition-all duration-150 overflow-hidden">
@@ -418,6 +430,7 @@ export const ClinicAuth: React.FC = () => {
                     +91
                   </div>
                   <input
+                    id="clinic-f-8" autoComplete="tel-national"
                     type="tel"
                     inputMode="numeric"
                     required
@@ -434,10 +447,11 @@ export const ClinicAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-9" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Email
                 </label>
                 <input
+                  id="clinic-f-9" autoComplete="email"
                   type="email"
                   required
                   value={email}
@@ -448,11 +462,12 @@ export const ClinicAuth: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+                <label htmlFor="clinic-f-10" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Password
                 </label>
                 <div className="relative">
                   <input
+                    id="clinic-f-10" autoComplete="new-password"
                     type={showPassword ? 'text' : 'password'}
                     required
                     minLength={8}
@@ -494,7 +509,7 @@ export const ClinicAuth: React.FC = () => {
         {/* Footer Link */}
         <p className="mt-5 text-center text-xs text-[#86868b]">
           Front desk staff?{' '}
-          <Link to="/receptionist/login" className="text-[#0066cc] font-semibold hover:underline">
+          <Link to="/receptionist/login" className="inline-block py-2 text-[#0066cc] font-semibold hover:underline">
             Receptionist sign in
           </Link>
         </p>

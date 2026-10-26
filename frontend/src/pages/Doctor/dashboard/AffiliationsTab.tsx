@@ -1,4 +1,5 @@
 import { formatClinicAddress } from '../../../utils/address';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
 import { WeekdayDisplay } from '../../../components/common/WeekdayDisplay';
 import { Users, Clock, CheckCircle2, Trash2, Plus, AlertCircle, X, MapPin, Check, Calendar, QrCode } from 'lucide-react';
@@ -109,7 +110,7 @@ export const AffiliationsTab: React.FC = () => {
                           {formatClinicAddress(req, { withState: false })}
                         </p>
                         {req.phone && (
-                          <p className="text-xs text-[#86868b] mt-0.5">{req.phone}</p>
+                          <p className="text-xs text-[#86868b] mt-0.5">{formatDisplayPhone(req.phone)}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#e5e5ea]">

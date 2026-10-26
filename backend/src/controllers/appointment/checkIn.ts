@@ -1,11 +1,38 @@
 import { Response } from 'express';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
-import { getLocalDateString } from '../../utils/scheduleUtils';
+import { getLocalDateString, getIndianTimeMinutes, parseDoctorSlots, parseAffiliationSlots, timeToMinutes } from '../../utils/scheduleUtils';
 import crypto from 'crypto';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
 import { createNotification, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
+
+/** How early before a shift starts a patient may scan the clinic QR. */
+export const CHECKIN_OPENS_BEFORE_MINUTES = 180;
+
+/** Minutes after midnight (IST) when QR check-in opens and closes for this visit, or null if the shift is unknown. */
+export const getCheckInWindow = async (appointment: any): Promise<{ opensAt: number; closesAt: number } | null> => {
+  try {
+    let slots = parseDoctorSlots(appointment.doctor || {});
+    if (appointment.clinicId && typeof (prisma.clinicDoctor as any)?.findUnique === 'function') {
+      const aff = await prisma.clinicDoctor.findUnique({
+        where: { clinicId_doctorId: { clinicId: appointment.clinicId, doctorId: appointment.doctorId } },
+        select: { slots: true },
+      });
+      slots = parseAffiliationSlots(aff?.slots) ?? slots;
+    }
+    const slot = appointment.slotId ? slots.find((s: any) => s.id === appointment.slotId) : null;
+    if (!slot) return null;
+    const start = timeToMinutes(slot.startTime);
+    let end = timeToMinutes(slot.endTime);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+    // Overnight shifts: allow until midnight; the date check above already pins the day
+    if (end <= start) end = 24 * 60 - 1;
+    return { opensAt: Math.max(0, start - CHECKIN_OPENS_BEFORE_MINUTES), closesAt: end };
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Patient Physical Clinic Check-In via Scanned Clinic QR Code
@@ -171,6 +198,27 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
         message: `Check-in is only available on the date of your consultation (${appointment.appointmentDate}). Today is ${todayStr}.`,
       });
       return;
+    }
+
+    // The standee QR never changes, so a photo of it must not work from home all day:
+    // scanning only counts from a few hours before the shift starts until it ends.
+    const checkInWindow = await getCheckInWindow(appointment);
+    if (checkInWindow) {
+      const nowMins = getIndianTimeMinutes(new Date());
+      if (nowMins < checkInWindow.opensAt) {
+        res.status(400).json({
+          success: false,
+          message: `Check-in opens ${CHECKIN_OPENS_BEFORE_MINUTES / 60} hours before your shift. Scan again closer to your visit.`,
+        });
+        return;
+      }
+      if (nowMins > checkInWindow.closesAt) {
+        res.status(400).json({
+          success: false,
+          message: 'This shift has ended, so check-in is closed. Please contact the front desk.',
+        });
+        return;
+      }
     }
 
     if (appointment.status === 'PENDING_APPROVAL') {

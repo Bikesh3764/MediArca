@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../config/database';
+import { findTooLong, LIMITS } from '../utils/inputLimits';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString } from '../utils/scheduleUtils';
 import { createNotification } from '../services/notificationService';
@@ -118,7 +119,7 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const { doctorId, isVerified, status } = req.body;
 
-    if (!doctorId) {
+    if (!doctorId || typeof doctorId !== 'string') {
       res.status(400).json({ success: false, message: 'doctorId is required' });
       return;
     }
@@ -126,7 +127,7 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
     let targetStatus: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING';
     let targetIsVerified: boolean;
 
-    if (status && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
+    if (typeof status === 'string' && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
       targetStatus = status.toUpperCase() as any;
       targetIsVerified = targetStatus === 'VERIFIED';
     } else if (typeof isVerified === 'boolean') {
@@ -202,8 +203,10 @@ export const verifyDoctor = async (req: AuthRequest, res: Response): Promise<voi
   }
 };
 
-export const getAllAppointments = async (_req: AuthRequest, res: Response): Promise<void> => {
+export const getAllAppointments = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    // Paged so the list never silently stops at a fixed number; the dashboard loads page by page
+    const { page, limit, skip } = parsePaginationParams(req.query, 250, 250);
     // SEC-002: Enforce PHI minimization (HIPAA / DPDP Act) for administrative operational overview.
     // Explicitly exclude clinicalNotes, vitals, symptoms, reasonForVisit, allergies,
     // existingConditions, and currentMedications from the admin overview response.
@@ -269,11 +272,18 @@ export const getAllAppointments = async (_req: AuthRequest, res: Response): Prom
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 250,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip,
+      take: limit,
     });
+    const total = await prisma.appointment.count();
 
-    res.json({ success: true, count: appointments.length, data: appointments });
+    res.json({
+      success: true,
+      count: appointments.length,
+      data: appointments,
+      pagination: buildPaginationMetadata(total, page, limit),
+    });
   } catch (error: any) {
     console.error('getAllAppointments error:', error);
     res.status(500).json({
@@ -344,7 +354,7 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
   try {
     const { clinicId, isVerified, status } = req.body;
 
-    if (!clinicId) {
+    if (!clinicId || typeof clinicId !== 'string') {
       res.status(400).json({ success: false, message: 'clinicId is required' });
       return;
     }
@@ -352,7 +362,7 @@ export const verifyClinic = async (req: AuthRequest, res: Response): Promise<voi
     let targetStatus: 'VERIFIED' | 'SUSPENDED' | 'REJECTED' | 'PENDING';
     let targetIsVerified: boolean;
 
-    if (status && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
+    if (typeof status === 'string' && ['VERIFIED', 'SUSPENDED', 'REJECTED', 'PENDING'].includes(status.toUpperCase())) {
       targetStatus = status.toUpperCase() as any;
       targetIsVerified = targetStatus === 'VERIFIED';
     } else if (typeof isVerified === 'boolean') {
@@ -438,6 +448,22 @@ export const submitContactMessage = async (req: any, res: Response): Promise<voi
         success: false,
         message: 'Name, email, and message are required.',
       });
+      return;
+    }
+
+    if ([fullName, email, message].some((v) => typeof v !== 'string') || (subject != null && typeof subject !== 'string')) {
+      res.status(400).json({ success: false, message: 'Name, email, subject and message must be text.' });
+      return;
+    }
+    const tooLong = findTooLong({
+      fullName: [fullName, LIMITS.name],
+      email: [email, LIMITS.email],
+      phone: [phone == null ? phone : String(phone), LIMITS.phone],
+      subject: [subject, LIMITS.subject],
+      message: [message, LIMITS.message],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
       return;
     }
 

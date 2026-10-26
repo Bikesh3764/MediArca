@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
+import { findTooLong, LIMITS } from '../../utils/inputLimits';
 import { AuthRequest, getJwtSecret } from '../../middleware/authMiddleware';
 import crypto from 'crypto';
 import { parseDoctorSlots, getLocalDateString, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate } from '../../utils/scheduleUtils';
@@ -357,6 +358,16 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       return;
     }
 
+    const tooLong = findTooLong({
+      fullName: [typeof fullName === 'string' ? fullName : String(fullName), LIMITS.name],
+      email: [typeof email === 'string' ? email : String(email), LIMITS.email],
+      password: [password, LIMITS.password],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
+      return;
+    }
+
     let formattedPhone: string | null = null;
     if (phone && String(phone).trim() !== '') {
       if (!isValidIndianPhone(String(phone))) {
@@ -388,6 +399,15 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
 
     if (existingUser && existingRecProfile?.status !== 'REJECTED') {
       res.status(409).json({ success: false, message: 'A receptionist account with this email already exists' });
+      return;
+    }
+
+    // Re-applying after a rejection must not let a stranger replace that person's password
+    if (existingUser && !(await bcrypt.compare(String(password), existingUser.passwordHash))) {
+      res.status(409).json({
+        success: false,
+        message: 'This email applied before. Use the same password to apply again, or reset it from the sign-in page.',
+      });
       return;
     }
 

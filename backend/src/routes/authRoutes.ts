@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, updateProfile, googleAuth, uploadAvatar, verifyEmailOtp, resendEmailOtp } from '../controllers/authController';
+import { register, login, getMe, updateProfile, googleAuth, uploadAvatar, verifyEmailOtp, resendEmailOtp, requestPasswordReset, resetPasswordWithCode, changeOwnPassword } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
 import { blockDemoAccountChanges } from '../utils/demoAccounts';
@@ -11,6 +11,9 @@ router.post('/login', login);
 router.post('/verify-otp', verifyEmailOtp);
 router.post('/resend-otp', resendEmailOtp);
 router.post('/google', googleAuth);
+router.post('/forgot-password', requestPasswordReset);
+router.post('/reset-password', resetPasswordWithCode);
+router.put('/change-password', authenticate, blockDemoAccountChanges, changeOwnPassword);
 router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, blockDemoAccountChanges, updateProfile);
 

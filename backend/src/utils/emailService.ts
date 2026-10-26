@@ -70,9 +70,11 @@ export async function getTransporter(): Promise<{ transporter: Transporter | nul
 export async function sendVerificationOtpEmail(
   toEmail: string,
   otp: string,
-  recipientName?: string
+  recipientName?: string,
+  purpose: 'verify' | 'reset' = 'verify'
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    const isReset = purpose === 'reset';
     const rawName = recipientName ? recipientName.trim() : 'Valued Member';
     const greetingName = rawName
       .replace(/&/g, '&amp;')
@@ -177,10 +179,10 @@ export async function sendVerificationOtpEmail(
       <div class="logo-container">
         <h1 class="brand-title">MediArca</h1>
       </div>
-      <h2 class="headline">Verify your email address</h2>
+      <h2 class="headline">${isReset ? 'Reset your password' : 'Verify your email address'}</h2>
       <p class="subtext">
         Hello <strong>${greetingName}</strong>,<br>
-        Please use the 6-digit verification code below to verify your MediArca account.
+        ${isReset ? 'Use this 6-digit code to set a new MediArca password.' : 'Please use the 6-digit verification code below to verify your MediArca account.'}
       </p>
 
       <div class="otp-box">
@@ -195,7 +197,7 @@ export async function sendVerificationOtpEmail(
       <div class="divider"></div>
 
       <p class="footer">
-        If you didn't create an account on MediArca, you can safely ignore this email.<br>
+        ${isReset ? "If you didn't ask to reset your password, ignore this email. Your password stays the same." : "If you didn't create an account on MediArca, you can safely ignore this email."}<br>
         &copy; ${new Date().getFullYear()} MediArca Clinical Platform. All rights reserved.
       </p>
     </div>
@@ -204,7 +206,7 @@ export async function sendVerificationOtpEmail(
 </html>
     `;
 
-    const textContent = `Hello ${greetingName},\n\nYour MediArca 6-digit verification code is: ${otp}\n\nThis code is valid for 10 minutes.\nIf you did not request this, please ignore this email.\n\nMediArca Clinical Platform`;
+    const textContent = `Hello ${greetingName},\n\nYour MediArca ${isReset ? "password reset" : "verification"} code is: ${otp}\n\nThis code is valid for 10 minutes.\nIf you did not request this, please ignore this email.\n\nMediArca Clinical Platform`;
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[emailService] Dispatching email verification OTP to ${toEmail}`);
@@ -221,7 +223,7 @@ export async function sendVerificationOtpEmail(
     const sendPromise = transporter.sendMail({
       from,
       to: toEmail,
-      subject: `${otp} is your MediArca verification code`,
+      subject: isReset ? `${otp} is your MediArca password reset code` : `${otp} is your MediArca verification code`,
       text: textContent,
       html: htmlContent,
     });

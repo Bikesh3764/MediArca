@@ -1,7 +1,8 @@
 import { safeFetch } from '../safeFetch';
+import { safeStorage } from '../../utils/safeStorage';
 
 export const getHeaders = (isMultipart = false) => {
-  const token = localStorage.getItem('mediarca_token');
+  const token = safeStorage.getItem('mediarca_token');
   const headers: Record<string, string> = {};
   if (!isMultipart) {
     headers['Content-Type'] = 'application/json';

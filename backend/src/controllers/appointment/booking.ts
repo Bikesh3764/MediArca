@@ -8,6 +8,12 @@ import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../.
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { resolveReceptionistContact } from './helpers';
+import { pickWalkinAccount } from '../../utils/walkinMatch';
+import { findTooLong, LIMITS } from '../../utils/inputLimits';
+import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE } from '../../utils/scheduleUtils';
+
+/** Active bookings (self plus family) one patient account may hold on a single date. */
+export const MAX_ACTIVE_BOOKINGS_PER_DAY = 4;
 
 export const bookAppointment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -71,6 +77,42 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         message: 'Cannot book appointments for past dates.',
       });
       return;
+    }
+
+    if (!isWithinBookingWindow(appointmentDate, now)) {
+      res.status(400).json({ success: false, message: BOOKING_WINDOW_MESSAGE });
+      return;
+    }
+
+    const tooLong = findTooLong({
+      reasonForVisit: [reasonForVisit, LIMITS.reason],
+      symptoms: [symptoms, LIMITS.symptoms],
+      patientName: [patientName, LIMITS.name],
+      patientPhone: [patientPhone, LIMITS.phone],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
+      return;
+    }
+
+    // One account can hold a few active bookings per day (self plus family), not unlimited requests
+    if (req.user.role === 'PATIENT' && typeof (prisma.appointment as any)?.count === 'function') {
+      const activeThatDay = Number(
+        (await prisma.appointment.count({
+          where: {
+            patient: { userId: req.user.id },
+            appointmentDate,
+            status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+          },
+        })) || 0
+      );
+      if (activeThatDay >= MAX_ACTIVE_BOOKINGS_PER_DAY) {
+        res.status(429).json({
+          success: false,
+          message: `You already have ${MAX_ACTIVE_BOOKINGS_PER_DAY} bookings on this date. Cancel one to book another.`,
+        });
+        return;
+      }
     }
 
     if (isForOther && req.user.role === 'PATIENT') {
@@ -160,16 +202,14 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
             include: { patientProfile: true },
             orderBy: [{ isEmailVerified: 'desc' }, { createdAt: 'asc' }],
           });
-          patientUser =
-            candidates.find((u: any) => u.isEmailVerified && !String(u.email || '').endsWith('@mediarca.local')) ||
-            candidates.find((u: any) => !String(u.email || '').endsWith('@mediarca.local')) ||
-            candidates[0] ||
-            null;
+          // Only reuse an account whose name matches what was typed (no phone-to-name lookup)
+          patientUser = pickWalkinAccount(candidates as any[], patientName);
         } else {
-          patientUser = await prisma.user.findFirst({
+          const found = await prisma.user.findFirst({
             where: phoneWhere,
             include: { patientProfile: true },
           });
+          patientUser = pickWalkinAccount(found ? [found as any] : [], patientName);
         }
       }
       if (!patientUser) {
@@ -609,7 +649,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               },
               patient: {
                 include: {
-                  user: { select: { fullName: true, email: true, phone: true } },
+                  user: { select: { fullName: true, phone: true } },
                 },
               },
             },

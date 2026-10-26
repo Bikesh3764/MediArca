@@ -69,8 +69,17 @@ export const adminApi = {
   },
 
   async getAdminAppointments(): Promise<any[]> {
-    const res = await safeFetch(`${API_BASE_URL}/admin/appointments`, { headers: getHeaders() });
-    return handleResponse(res);
+    // The server sends 250 per page; keep going until a short page (capped at 20 pages)
+    const pageSize = 250;
+    const all: any[] = [];
+    for (let page = 1; page <= 20; page++) {
+      const res = await safeFetch(`${API_BASE_URL}/admin/appointments?page=${page}&limit=${pageSize}`, { headers: getHeaders() });
+      const rows = await handleResponse<any[]>(res);
+      const list = Array.isArray(rows) ? rows : [];
+      all.push(...list);
+      if (list.length < pageSize) break;
+    }
+    return all;
   },
 
   async submitContactMessage(data: {

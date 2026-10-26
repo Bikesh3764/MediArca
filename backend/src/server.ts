@@ -125,12 +125,17 @@ const allowedOrigins = [
   'https://mediarca.in',
   'https://www.mediarca.in',
   'https://mediarca.pages.dev',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://localhost:5000',
-  'http://localhost:8081',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:8081',
+  // Local dev servers are only trusted outside production
+  ...(isProduction
+    ? []
+    : [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:5000',
+        'http://localhost:8081',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8081',
+      ]),
 ].filter(Boolean) as string[];
 
 export const checkCorsOrigin = (
@@ -348,7 +353,7 @@ export const authRateLimiter = (
       return;
     }
 
-    const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp)|receptionists?\/apply)/i.test(
+    const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp|forgot-password|reset-password)|receptionists?\/apply)/i.test(
       req.originalUrl || req.baseUrl || req.path
     );
 
@@ -436,7 +441,8 @@ app.use(
 
 // Mount dedicated rate limiting on OTP verification & resend endpoints (FIX-005)
 app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
-app.use(['/api/auth/resend-otp'], authRateLimiter(5, 60));
+app.use(['/api/auth/resend-otp', '/api/auth/forgot-password'], authRateLimiter(5, 60));
+app.use(['/api/auth/reset-password', '/api/auth/change-password'], authRateLimiter(10, 60));
 
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
 // Public catalog paths use the in-process counter (no Redis round trip): see PUBLIC_CATALOG_LIMIT_KEYS

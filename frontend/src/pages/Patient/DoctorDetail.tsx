@@ -11,8 +11,7 @@ import {
   getTomorrowDateString,
   formatDoctorDegrees,
   getFileUrl,
-  cleanSlotName,
-} from '../../services/api';
+  cleanSlotName, getMaxBookingDateString } from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -371,6 +370,7 @@ export const DoctorDetail: React.FC = () => {
                   type="date"
                   value={selectedDate}
                   min={getLocalDateString()}
+                  max={getMaxBookingDateString()}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
                 />

@@ -1,4 +1,5 @@
 import { AvatarImage } from '../../../components/ui/AvatarImage';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import { formatClinicAddress } from '../../../utils/address';
 import React from 'react';
 import { format12Hour, getFileUrl, formatDoctorDegrees } from '../../../services/api';
@@ -97,7 +98,7 @@ export const DoctorDetailsModal: React.FC = () => {
                           </span>
                         </div>
                         {cAff.clinic?.phone && (
-                          <span className="text-[11px] text-[#86868b] font-normal">{cAff.clinic.phone}</span>
+                          <span className="text-[11px] text-[#86868b] font-normal">{formatDisplayPhone(cAff.clinic.phone)}</span>
                         )}
                       </div>
                     ))}

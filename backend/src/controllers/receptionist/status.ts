@@ -220,6 +220,10 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       );
     } else {
       updated = await prisma.$transaction(async (tx) => {
+        // Lock the row so a doctor calling this patient at the same moment can't be overwritten
+        if (typeof (tx as any).$executeRaw === 'function') {
+          await (tx as any).$executeRaw`SELECT id FROM "Appointment" WHERE id = ${appointmentId} FOR UPDATE;`;
+        }
         const current = await tx.appointment.findUnique({
           where: { id: appointmentId },
           select: { status: true, isCheckedIn: true, doctorId: true, clinicId: true, appointmentDate: true },
@@ -230,6 +234,16 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         const stateCheck = canTransition(current.status, status, req.user?.role || 'RECEPTIONIST');
         if (!stateCheck.allowed) {
           throw new Error(stateCheck.reason || `Cannot transition appointment from ${current.status} to ${status}.`);
+        }
+        // Only change it if the status is still the one we checked
+        if (typeof (tx.appointment as any).updateMany === 'function') {
+          const changed = await tx.appointment.updateMany({
+            where: { id: appointmentId, status: current.status },
+            data: updatePayload,
+          });
+          if (changed && typeof changed.count === 'number' && changed.count === 0) {
+            throw new Error('Cannot transition appointment: its status changed a moment ago. Refresh and try again.');
+          }
         }
         return await tx.appointment.update({
           where: { id: appointmentId },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { parseDoctorSlots, formatShiftOption, getLocalDateString, getTomorrowDateString } from '../../../services/api';
+import { parseDoctorSlots, formatShiftOption, getLocalDateString, getTomorrowDateString, getMaxBookingDateString } from '../../../services/api';
 import { sanitizeIndianPhone } from '../../../utils/phoneUtils';
 import { CheckCircle2, Plus, AlertCircle, X, ChevronDown } from 'lucide-react';
 import { useDoctorDashboard } from './state';
@@ -176,6 +176,7 @@ export const WalkinModal: React.FC = () => {
                   <input
                     type="date"
                     min={getLocalDateString()}
+                    max={getMaxBookingDateString()}
                     value={walkinDate}
                     onChange={(e) => setWalkinDate(e.target.value)}
                     className="flex-1 h-9 px-3 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-xs text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 cursor-pointer"

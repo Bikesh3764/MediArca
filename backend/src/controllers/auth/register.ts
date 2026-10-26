@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import prisma from '../../config/database';
+import { findTooLong, LIMITS } from '../../utils/inputLimits';
+import { hashOtp } from '../../utils/otpHash';
 import { isValidDobDate, timeToMinutes, validateDoctorNumericBounds } from '../../utils/scheduleUtils';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { sendVerificationOtpEmail } from '../../utils/emailService';
@@ -15,6 +17,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     if (!email || !password || !fullName || typeof email !== 'string' || typeof password !== 'string' || typeof fullName !== 'string') {
       res.status(400).json({ success: false, message: 'Email, password, and full name are required and must be valid strings.' });
+      return;
+    }
+
+    const tooLong = findTooLong({
+      fullName: [fullName, LIMITS.name],
+      email: [email, LIMITS.email],
+      password: [password, LIMITS.password],
+    });
+    if (tooLong) {
+      res.status(400).json({ success: false, message: tooLong });
       return;
     }
 
@@ -228,7 +240,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           fullName: normalizedRole === 'CLINIC' ? (profileData.clinicName?.trim() || cleanFullName) : cleanFullName,
           phone: targetPhone,
           role: normalizedRole,
-          emailVerificationOtp: otp,
+          emailVerificationOtp: hashOtp(otp),
           emailVerificationOtpExpiresAt: otpExpiresAt,
           ...(normalizedRole === 'PATIENT'
             ? {
@@ -340,7 +352,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           phone: formattedPhone,
           role: 'PATIENT',
           isEmailVerified: false,
-          emailVerificationOtp: otp,
+          emailVerificationOtp: hashOtp(otp),
           emailVerificationOtpExpiresAt: otpExpiresAt,
           patientProfile: {
             create: {
@@ -395,7 +407,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           phone: formattedPhone,
           role: 'DOCTOR',
           isEmailVerified: false,
-          emailVerificationOtp: otp,
+          emailVerificationOtp: hashOtp(otp),
           emailVerificationOtpExpiresAt: otpExpiresAt,
           doctorProfile: {
             create: {
@@ -424,7 +436,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           phone: formattedPhone,
           role: 'CLINIC',
           isEmailVerified: false,
-          emailVerificationOtp: otp,
+          emailVerificationOtp: hashOtp(otp),
           emailVerificationOtpExpiresAt: otpExpiresAt,
           clinicProfile: {
             create: {

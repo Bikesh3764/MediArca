@@ -12,8 +12,7 @@ import {
   formatDoctorDegrees,
   getFileUrl,
   cleanSlotName,
-  formatDisplayDate,
-} from '../../services/api';
+  formatDisplayDate, getMaxBookingDateString } from '../../services/api';
 import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
 import { formatClinicAddress } from '../../utils/address';
 import { useAuth } from '../../context/AuthContext';
@@ -637,6 +636,7 @@ export const BookAppointment: React.FC = () => {
               required
               value={appointmentDate}
               min={getLocalDateString()}
+              max={getMaxBookingDateString()}
               onChange={(e) => setAppointmentDate(e.target.value)}
               className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
             />
@@ -806,6 +806,7 @@ export const BookAppointment: React.FC = () => {
                         type="text"
                         required={bookingFor === 'other'}
                         value={patientName}
+                        maxLength={100}
                         onChange={(e) => setPatientName(e.target.value)}
                         placeholder="e.g. Rahul Ray"
                         className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
@@ -869,6 +870,7 @@ export const BookAppointment: React.FC = () => {
                 Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
               </label>
               <textarea
+                maxLength={500}
                 rows={2}
                 value={symptoms}
                 onChange={(e) => setSymptoms(e.target.value)}

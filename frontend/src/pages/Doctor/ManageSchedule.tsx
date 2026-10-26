@@ -1,4 +1,5 @@
 import { formatClinicAddress } from '../../utils/address';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -546,7 +547,7 @@ export const ManageSchedule: React.FC = () => {
                     {selectedClinic.phone && (
                       <div className="flex items-center gap-1.5 font-normal">
                         <Phone className="w-3 h-3 text-[#86868b]" />
-                        <span>{selectedClinic.phone}</span>
+                        <span>{formatDisplayPhone(selectedClinic.phone)}</span>
                       </div>
                     )}
                   </div>

@@ -197,10 +197,12 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           {/* Email / Password Form */}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
+              <label htmlFor="login-email" className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                 {activeRole === 'DOCTOR' ? 'Doctor Email' : 'Email Address'}
               </label>
               <input
+                id="login-email"
+                autoComplete="email"
                 type="email"
                 required
                 value={email}
@@ -211,11 +213,22 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="login-password" className="block text-xs font-normal text-[#1d1d1f] tracking-tight">
+                  Password
+                </label>
+                <Link
+                  to={`/forgot-password?role=${activeRole}`}
+                  state={{ email: email.trim() }}
+                  className="text-xs text-[#0066cc] hover:underline py-1"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <input
+                  id="login-password"
+                  autoComplete="current-password"
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -275,11 +288,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
 
             <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#86868b]">
               <span>Staff:</span>
-              <Link to="/receptionist/login" className="text-[#0066cc] hover:underline font-normal">
+              <Link to="/receptionist/login" className="inline-block py-2 text-[#0066cc] hover:underline font-normal">
                 Receptionist
               </Link>
               <span>•</span>
-              <Link to="/clinic/login" className="text-[#0066cc] hover:underline font-normal">
+              <Link to="/clinic/login" className="inline-block py-2 text-[#0066cc] hover:underline font-normal">
                 Clinic
               </Link>
             </div>
@@ -291,7 +304,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           Don't have an account?{' '}
           <Link
             to={activeRole === 'DOCTOR' ? '/doctor/signup' : '/patient/signup'}
-            className="text-[#0066cc] font-semibold hover:underline"
+            className="inline-block py-2 text-[#0066cc] font-semibold hover:underline"
           >
             Create {activeRole === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}
           </Link>

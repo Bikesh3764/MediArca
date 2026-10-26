@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import prisma from '../../config/database';
+import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE } from '../../utils/scheduleUtils';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, evaluateSlotStatus, getLocalDateString, getIndianTimeMinutes, timeToMinutes, minutesTo12Hour, isValidAppointmentDate, cleanSlotName, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
@@ -70,6 +71,10 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
     const istTodayStr = getLocalDateString();
     if (newDate < istTodayStr) {
       res.status(400).json({ success: false, message: 'Cannot reschedule to a past date' });
+      return;
+    }
+    if (!isWithinBookingWindow(newDate)) {
+      res.status(400).json({ success: false, message: BOOKING_WINDOW_MESSAGE });
       return;
     }
 

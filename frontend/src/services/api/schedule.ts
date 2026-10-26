@@ -297,6 +297,13 @@ export const getLocalDateString = (d: Date = new Date()): string => {
   }
 };
 
+/** Bookings open up to this many days ahead (matches the server). */
+export const MAX_BOOKING_DAYS_AHEAD = 90;
+
+/** Last date (YYYY-MM-DD, IST) that can be booked today. */
+export const getMaxBookingDateString = (now: Date = new Date()): string =>
+  getLocalDateString(new Date(now.getTime() + MAX_BOOKING_DAYS_AHEAD * 24 * 60 * 60 * 1000));
+
 export const getIndianTimeMinutes = (d: Date = new Date()): number => {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {

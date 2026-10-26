@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { API_BASE_URL } from '../services/api';
+import { safeStorage } from './safeStorage';
 
 /**
  * Live updates from the backend (Server-Sent Events over fetch, so the login
@@ -80,7 +81,7 @@ const parseBlock = (block: string) => {
 const connect = async () => {
   if (controller || typeof window === 'undefined') return;
   if (document.hidden || listenerCount() === 0) return;
-  const token = localStorage.getItem('mediarca_token');
+  const token = safeStorage.getItem('mediarca_token');
   if (!token) return;
 
   const ctrl = new AbortController();

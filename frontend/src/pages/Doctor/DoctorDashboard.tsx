@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDisplayPhone } from '../../utils/phoneUtils';
 import { getLocalDateString } from '../../services/api';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Users, Clock, CheckCircle2, RefreshCw, Building2, Plus, AlertCircle, X, Search, MapPin, Clock3, ChevronDown, Phone, FileText } from 'lucide-react';
@@ -361,7 +362,7 @@ export const DoctorDashboard: React.FC = () => {
                             {c.phone && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3" />
-                                {c.phone}
+                                {formatDisplayPhone(c.phone)}
                               </span>
                             )}
                             <span className="flex items-center gap-1">

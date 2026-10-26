@@ -1,4 +1,5 @@
 import { formatDisplayDate } from '../../../services/api';
+import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
 import { cleanSlotName } from '../../../services/api';
 import { X, Printer } from 'lucide-react';
@@ -60,7 +61,7 @@ export const BookedPassModal: React.FC = () => {
               {bookedPass.patientPhone && (
                 <div className="flex justify-between">
                   <span className="text-[#86868b]">Phone</span>
-                  <span className="font-semibold text-[#1d1d1f]">{bookedPass.patientPhone}</span>
+                  <span className="font-semibold text-[#1d1d1f]">{formatDisplayPhone(bookedPass.patientPhone)}</span>
                 </div>
               )}
               <div className="flex justify-between">

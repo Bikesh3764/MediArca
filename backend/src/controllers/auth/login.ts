@@ -3,11 +3,13 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
+import { hashOtp } from '../../utils/otpHash';
 import { getJwtSecret } from '../../middleware/authMiddleware';
 import { sendVerificationOtpEmail } from '../../utils/emailService';
 import { checkPasswordLoginLockout, recordFailedPasswordLogin, clearPasswordLoginState, SecurityStoreUnavailableError } from '../../utils/securityStore';
 import { getVerificationLockoutAsync, checkResendCooldown, recordResendAttempt } from '../../utils/otpSecurity';
 import { googleClient, sanitizeUserPayload } from './helpers';
+import { isDemoAccountEmail, isDemoLockEnabled } from '../../utils/demoAccounts';
 
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -192,6 +194,44 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
     await clearPasswordLoginState(user.email, null, clientIp);
 
+    // A public demo password must never open the admin panel on the live site
+    if (user.role === 'ADMIN' && isDemoLockEnabled() && isDemoAccountEmail(user.email)) {
+      res.status(403).json({
+        success: false,
+        code: 'DEMO_ADMIN_DISABLED',
+        message: 'The demo admin account is turned off on the live site.',
+      });
+      return;
+    }
+
+    // Suspended or rejected doctors and clinics can't sign in (same rule as Google sign-in)
+    if (user.role === 'DOCTOR' && user.doctorProfile) {
+      const st = user.doctorProfile.verificationStatus;
+      if (st === 'SUSPENDED' || st === 'REJECTED') {
+        res.status(403).json({
+          success: false,
+          message:
+            st === 'SUSPENDED'
+              ? 'Your doctor account is paused. Contact MediArca support for help.'
+              : 'Your doctor registration was not approved. Contact MediArca support for help.',
+        });
+        return;
+      }
+    }
+    if (user.role === 'CLINIC' && user.clinicProfile) {
+      const st = user.clinicProfile.verificationStatus;
+      if (st === 'SUSPENDED' || st === 'REJECTED') {
+        res.status(403).json({
+          success: false,
+          message:
+            st === 'SUSPENDED'
+              ? 'Your clinic account is paused. Contact MediArca support for help.'
+              : 'Your clinic registration was not approved. Contact MediArca support for help.',
+        });
+        return;
+      }
+    }
+
     // Check receptionist application & clinic status BEFORE email verification check (FUNC-006)
     if (user.role === 'RECEPTIONIST') {
       const recStatus = (user.receptionistProfile as any)?.status;
@@ -268,7 +308,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          emailVerificationOtp: otp,
+          emailVerificationOtp: hashOtp(otp),
           emailVerificationOtpExpiresAt: otpExpiresAt,
         },
       });

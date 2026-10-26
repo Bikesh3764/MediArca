@@ -26,6 +26,7 @@ const ConsultationView = lazy(() => import('./pages/Doctor/ConsultationView').th
 const ManageSchedule = lazy(() => import('./pages/Doctor/ManageSchedule').then(m => ({ default: m.ManageSchedule })));
 const DoctorProfile = lazy(() => import('./pages/Doctor/DoctorProfile').then(m => ({ default: m.DoctorProfile })));
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const AdminLogin = lazy(() => import('./pages/Auth/AdminLogin').then(m => ({ default: m.AdminLogin })));
 const ClinicAuth = lazy(() => import('./pages/Clinic/ClinicAuth').then(m => ({ default: m.ClinicAuth })));
 const ClinicDashboard = lazy(() => import('./pages/Clinic/ClinicDashboard').then(m => ({ default: m.ClinicDashboard })));
@@ -297,6 +298,7 @@ function AppShell() {
             {/* Admin Routes */}
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route
               path="/admin"
               element={

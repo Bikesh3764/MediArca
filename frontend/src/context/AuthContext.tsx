@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api, User } from '../services/api';
+import { safeStorage } from '../utils/safeStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -12,28 +13,41 @@ interface AuthContextType {
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Forgets the saved sign-in. Blocked browser storage must not crash sign-out. */
+const clearSavedSession = () => {
+  try {
+    localStorage.removeItem('mediarca_token');
+    localStorage.removeItem('mediarca_user');
+  } catch {
+    /* storage blocked */
+  }
+  safeStorage.removeItem('mediarca_token');
+  safeStorage.removeItem('mediarca_user');
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem('mediarca_user');
+      const saved = safeStorage.getItem('mediarca_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('mediarca_token'));
+  const [token, setToken] = useState<string | null>(() => safeStorage.getItem('mediarca_token'));
   const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
     try {
-      if (localStorage.getItem('mediarca_token')) {
+      if (safeStorage.getItem('mediarca_token')) {
         const currentUser = await api.getMe();
         setUser(currentUser);
-        localStorage.setItem('mediarca_user', JSON.stringify(currentUser));
+        safeStorage.setItem('mediarca_user', JSON.stringify(currentUser));
       } else {
         setUser(null);
       }
@@ -41,13 +55,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Session refresh warning:', error);
       // Only clear credentials if the server explicitly confirmed an invalid/expired token (401)
       if (error?.status === 401 || error?.response?.status === 401) {
-        localStorage.removeItem('mediarca_token');
-        localStorage.removeItem('mediarca_user');
+        clearSavedSession();
         setUser(null);
         setToken(null);
       } else {
         // Transient network error or 5xx: preserve cached session so user is not logged out
-        const cached = localStorage.getItem('mediarca_user');
+        const cached = safeStorage.getItem('mediarca_user');
         if (cached) {
           try {
             setUser(JSON.parse(cached));
@@ -69,8 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (credentials: { email: string; password: string; role?: string }): Promise<User> => {
     const data = await api.login(credentials);
-    localStorage.setItem('mediarca_token', data.token);
-    localStorage.setItem('mediarca_user', JSON.stringify(data.user));
+    safeStorage.setItem('mediarca_token', data.token);
+    safeStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
     return data.user;
@@ -78,8 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async (credential: string, role = 'PATIENT'): Promise<User> => {
     const data = await api.googleAuth(credential, role);
-    localStorage.setItem('mediarca_token', data.token);
-    localStorage.setItem('mediarca_user', JSON.stringify(data.user));
+    safeStorage.setItem('mediarca_token', data.token);
+    safeStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
     return data.user;
@@ -91,8 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { requiresVerification: true, email: data.email };
     }
     if (data.token && data.user) {
-      localStorage.setItem('mediarca_token', data.token);
-      localStorage.setItem('mediarca_user', JSON.stringify(data.user));
+      safeStorage.setItem('mediarca_token', data.token);
+      safeStorage.setItem('mediarca_user', JSON.stringify(data.user));
       setToken(data.token);
       setUser(data.user);
       return { user: data.user };
@@ -102,16 +115,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyOtp = async (email: string, otp: string, role?: string): Promise<User> => {
     const data = await api.verifyEmailOtp({ email, otp, ...(role ? { role } : {}) });
-    localStorage.setItem('mediarca_token', data.token);
-    localStorage.setItem('mediarca_user', JSON.stringify(data.user));
+    safeStorage.setItem('mediarca_token', data.token);
+    safeStorage.setItem('mediarca_user', JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
     return data.user;
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    const data = await api.changePassword(currentPassword, newPassword);
+    // Old tokens stop working after a password change; keep this device signed in with the new one
+    safeStorage.setItem('mediarca_token', data.token);
+    safeStorage.setItem('mediarca_user', JSON.stringify(data.user));
+    setToken(data.token);
+    setUser(data.user);
+  };
+
   const logout = () => {
-    localStorage.removeItem('mediarca_token');
-    localStorage.removeItem('mediarca_user');
+    clearSavedSession();
     setToken(null);
     setUser(null);
   };
@@ -119,14 +140,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
     try {
-      localStorage.setItem('mediarca_user', JSON.stringify(updatedUser));
+      safeStorage.setItem('mediarca_user', JSON.stringify(updatedUser));
     } catch (e) {
       console.error('Failed to persist updated user:', e);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, verifyOtp, logout, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, register, verifyOtp, logout, refreshUser, updateUser, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

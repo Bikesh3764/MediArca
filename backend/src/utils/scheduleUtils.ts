@@ -618,3 +618,15 @@ export const parseAffiliationSlots = (rawSlots: unknown): DoctorSlot[] | null =>
     return null;
   }
 };
+
+/** Bookings, walk-ins and reschedules can be made at most this many days ahead (IST). */
+export const MAX_BOOKING_DAYS_AHEAD = 90;
+
+export const getMaxBookingDateString = (now: Date = new Date()): string =>
+  getLocalDateString(new Date(now.getTime() + MAX_BOOKING_DAYS_AHEAD * 24 * 60 * 60 * 1000));
+
+/** True when the date is no later than the booking window allows. */
+export const isWithinBookingWindow = (dateStr: string, now: Date = new Date()): boolean =>
+  String(dateStr).trim() <= getMaxBookingDateString(now);
+
+export const BOOKING_WINDOW_MESSAGE = `Bookings open up to ${MAX_BOOKING_DAYS_AHEAD} days ahead. Pick an earlier date.`;

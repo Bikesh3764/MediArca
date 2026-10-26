@@ -6,6 +6,10 @@ import App from './App.tsx';
 
 import { GOOGLE_CLIENT_ID } from './config/auth';
 import { installGlobalErrorReporting } from './utils/errorReporter';
+import { redirectWwwToApex } from './utils/siteUrl';
+
+// www.mediarca.in -> mediarca.in, so sign-in isn't split across two addresses
+redirectWwwToApex();
 
 // Send uncaught browser errors to the backend log
 installGlobalErrorReporting();

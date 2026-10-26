@@ -65,8 +65,18 @@ export const DocumentTitleSync: React.FC = () => {
       title = 'Terms of Service — MediArca';
     } else if (path === '/privacy') {
       title = 'Privacy Policy — MediArca';
-    } else if (path === '/refund-policy') {
+    } else if (path === '/refund-policy' || path === '/refunds' || path === '/cancellation-policy') {
       title = 'Cancellation Policy — MediArca';
+    } else if (path === '/clinic/signup') {
+      title = 'Register Clinic — MediArca';
+    } else if (path === '/receptionist/signup') {
+      title = 'Join a Front Desk — MediArca';
+    } else if (path.startsWith('/clinic/profile')) {
+      title = 'Clinic Settings — MediArca';
+    } else if (path === '/forgot-password') {
+      title = 'Reset Password — MediArca';
+    } else if (!['/records', '/patient/records', '/vault', '/patient/vault'].includes(path)) {
+      title = 'Page Not Found — MediArca';
     }
 
     document.title = title;

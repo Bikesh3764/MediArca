@@ -22,7 +22,8 @@ import bcrypt from 'bcryptjs';
 import app from '../src/server';
 import prisma from '../src/config/database';
 import { getJwtSecret } from '../src/middleware/authMiddleware';
-import { getLocalDateString, getIndianTimeMinutes } from '../src/utils/scheduleUtils';
+import { getLocalDateString, getIndianTimeMinutes, MAX_BOOKING_DAYS_AHEAD } from '../src/utils/scheduleUtils';
+import { getCheckInWindow } from '../src/controllers/appointment/checkIn';
 
 let passed = 0;
 let failed = 0;
@@ -162,6 +163,9 @@ async function cleanup() {
   const doctors = await prisma.doctorProfile.findMany({ where: { userId: { in: ids } }, select: { id: true } });
   await prisma.appointment.deleteMany({ where: { doctorId: { in: doctors.map((d) => d.id) } } });
   await prisma.user.deleteMany({ where: { id: { in: ids } } });
+  // Walk-in records the tests created (synthetic emails, named after this run)
+  await prisma.user.deleteMany({ where: { email: { endsWith: '@mediarca.local' }, fullName: { contains: RUN } } });
+  await prisma.contactMessage.deleteMany({ where: { email: email('contact') } });
 }
 
 async function main() {
@@ -275,6 +279,176 @@ async function main() {
       .then(() => 'created')
       .catch(() => 'rejected');
     check(badStatus === 'rejected', 'Database rejects unknown appointment statuses', badStatus);
+
+    // ---- Walk-ins don't reveal who owns a phone number -----------------------
+    const strangerWalkin = await call('POST', '/api/appointments/book', doctorToken, {
+      clinicId: s.clinic.id,
+      appointmentDate: s.today,
+      slotId: 'slot_all_day',
+      patientName: `Stranger ${RUN}`,
+      patientPhone: '9800000004', // the test patient's phone
+    });
+    check(strangerWalkin.status === 201, 'Doctor can add a walk-in with any phone number', strangerWalkin.json);
+    const swData = strangerWalkin.json?.data || {};
+    check(!JSON.stringify(swData).includes(s.patientUser.email), "Walk-in reply never contains the phone owner's email", swData?.patient?.user);
+    check(swData?.patient?.user?.fullName !== s.patientUser.fullName, "Walk-in reply never shows the phone owner's name", swData?.patient?.user?.fullName);
+    const patientProfileId = (await prisma.patientProfile.findUnique({ where: { userId: s.patientUser.id } }))!.id;
+    check(swData?.patientId && swData.patientId !== patientProfileId, "A walk-in with a different name is not added to the phone owner's account", swData?.patientId);
+
+    const deskWalkin = await call('POST', '/api/receptionist/book-walkin', deskToken, {
+      doctorId: s.doctor.id,
+      clinicId: s.clinic.id,
+      slotId: 'slot_all_day',
+      patientName: `Desk Stranger ${RUN}`,
+      patientPhone: '9800000004',
+    });
+    check(deskWalkin.status === 201, 'Desk can add a walk-in with any phone number', deskWalkin.json);
+    check(deskWalkin.json?.data?.patientId !== patientProfileId, "Desk walk-in with a different name stays off the owner's account", deskWalkin.json?.data?.patientId);
+
+    // Use the name as it is now (an earlier step renamed this patient)
+    const ownerNow = await prisma.user.findUnique({ where: { id: s.patientUser.id }, select: { fullName: true } });
+    const ownerWalkin = await call('POST', '/api/receptionist/book-walkin', deskToken, {
+      doctorId: s.doctor.id,
+      clinicId: s.clinic.id,
+      slotId: 'slot_all_day',
+      patientName: ownerNow?.fullName,
+      patientPhone: '9800000004',
+    });
+    check(
+      ownerWalkin.status === 201 && ownerWalkin.json?.data?.patientId === patientProfileId,
+      "Walk-in with the same name and phone joins the patient's own account",
+      ownerWalkin.json?.data?.patientId
+    );
+    if (ownerWalkin.json?.data?.id) {
+      await prisma.appointment.update({ where: { id: ownerWalkin.json.data.id }, data: { status: 'CANCELLED' } });
+    }
+
+    // ---- Booking limits ------------------------------------------------------
+    const farDate = getLocalDateString(new Date(Date.now() + (MAX_BOOKING_DAYS_AHEAD + 30) * 864e5));
+    const tooFar = await call('POST', '/api/appointments/book', patientToken, { doctorId: s.doctor.id, clinicId: s.clinic.id, appointmentDate: farDate, slotId: 'slot_all_day' });
+    check(tooFar.status === 400, `Bookings more than ${MAX_BOOKING_DAYS_AHEAD} days ahead are refused`, tooFar.json);
+
+    const longReason = await call('POST', '/api/appointments/book', patientToken, {
+      doctorId: s.doctor.id, clinicId: s.clinic.id, appointmentDate: s.today, slotId: 'slot_all_day',
+      isForOther: true, patientName: `Long ${RUN}`, patientAge: '30', reasonForVisit: 'x'.repeat(5000),
+    });
+    check(longReason.status === 400, 'A 5,000-character reason for visit is refused', longReason.json);
+
+    const familyStatuses: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const r = await call('POST', '/api/appointments/book', patientToken, {
+        doctorId: s.doctor.id, clinicId: s.clinic.id, appointmentDate: s.today, slotId: 'slot_all_day',
+        isForOther: true, patientName: `Family ${i} ${RUN}`, patientAge: '30',
+      });
+      familyStatuses.push(r.status);
+    }
+    check(familyStatuses.slice(0, 4).every((st) => st === 201), 'A patient can book for a few family members on one day', familyStatuses);
+    check(familyStatuses[4] === 429, 'The 5th active booking on one day is refused', familyStatuses);
+    await prisma.appointment.updateMany({ where: { patientId: patientProfileId, isForOther: true, status: 'PENDING_APPROVAL' }, data: { status: 'CANCELLED' } });
+
+    const bigContact = await call('POST', '/api/contact', undefined, { fullName: 'Flow', email: email('contact'), message: 'y'.repeat(4000) });
+    check(bigContact.status === 400, 'A 4,000-character contact message is refused', bigContact.json);
+    const okContact = await call('POST', '/api/contact', undefined, { fullName: 'Flow', email: email('contact'), message: 'Hello' });
+    check(okContact.status === 201, 'A normal contact message is accepted', okContact.json);
+
+    // ---- QR check-in only near the visit -------------------------------------
+    const win = await getCheckInWindow({
+      doctorId: s.doctor.id,
+      slotId: 'evening',
+      doctor: { slots: JSON.stringify([{ id: 'evening', name: 'Evening', startTime: '18:00', endTime: '20:00', maxPatients: 10 }]) },
+    });
+    check(win?.opensAt === 15 * 60 && win?.closesAt === 20 * 60, 'QR check-in opens 3 hours before an 18:00 shift and closes at 20:00', win);
+
+    const qrBooking = await call('POST', '/api/appointments/book', patientToken, { doctorId: s.doctor.id, clinicId: s.clinic.id, appointmentDate: s.today, slotId: 'slot_all_day' });
+    const qrId: string = qrBooking.json?.data?.id;
+    await call('POST', `/api/receptionist/appointments/${qrId}/approve`, deskToken, { paymentStatus: 'PAID' });
+    const qrWrong = await call('POST', '/api/appointments/check-in', patientToken, { clinicId: s.clinic.id, code: '000000' });
+    check(qrWrong.status === 403, 'Scanning with a wrong clinic code is refused', qrWrong.json);
+    const qrOk = await call('POST', '/api/appointments/check-in', patientToken, { clinicId: s.clinic.id, code: '482913', appointmentId: qrId });
+    check(qrOk.status === 200, 'Scanning the clinic QR during the shift checks the patient in', qrOk.json);
+
+    // ---- Bad input is a clear 400, not a crash -------------------------------
+    const adminToken = sign({ id: `admin-${RUN}`, email: email('admin'), role: 'ADMIN', fullName: 'Flow Admin' });
+    const badStatusType = await call('POST', '/api/admin/verify-doctor', adminToken, { doctorId: s.doctor.id, status: 123 });
+    check(badStatusType.status === 400, 'Admin verify with a non-text status returns 400', badStatusType.status);
+    const badNotes = await call('PUT', '/api/consultations/notes', doctorToken, { appointmentId: qrId, diagnosis: 5 });
+    check(badNotes.status === 400, 'Doctor notes with a non-text diagnosis return 400', badNotes.status);
+
+    const pageOne = await call('GET', '/api/admin/appointments?page=1&limit=1', adminToken);
+    check(
+      pageOne.status === 200 && pageOne.json?.data?.length === 1 && pageOne.json?.pagination?.total >= 1,
+      'Admin bookings list is paged (no silent 250 cap)',
+      pageOne.json?.pagination
+    );
+
+    // ---- Sign-in rules -------------------------------------------------------
+    await prisma.doctorProfile.update({ where: { id: s.doctor.id }, data: { verificationStatus: 'SUSPENDED', isVerified: false } });
+    const suspendedLogin = await call('POST', '/api/auth/login', undefined, { email: s.doctorUser.email, password: 'Temp-Pass-123', role: 'DOCTOR' });
+    check(suspendedLogin.status === 403, 'A suspended doctor cannot sign in with a password', suspendedLogin.json);
+    await prisma.doctorProfile.update({ where: { id: s.doctor.id }, data: { verificationStatus: 'VERIFIED', isVerified: true } });
+
+    const demoAdminEmail = email('demoadmin');
+    await prisma.user.create({
+      data: { email: demoAdminEmail, passwordHash: await bcrypt.hash('Demo-Admin-123', 4), fullName: `Demo Admin ${RUN}`, role: 'ADMIN', isEmailVerified: true },
+    });
+    const savedDemoList = process.env.DEMO_ACCOUNT_EMAILS;
+    process.env.DEMO_ACCOUNT_EMAILS = `john.doe@gmail.com,${demoAdminEmail}`;
+    const demoAdminLogin = await call('POST', '/api/auth/login', undefined, { email: demoAdminEmail, password: 'Demo-Admin-123', role: 'ADMIN' });
+    if (savedDemoList === undefined) delete process.env.DEMO_ACCOUNT_EMAILS;
+    else process.env.DEMO_ACCOUNT_EMAILS = savedDemoList;
+    check(demoAdminLogin.status === 403 && demoAdminLogin.json?.code === 'DEMO_ADMIN_DISABLED', 'The public demo admin cannot open the admin panel', demoAdminLogin.json);
+
+    const recRejectedEmail = email('rejected');
+    const rejUser = await prisma.user.create({
+      data: { email: recRejectedEmail, passwordHash: await bcrypt.hash('Their-Own-Pass-1', 4), fullName: `Rejected ${RUN}`, role: 'RECEPTIONIST' },
+    });
+    await prisma.receptionistProfile.create({ data: { userId: rejUser.id, clinicId: s.clinic.id, status: 'REJECTED' } });
+    const hijack = await call('POST', '/api/receptionists/apply', undefined, { fullName: 'Someone Else', email: recRejectedEmail, password: 'Stranger-Pass-9', clinicId: s.clinic.id });
+    check(hijack.status === 409, "A stranger cannot re-apply with a rejected receptionist's email and replace the password", hijack.json);
+    const stillOwn = await prisma.user.findUnique({ where: { id: rejUser.id } });
+    check(Boolean(stillOwn && (await bcrypt.compare('Their-Own-Pass-1', stillOwn.passwordHash))), 'The rejected receptionist keeps their password', null);
+
+    // ---- Forgot and change password -----------------------------------------
+    const unknownReset = await call('POST', '/api/auth/forgot-password', undefined, { email: email('nobody'), role: 'PATIENT' });
+    check(unknownReset.status === 200, 'Forgot password gives the same reply for unknown emails', unknownReset.json);
+    const resetReq = await call('POST', '/api/auth/forgot-password', undefined, { email: s.patientUser.email, role: 'PATIENT' });
+    const devOtp: string = resetReq.json?.data?.devOtp || '';
+    check(resetReq.status === 200 && /^\d{6}$/.test(devOtp), 'Forgot password sends a 6-digit code', resetReq.json);
+    const stored = await prisma.user.findUnique({ where: { id: s.patientUser.id }, select: { emailVerificationOtp: true } });
+    check(
+      Boolean(stored?.emailVerificationOtp?.startsWith('h1:')) && !stored?.emailVerificationOtp?.includes(devOtp),
+      'Email codes are stored hashed, not as plain digits',
+      null
+    );
+    const wrongCode = await call('POST', '/api/auth/reset-password', undefined, {
+      email: s.patientUser.email, role: 'PATIENT', otp: devOtp === '111111' ? '222222' : '111111', newPassword: 'Brand-New-Pass-1',
+    });
+    check(wrongCode.status === 400, 'A wrong reset code is refused', wrongCode.json);
+    await wait(1100); // tokens record whole seconds; make sure the old one is older than the reset
+    const reset = await call('POST', '/api/auth/reset-password', undefined, { email: s.patientUser.email, role: 'PATIENT', otp: devOtp, newPassword: 'Brand-New-Pass-1' });
+    check(reset.status === 200, 'The right code sets a new password', reset.json);
+    const oldPatientSession = await call('GET', '/api/auth/me', patientToken);
+    check(oldPatientSession.status === 401, 'Resetting the password signs out old sessions', oldPatientSession.status);
+    const newLogin = await call('POST', '/api/auth/login', undefined, { email: s.patientUser.email, password: 'Brand-New-Pass-1', role: 'PATIENT' });
+    check(newLogin.status === 200 && newLogin.json?.data?.token, 'Patient signs in with the new password', newLogin.json?.message);
+    const reuse = await call('POST', '/api/auth/reset-password', undefined, { email: s.patientUser.email, role: 'PATIENT', otp: devOtp, newPassword: 'Another-Pass-22' });
+    check(reuse.status === 400, 'A reset code works only once', reuse.json);
+
+    const newToken: string = newLogin.json?.data?.token;
+    await wait(1100);
+    const badCurrent = await call('PUT', '/api/auth/change-password', newToken, { currentPassword: 'wrong-one', newPassword: 'Changed-Pass-33' });
+    check(badCurrent.status === 400, 'Change password needs the current password', badCurrent.json);
+    const changedOwn = await call('PUT', '/api/auth/change-password', newToken, { currentPassword: 'Brand-New-Pass-1', newPassword: 'Changed-Pass-33' });
+    check(changedOwn.status === 200 && changedOwn.json?.data?.token, 'Signed-in patient can change their password', changedOwn.json);
+    const afterChangeOld = await call('GET', '/api/auth/me', newToken);
+    const afterChangeNew = await call('GET', '/api/auth/me', changedOwn.json?.data?.token);
+    check(
+      afterChangeOld.status === 401 && afterChangeNew.status === 200,
+      'Changing the password keeps this device signed in and signs out the others',
+      [afterChangeOld.status, afterChangeNew.status]
+    );
+    const demoChange = await call('PUT', '/api/auth/change-password', demoToken, { currentPassword: 'x', newPassword: 'Whatever-123' });
+    check(demoChange.status === 403, 'Demo accounts cannot change their password', demoChange.status);
   } finally {
     await cleanup().catch((e) => console.error('cleanup failed', e));
     server.close();

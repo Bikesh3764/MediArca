@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
 import { SubNav } from '../../components/layout/SubNav';
 import { useAuth } from '../../context/AuthContext';
 import { api, getLocalDateString } from '../../services/api';
@@ -254,6 +255,8 @@ export const PatientProfile: React.FC = () => {
             </button>
           </div>
         </form>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );
