@@ -105,8 +105,8 @@ class SecurityStore {
   private logFallbackNotice(): void {
     if (!this.hasLoggedFallbackNotice && !this.enforceDistributed) {
       this.hasLoggedFallbackNotice = true;
-      console.warn(
-        '[SecurityStore] NOTICE: REDIS_URL is not configured. Running in In-Memory fallback mode for development/test. Multi-instance production deployments require REDIS_URL.'
+      console.log(
+        '[SecurityStore] Using in-memory storage (no REDIS_URL). Fine for a single server.'
       );
     }
   }

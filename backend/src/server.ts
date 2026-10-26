@@ -98,10 +98,12 @@ if (isProduction) {
   const redisUrl = process.env.REDIS_URL;
   const isRedisRequired = process.env.REQUIRE_REDIS !== 'false' && process.env.STRICT_DISTRIBUTED_SECURITY !== 'false';
   if (!redisUrl || !redisUrl.trim()) {
-    console.error('FATAL CONFIGURATION ERROR: In production, REDIS_URL is strictly required for distributed rate-limiting, OTP abuse protection, and account lockout security controls across instances.');
     if (isRedisRequired) {
+      console.error('FATAL CONFIGURATION ERROR: In production, REDIS_URL is strictly required for distributed rate-limiting, OTP abuse protection, and account lockout security controls across instances.');
       process.exit(1);
     }
+    // REQUIRE_REDIS=false: fine for a single server, limits are kept in memory
+    console.log('[Config] Redis is off (REQUIRE_REDIS=false). Rate limits and lockouts are kept in memory, which is correct for one server. Add REDIS_URL before running more than one.');
   }
 }
 
