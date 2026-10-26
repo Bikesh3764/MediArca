@@ -366,8 +366,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <main className="flex-1 md:pl-64 flex flex-col min-w-0">
         {/* Page Top Header with Greeting & Action Slot */}
         <div className="bg-white border-b border-[#e5e5ea] px-4 py-4 sm:px-8 sm:py-5">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-            <div>
+          {/* Phones: title and bell share the first row, header buttons get a row of their own */}
+          <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 sm:gap-2.5">
+            <div className="min-w-0 flex-1 sm:mr-1.5">
               <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-tight text-[#1d1d1f] leading-snug">
                 {title || defaultGreeting}
               </h1>
@@ -377,9 +378,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
               {/* Notifications Popover */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen((prev) => !prev)}
@@ -398,13 +398,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {notificationsOpen && <NotificationPanel onClose={closeNotifications} />}
               </div>
 
-              {headerAction}
-            </div>
+              {headerAction && (
+                <div className="w-full sm:w-auto flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                  {headerAction}
+                </div>
+              )}
           </div>
         </div>
 
         {/* Inner Page View Content */}
-        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 pb-safe">
+        <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 pb-24 md:pb-8 pb-safe pb-tabbar">
           {children}
         </div>
       </main>

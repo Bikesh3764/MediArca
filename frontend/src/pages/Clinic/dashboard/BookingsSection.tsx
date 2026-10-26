@@ -12,7 +12,7 @@ export const BookingsSection: React.FC = () => {
     getApptStatusBadge,
   } = useClinicDashboard();
   return (
-<div id="appointments-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-6 sm:p-8 ">
+<div id="appointments-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-8">
           <div className="pb-5 border-b border-[#f0f0f2] mb-6">
             <h2 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
               Recent bookings

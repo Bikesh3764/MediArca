@@ -726,7 +726,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                           {/* Doctor Photo Banner */}
                           <div
                             onClick={() => navigate(getDoctorDetailPath(doctor.id) + `?clinicId=${selectedClinic.id}`)}
-                            className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                            className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                           >
                             {doctor.user?.avatarUrl ? (
                               <img
@@ -855,7 +855,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                         className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                       >
                         {/* Top Facility Photography Banner */}
-                        <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
+                        <div className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
                           <img
                             src={clinic.avatarUrl ? getFileUrl(clinic.avatarUrl) : clinicLobbyBg}
                             alt={clinic.clinicName}
@@ -1248,7 +1248,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         {/* RIGHT MAIN AREA: Results Header + Doctor Cards Grid */}
         <div className="flex-1 w-full min-w-0">
           {/* Open Apple Catalog Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-6 border-b border-[#e5e5ea]">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-6 border-b border-[#e5e5ea]">
             <div className="flex items-baseline gap-2">
               <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
                 {selectedSpecialty === 'All' ? 'Specialists' : selectedSpecialty}
@@ -1395,7 +1395,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                     <div
                       onClick={() => navigate(getDoctorDetailPath(doctor.id))}
-                      className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
+                      className="relative w-full aspect-[2/1] sm:aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden cursor-pointer flex items-center justify-center"
                     >
                       {doctor.user?.avatarUrl ? (
                         <img

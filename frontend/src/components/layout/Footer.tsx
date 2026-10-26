@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-[#f5f5f7] border-t border-[#e5e5ea] text-[#1d1d1f] mt-auto select-none">
+    <footer className="bg-[#f5f5f7] border-t border-[#e5e5ea] text-[#1d1d1f] mt-auto select-none pb-tabbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-10">
         {/* Brand on the left, three even link columns on the right */}
         <div className="flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16">

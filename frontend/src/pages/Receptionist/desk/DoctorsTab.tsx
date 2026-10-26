@@ -40,7 +40,7 @@ export const DoctorsTab: React.FC = () => {
                   {linkedDoctors.map((doc) => (
                     <div
                       key={doc.doctorId}
-                      className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4"
+                      className="p-4 sm:p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4"
                     >
                       <div className="flex items-center gap-3.5">
                         <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden shrink-0">
@@ -53,8 +53,8 @@ export const DoctorsTab: React.FC = () => {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight leading-snug truncate">
+                          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                            <h4 className="font-semibold text-base text-[#1d1d1f] tracking-tight leading-snug truncate max-w-full">
                               {cleanDoctorName(doc.fullName)}
                             </h4>
                             {doc.isOnLeaveToday ? (

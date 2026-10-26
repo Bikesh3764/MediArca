@@ -479,14 +479,14 @@ export const QueueTab: React.FC = () => {
                       return (
                         <div
                           key={appt.id}
-                          className={`p-4 sm:px-5 sm:py-4 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 ${
+                          className={`px-3 py-3.5 sm:px-5 sm:py-4 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-3.5 ${
                             isCancelledOrExpired ? 'bg-[#fafafc]/60 opacity-75' : 'hover:bg-[#fafafc]'
                           }`}
                         >
                           {/* Left: Token + Patient Details */}
-                          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                          <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
                             <div
-                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-semibold text-[15px] shrink-0 transition-all ${
+                              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center font-semibold text-[15px] shrink-0 transition-all ${
                                 appt.status === 'IN_CONSULTATION'
                                   ? 'bg-[#1d1d1f] text-white '
                                   : appt.status === 'COMPLETED'
@@ -508,14 +508,14 @@ export const QueueTab: React.FC = () => {
                                 >
                                   {appt.patientName}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                                   {cleanShiftDisplayName(appt.checkingWindow)}
                                 </span>
                                 {(() => {
                                   const doc = linkedDoctors.find((d) => d.doctorId === (appt.doctorId || selectedDoctorId));
                                   if (!doc?.fullName) return null;
                                   return (
-                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
                                       {cleanDoctorName(doc.fullName)}
                                     </span>
                                   );
@@ -541,11 +541,11 @@ export const QueueTab: React.FC = () => {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2.5 text-xs text-[#86868b] mt-1 flex-wrap">
+                              <div className="flex items-center gap-x-2.5 gap-y-0.5 text-xs text-[#86868b] mt-1 flex-wrap">
                                 {appt.patientPhone && <span>{formatDisplayPhone(appt.patientPhone)}</span>}
                                 {appt.estimatedTime && (
                                   <>
-                                    <span>•</span>
+                                    {appt.patientPhone && <span aria-hidden="true">•</span>}
                                     <span>
                                       Est. <span className="text-[#1d1d1f] font-normal">{appt.estimatedTime}</span>
                                     </span>
@@ -556,8 +556,8 @@ export const QueueTab: React.FC = () => {
                                   if (!cleanReason) return null;
                                   return (
                                     <>
-                                      <span>•</span>
-                                      <span className="truncate max-w-[220px]">{cleanReason}</span>
+                                      <span aria-hidden="true" className="hidden sm:inline">•</span>
+                                      <span className="basis-full sm:basis-auto truncate sm:max-w-[220px]">{cleanReason}</span>
                                     </>
                                   );
                                 })()}
@@ -566,14 +566,14 @@ export const QueueTab: React.FC = () => {
                           </div>
 
                           {/* Right: Arrival Toggle + Queue Actions */}
-                          <div className="flex items-center justify-between sm:justify-end gap-2 flex-wrap pt-2 lg:pt-0 border-t lg:border-t-0 border-[#f0f0f2]">
+                          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-wrap pt-2.5 lg:pt-0 border-t lg:border-t-0 border-[#f0f0f2]">
                             {/* Arrival Check-In Pill */}
                             {canMarkArrival && (
                               <button
                                 type="button"
                                 disabled={togglingCheckinId === appt.id}
                                 onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                                className={`h-8 px-3 rounded-full text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                className={`h-8 px-2.5 sm:px-3 rounded-full text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                                   appt.isCheckedIn
                                     ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
                                     : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
@@ -595,7 +595,7 @@ export const QueueTab: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                  className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-[0.98] cursor-pointer"
+                                  className="h-8 px-3 sm:px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-[0.98] cursor-pointer"
                                 >
                                   Call In
                                 </button>
@@ -634,7 +634,7 @@ export const QueueTab: React.FC = () => {
                                     setRescheduleSlotId(appt.slotId || '');
                                     setRescheduleError(null);
                                   }}
-                                  className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
+                                  className="h-8 px-2.5 sm:px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
                                   title="Move to another date"
                                 >
                                   Move
@@ -646,7 +646,7 @@ export const QueueTab: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="h-8 px-3 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
+                                  className="h-8 px-2.5 sm:px-3 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
                                 >
                                   Cancel
                                 </button>

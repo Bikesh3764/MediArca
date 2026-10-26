@@ -115,7 +115,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
 
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex flex-col justify-center py-8 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
+    <div className="sm:min-h-screen bg-[#f5f5f7] flex flex-col sm:justify-center py-6 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
         <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
           {/* Brand & Header */}

@@ -112,7 +112,7 @@ export const ReceptionistDashboard: React.FC = () => {
         )}
 
         {/* Primary Workspace Container */}
-        <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-7 ">
+        <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-7">
           {/* TAB 1: LIVE QUEUE (Primary Front Desk View) */}
           {activeTab === 'queue' && (
             <QueueTab />

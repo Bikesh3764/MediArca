@@ -90,6 +90,14 @@
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 
+/* Phones: keep the last content clear of the fixed bottom tab bar (MobileTabBar, hidden from md up).
+   Defined after .pb-safe so it wins when both are on one element. */
+@media (max-width: 767px) {
+  .pb-tabbar {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
 .pt-safe {
   padding-top: max(env(safe-area-inset-top), 1rem);
 }

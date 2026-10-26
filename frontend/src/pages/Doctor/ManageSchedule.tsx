@@ -492,7 +492,7 @@ export const ManageSchedule: React.FC = () => {
               </div>
             )}
 
-            <UtilityCard className="p-5 sm:p-7 space-y-6">
+            <UtilityCard className="p-4 sm:p-7 space-y-6">
               {successMsg && (
                 <div className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs flex items-center gap-2.5 animate-fadeIn">
                   <CheckCircle2 className="w-4 h-4 text-[#0066cc] flex-shrink-0" />
@@ -683,7 +683,7 @@ export const ManageSchedule: React.FC = () => {
                       </div>
 
                       {/* 4 Interactive Inputs */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                             Start
