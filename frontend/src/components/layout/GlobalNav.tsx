@@ -5,13 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../ui/BrandLogo';
 import {
   LogOut,
-  ShieldCheck,
-  Stethoscope,
   Menu,
   X,
-  Calendar,
-  Building2,
-  Users,
   Bell,
   ChevronDown,
   Info,
@@ -98,7 +93,7 @@ export const GlobalNav: React.FC = () => {
   };
 
   const getNavLinkClass = (active: boolean) =>
-    `px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 cursor-pointer ${
+    `h-9 px-4 rounded-full transition-colors duration-200 text-xs flex items-center gap-1 cursor-pointer whitespace-nowrap ${
       active
         ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
         : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.03] font-normal'
@@ -122,7 +117,7 @@ export const GlobalNav: React.FC = () => {
         </Link>
 
         {/* Center Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-1 text-[#86868b]">
+        <nav className="hidden md:flex items-center gap-0.5 text-[#86868b]">
           <Link
             to="/"
             className={getNavLinkClass(isActive('/'))}
@@ -136,7 +131,7 @@ export const GlobalNav: React.FC = () => {
                 to="/doctors"
                 className={getNavLinkClass(isActive('/doctors') && !location.search.includes('tab=clinics'))}
               >
-                Find Doctors
+                Doctors
               </Link>
               <Link
                 to="/doctors?tab=clinics"
@@ -153,7 +148,6 @@ export const GlobalNav: React.FC = () => {
                 to="/patient/appointments"
                 className={getNavLinkClass(isActive('/patient/appointments'))}
               >
-                <Calendar className="w-3.5 h-3.5 text-current opacity-80" />
                 Appointments
               </Link>
               <Link
@@ -171,7 +165,6 @@ export const GlobalNav: React.FC = () => {
                 to="/doctor/dashboard"
                 className={getNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
               >
-                <Stethoscope className="w-3.5 h-3.5 text-current opacity-80" />
                 Queue
               </Link>
               <Link
@@ -194,7 +187,6 @@ export const GlobalNav: React.FC = () => {
               to="/admin"
               className={getNavLinkClass(isActive('/admin'))}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-current opacity-80" />
               Admin
             </Link>
           )}
@@ -204,7 +196,6 @@ export const GlobalNav: React.FC = () => {
               to="/clinic/dashboard"
               className={getNavLinkClass(isActive('/clinic/dashboard'))}
             >
-              <Building2 className="w-3.5 h-3.5 text-current opacity-80" />
               Dashboard
             </Link>
           )}
@@ -214,7 +205,6 @@ export const GlobalNav: React.FC = () => {
               to="/receptionist/dashboard"
               className={getNavLinkClass(isActive('/receptionist/dashboard'))}
             >
-              <Users className="w-3.5 h-3.5 text-current opacity-80" />
               Front Desk
             </Link>
           )}
@@ -314,7 +304,7 @@ export const GlobalNav: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="relative p-2 rounded-full text-[#1d1d1f] hover:bg-black/[0.04] transition-all active:scale-95"
+                  className="relative w-9 h-9 flex items-center justify-center rounded-full text-[#1d1d1f] hover:bg-black/[0.04] transition-all active:scale-95"
                   title="Notifications"
                   aria-label="Notifications"
                 >
@@ -343,7 +333,7 @@ export const GlobalNav: React.FC = () => {
                     ? '/receptionist/dashboard'
                     : '/admin'
                 }
-                className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] transition-all hover:border-[#d2d2d7]"
+                className="flex items-center gap-2 h-9 pl-1.5 pr-3.5 rounded-full bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] transition-all hover:border-[#d2d2d7]"
                 title="Profile"
               >
                 <div className="w-6 h-6 rounded-full bg-[#0066cc] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden flex-shrink-0">
@@ -359,7 +349,7 @@ export const GlobalNav: React.FC = () => {
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-[#86868b] hover:text-danger transition-colors p-1.5 rounded-full hover:bg-danger-soft/80 active:scale-95"
+                className="text-[#86868b] hover:text-danger transition-colors w-9 h-9 flex items-center justify-center rounded-full hover:bg-danger-soft/80 active:scale-95"
                 title="Sign out"
               >
                 <LogOut className="w-4 h-4" />
@@ -455,7 +445,7 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/doctors') && !location.search.includes('tab=clinics'))}
                 >
-                  Find Doctors
+                  Doctors
                 </Link>
                 <Link
                   to="/doctors?tab=clinics"
@@ -476,7 +466,6 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/patient/appointments'))}
                 >
-                  <Calendar className="w-4 h-4 text-current opacity-80" />
                   Appointments
                 </Link>
                 <Link
@@ -496,7 +485,6 @@ export const GlobalNav: React.FC = () => {
                   onClick={closeMenu}
                   className={getMobileNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
                 >
-                  <Stethoscope className="w-4 h-4 text-current opacity-80" />
                   Queue
                 </Link>
                 <Link
@@ -522,7 +510,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/admin'))}
               >
-                <ShieldCheck className="w-4 h-4 text-current opacity-80" />
                 Admin
               </Link>
             )}
@@ -533,7 +520,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/clinic/dashboard'))}
               >
-                <Building2 className="w-4 h-4 text-current opacity-80" />
                 Dashboard
               </Link>
             )}
@@ -544,7 +530,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/receptionist/dashboard'))}
               >
-                <Users className="w-4 h-4 text-current opacity-80" />
                 Front Desk
               </Link>
             )}
@@ -559,7 +544,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/about'))}
               >
-                <Info className="w-4 h-4 text-current opacity-80" />
                 About
               </Link>
               <Link
@@ -567,7 +551,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/how-it-works'))}
               >
-                <HelpCircle className="w-4 h-4 text-current opacity-80" />
                 How It Works
               </Link>
               <Link
@@ -575,7 +558,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/faq'))}
               >
-                <FileQuestion className="w-4 h-4 text-current opacity-80" />
                 FAQ
               </Link>
               <Link
@@ -583,7 +565,6 @@ export const GlobalNav: React.FC = () => {
                 onClick={closeMenu}
                 className={getMobileNavLinkClass(isActive('/contact'))}
               >
-                <Mail className="w-4 h-4 text-current opacity-80" />
                 Contact
               </Link>
             </div>

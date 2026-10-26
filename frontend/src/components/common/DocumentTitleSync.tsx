@@ -12,7 +12,7 @@ export const DocumentTitleSync: React.FC = () => {
     if (path === '/') {
       title = 'MediArca — Book a Doctor, Skip the Wait';
     } else if (path === '/doctors' || path === '/patient/doctors') {
-      title = 'Find Doctors — MediArca';
+      title = 'Doctors — MediArca';
     } else if (path.startsWith('/book/') || path.startsWith('/patient/book/')) {
       title = 'Book Appointment — MediArca';
     } else if (path.startsWith('/doctor/dashboard')) {
