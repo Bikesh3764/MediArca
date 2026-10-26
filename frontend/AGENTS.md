@@ -87,3 +87,11 @@ npm test
 # Compile TypeScript and create production bundle with Vite
 npm run build
 ```
+
+### Cloudflare Pages (mediarca.in) — manual upload after frontend changes
+GitHub Pages deploys itself from `main`; Cloudflare does not. From `frontend/` in Git Bash:
+```bash
+MSYS_NO_PATHCONV=1 VITE_BASE=/ VITE_API_URL=https://mediarca-api-sg.onrender.com/api npm run build
+npx wrangler@4 pages deploy dist --project-name mediarca --branch main
+```
+`MSYS_NO_PATHCONV=1` is required: without it Git Bash turns `VITE_BASE=/` into `C:/Program Files/Git/` and the live site goes blank (happened once on 2026-10-26, fixed within minutes). Check `dist/index.html` has `src="/assets/..."` before uploading.
