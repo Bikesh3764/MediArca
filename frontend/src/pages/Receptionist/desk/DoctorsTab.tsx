@@ -57,17 +57,17 @@ export const DoctorsTab: React.FC = () => {
                               {cleanDoctorName(doc.fullName)}
                             </h4>
                             {doc.isOnLeaveToday ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fff1f0] text-[#ff3b30] border border-[#ff3b30]/20 inline-flex items-center gap-1 shrink-0">
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger border border-danger-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarX className="w-3 h-3" />
                                 On Leave Today
                               </span>
                             ) : doc.isWorkingToday === false ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fffbeb] text-[#b45309] border border-[#f59e0b]/20 inline-flex items-center gap-1 shrink-0">
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-warning-soft text-warning border border-warning-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarOff className="w-3 h-3" />
                                 Off Today
                               </span>
                             ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f2fbf4] text-[#34c759] border border-[#34c759]/20 inline-flex items-center gap-1 shrink-0">
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-success-soft text-success border border-success-line inline-flex items-center gap-1 shrink-0">
                                 <CalendarCheck className="w-3 h-3" />
                                 Sitting Today
                               </span>
@@ -134,7 +134,7 @@ export const DoctorsTab: React.FC = () => {
                         <div className="flex items-center justify-between gap-2 pt-1 text-xs">
                           <span className="text-[11px] text-[#86868b] truncate">
                             {doc.isOnLeaveToday ? (
-                              <span className="text-[#ff3b30] font-normal truncate">
+                              <span className="text-danger font-normal truncate">
                                 {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'On leave today'}
                               </span>
                             ) : (
@@ -162,8 +162,8 @@ export const DoctorsTab: React.FC = () => {
                             }}
                             className={`h-7 px-3 rounded-full text-[11px] font-normal transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 ${
                               doc.isOnLeaveToday
-                                ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
-                                : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
+                                ? 'bg-success-dot hover:bg-success-dot text-white'
+                                : 'bg-danger-soft hover:bg-danger-soft text-danger border border-danger-line'
                             }`}
                           >
                             {doc.isOnLeaveToday ? (

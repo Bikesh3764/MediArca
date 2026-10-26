@@ -36,7 +36,7 @@ export const BookedPassModal: React.FC = () => {
 
             <div className="my-5 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-center space-y-2.5">
               <span className="text-xs font-normal text-[#86868b] block">Queue Token Number</span>
-              <div className="text-5xl font-bold text-[#0066cc] tracking-tight">
+              <div className="text-5xl font-semibold text-[#0066cc] tracking-tight">
                 #{bookedPass.queueNumber}
               </div>
               <div className="pt-2.5 border-t border-[#e5e5ea] grid grid-cols-2 gap-2 text-xs">

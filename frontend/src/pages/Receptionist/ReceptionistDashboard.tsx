@@ -147,7 +147,7 @@ export const ReceptionistDashboard: React.FC = () => {
       {bookedPass && (
         <div className="hidden print:block font-sans text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
           <div className="text-center pb-3 border-b-2 border-dashed border-[#a1a1a6]">
-            <h2 className="text-base font-bold uppercase tracking-wide">
+            <h2 className="text-base font-semibold uppercase tracking-wide">
               {bookedPass.clinicName || 'MediArca Clinic'}
             </h2>
             {bookedPass.clinicAddress && (
@@ -160,7 +160,7 @@ export const ReceptionistDashboard: React.FC = () => {
 
           <div className="py-4 text-center">
             <div className="text-xs uppercase text-[#86868b] tracking-wider">Token Number</div>
-            <div className="text-5xl font-bold tracking-tight my-1">
+            <div className="text-5xl font-semibold tracking-tight my-1">
               #{bookedPass.queueNumber}
             </div>
             <div className="text-xs font-semibold text-[#1d1d1f]">
@@ -171,7 +171,7 @@ export const ReceptionistDashboard: React.FC = () => {
           <div className="space-y-1.5 py-3 border-t-2 border-b-2 border-dashed border-[#a1a1a6] text-xs">
             <div className="flex justify-between">
               <span className="text-[#6e6e73]">Patient:</span>
-              <span className="font-bold">{bookedPass.patientName}</span>
+              <span className="font-semibold">{bookedPass.patientName}</span>
             </div>
             {bookedPass.patientPhone && (
               <div className="flex justify-between">
@@ -181,7 +181,7 @@ export const ReceptionistDashboard: React.FC = () => {
             )}
             <div className="flex justify-between">
               <span className="text-[#6e6e73]">Doctor:</span>
-              <span className="font-bold">{cleanDoctorName(bookedPass.doctorName)}</span>
+              <span className="font-semibold">{cleanDoctorName(bookedPass.doctorName)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6e6e73]">Date:</span>
@@ -190,7 +190,7 @@ export const ReceptionistDashboard: React.FC = () => {
             {bookedPass.estimatedTime && (
               <div className="flex justify-between">
                 <span className="text-[#6e6e73]">Est. Time:</span>
-                <span className="font-bold">{bookedPass.estimatedTime}</span>
+                <span className="font-semibold">{bookedPass.estimatedTime}</span>
               </div>
             )}
           </div>

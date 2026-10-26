@@ -485,7 +485,7 @@ export const QueueTab: React.FC = () => {
                           {/* Left: Token + Patient Details */}
                           <div className="flex items-start sm:items-center gap-3.5 min-w-0">
                             <div
-                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-[15px] shrink-0 transition-all ${
+                              className={`w-11 h-11 rounded-2xl flex items-center justify-center font-semibold text-[15px] shrink-0 transition-all ${
                                 appt.status === 'IN_CONSULTATION'
                                   ? 'bg-[#1d1d1f] text-white '
                                   : appt.status === 'COMPLETED'

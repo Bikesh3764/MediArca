@@ -37,6 +37,10 @@ export default {
           bodyMuted: '#86868b',
         },
       },
+      fontSize: {
+        // Small UI text at 13px (iOS footnote) instead of 12px for readability on phones
+        xs: ['13px', { lineHeight: '18px' }],
+      },
       borderRadius: {
         // Cards use rounded-2xl = DESIGN.md {rounded.lg} 18px
         '2xl': '18px',

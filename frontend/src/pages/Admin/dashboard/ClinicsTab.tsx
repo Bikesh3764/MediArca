@@ -53,7 +53,7 @@ export const ClinicsTab: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto scrollbar-none self-start sm:self-auto">
+                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto no-scrollbar max-w-full self-start sm:self-auto">
                     {(['ALL', 'PENDING', 'VERIFIED', 'SUSPENDED', 'REJECTED'] as const).map((st) => {
                       const count = st === 'ALL'
                         ? clinics.length

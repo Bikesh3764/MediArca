@@ -693,11 +693,11 @@ export const QueueTab: React.FC = () => {
                           key={appt.id}
                           className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-[#d2d2d7] transition-colors duration-150 bg-white"
                         >
-                          <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto sm:flex-1">
                             <div className="w-11 h-11 rounded-full bg-[#f5f5f7] flex items-center justify-center font-semibold text-[15px] text-[#1d1d1f] shrink-0">
                               #{appt.queueNumber}
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
                                   {appt.patientName || appt.patient?.user?.fullName || 'Patient'}

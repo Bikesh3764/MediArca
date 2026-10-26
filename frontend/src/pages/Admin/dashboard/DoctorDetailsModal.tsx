@@ -23,7 +23,7 @@ export const DoctorDetailsModal: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#e5e5ea] max-w-lg w-full p-6 sm:p-8  space-y-5">
             <div className="flex justify-between items-start pb-4 border-b border-[#f0f0f2]">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-bold text-lg text-[#0066cc]">
+                <div className="w-12 h-12 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] overflow-hidden flex items-center justify-center font-semibold text-lg text-[#0066cc]">
                   {selectedDoctor.user.avatarUrl ? (
                     <img src={getFileUrl(selectedDoctor.user.avatarUrl)} alt={selectedDoctor.user.fullName} className="w-full h-full object-cover" />
                   ) : (

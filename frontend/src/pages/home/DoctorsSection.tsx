@@ -397,7 +397,7 @@ export const DoctorsSection: React.FC = () => {
                           {/* Card Footer: Fee & Apple Action Blue Pill Button */}
                           <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                             <div className="flex items-baseline gap-1">
-                              <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
+                              <span className="text-[21px] font-semibold text-[#1d1d1f] tracking-tight">
                                 ₹{doctor.consultationFee.toFixed(0)}
                               </span>
                               <span className="text-xs text-[#86868b] font-normal">/ visit</span>

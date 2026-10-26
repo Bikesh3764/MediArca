@@ -48,7 +48,7 @@ export const ContactUs: React.FC = () => {
       <div className="max-w-2xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f]">
             Contact Us
           </h1>
           <p className="text-sm text-[#6e6e73]">

@@ -12,7 +12,7 @@ export const NotFound: React.FC = () => {
         
         {/* Subtle Apple 404 Badge */}
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] mx-auto ">
-          <span className="text-xl font-bold tracking-tight">404</span>
+          <span className="text-xl font-semibold tracking-tight">404</span>
         </div>
 
         {/* Headline & Description */}

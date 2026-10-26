@@ -575,7 +575,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               <button
                 type="button"
                 onClick={() => setClinicMobileFiltersOpen(!clinicMobileFiltersOpen)}
-                className="sm:hidden h-7 px-2.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-[11px] font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                className="sm:hidden h-9 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
               >
                 <SlidersHorizontal className="w-3 h-3 text-[#86868b]" />
                 <span>Filters{(clinicSelectedState !== 'All' || clinicSelectedCity !== 'All') ? ' •' : ''}</span>
@@ -799,7 +799,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
                             <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                               <div className="flex items-baseline gap-1">
-                                <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
+                                <span className="text-[21px] font-semibold text-[#1d1d1f] tracking-tight">
                                   ₹{effectiveFee.toFixed(0)}
                                 </span>
                                 <span className="text-xs text-[#86868b] font-normal">/ visit</span>
@@ -997,7 +997,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filters</span>
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white text-[#0066cc] text-[11px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-white text-[#0066cc] text-[11px] font-semibold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -1497,7 +1497,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                       {/* Apple Card Footer: Fee & Booking CTA */}
                       <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-[21px] font-bold text-[#1d1d1f] tracking-tight">
+                          <span className="text-[21px] font-semibold text-[#1d1d1f] tracking-tight">
                             ₹{effectiveFee.toFixed(0)}
                           </span>
                           <span className="text-xs text-[#86868b] font-normal">/ visit</span>

@@ -136,7 +136,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
               <div className="flex flex-col items-end gap-1.5">
                 <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-4 py-1.5 rounded-2xl flex items-baseline gap-2">
                   <span className="text-xs font-normal text-[#86868b]">Est. Token</span>
-                  <span className="text-2xl font-bold text-[#1d1d1f] tracking-tight">#{estToken}</span>
+                  <span className="text-2xl font-semibold text-[#1d1d1f] tracking-tight">#{estToken}</span>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] text-[11px] font-normal text-[#86868b]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#86868b]"></span>
@@ -155,7 +155,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             ) : isToday && (status === 'IN_CONSULTATION' || (status === 'WAITING' && liveQueue?.currentServingQueueNumber === queueNumber && queueNumber > 0)) ? (
               <div className="bg-[#0066cc] text-white px-4 py-2 rounded-2xl flex items-baseline gap-2 ">
                 <span className="text-xs font-normal text-white/80">Serving</span>
-                <span className="text-2xl font-bold text-white tracking-tight">#{queueNumber}</span>
+                <span className="text-2xl font-semibold text-white tracking-tight">#{queueNumber}</span>
               </div>
             ) : status === 'CANCELLED' || status === 'REJECTED' ? (
               <div className="bg-danger-soft/80 border border-danger-line/80 px-3.5 py-1.5 rounded-full text-xs font-semibold text-danger">
@@ -164,7 +164,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             ) : (
               <div className="bg-[#f5f5f7] border border-[#e5e5ea] px-4 py-2 rounded-2xl flex items-baseline gap-2">
                 <span className="text-xs font-normal text-[#86868b]">Queue</span>
-                <span className="text-2xl font-bold text-[#0066cc] tracking-tight">#{queueNumber}</span>
+                <span className="text-2xl font-semibold text-[#0066cc] tracking-tight">#{queueNumber}</span>
               </div>
             )}
           </div>
@@ -477,7 +477,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     Patients Ahead
                   </span>
                   <div className="mt-1.5">
-                    <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
+                    <div className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
                       {liveQueue.patientsAway}
                     </div>
                     <p className="text-[11px] text-[#86868b] mt-0.5 font-normal">
@@ -491,7 +491,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     Estimated Wait
                   </span>
                   <div className="mt-1.5">
-                    <div className="text-xl sm:text-2xl font-bold text-[#0066cc] tracking-tight">
+                    <div className="text-xl sm:text-2xl font-semibold text-[#0066cc] tracking-tight">
                       ~{liveQueue.estimatedWaitMinutes} <span className="text-xs sm:text-sm font-semibold text-[#86868b]">mins</span>
                     </div>
                     <p className="text-[11px] text-[#86868b] mt-0.5 font-normal">

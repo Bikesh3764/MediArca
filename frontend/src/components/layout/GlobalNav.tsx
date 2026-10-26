@@ -110,8 +110,10 @@ export const GlobalNav: React.FC = () => {
   };
 
   const getNavLinkClass = (active: boolean) =>
-    `px-3 py-1 rounded-full transition-colors duration-200 text-[12px] flex items-center gap-1.5 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#2997ff] ${
-      active ? 'text-white' : 'text-white/70 hover:text-white'
+    `px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs flex items-center gap-1.5 cursor-pointer ${
+      active
+        ? 'bg-black/[0.06] text-[#1d1d1f] font-semibold'
+        : 'text-[#86868b] hover:text-[#1d1d1f] hover:bg-black/[0.03] font-normal'
     }`;
 
   const getMobileNavLinkClass = (active: boolean) =>
@@ -130,9 +132,9 @@ export const GlobalNav: React.FC = () => {
       <div
         className={`${
           isMobile
-            ? 'fixed left-3 right-3 sm:left-4 sm:right-4 top-12 max-w-sm sm:max-w-md mx-auto'
+            ? 'fixed left-3 right-3 sm:left-4 sm:right-4 top-14 max-w-sm sm:max-w-md mx-auto'
             : 'absolute right-0 top-11 w-80 sm:w-96'
-        } bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] z-50 overflow-hidden animate-fadeIn text-left`}
+        } bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-2xl z-50 overflow-hidden animate-fadeIn text-left`}
       >
         <div className="px-4 py-3 border-b border-[#f0f0f0] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -233,15 +235,15 @@ export const GlobalNav: React.FC = () => {
   );
 
   return (
-    <header className="sticky top-0 z-50 bg-black/[0.86] backdrop-blur-xl backdrop-saturate-150 text-white select-none">
-      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 h-11 flex items-center justify-between text-[12px] font-normal tracking-tight">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl backdrop-saturate-150 border-b border-black/[0.06] text-[#1d1d1f] select-none shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 h-14 flex items-center justify-between text-[13px] font-normal tracking-tight">
         {/* Brand */}
         <Link to="/" onClick={closeMenu} className="flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
-          <BrandLogo size="sm" theme="onDark" />
+          <BrandLogo variant="full" size="md" theme="light" imgClassName="h-7 w-auto" />
         </Link>
 
         {/* Center Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-1">
+        <nav className="hidden md:flex items-center gap-1 text-[#86868b]">
           <Link
             to="/"
             className={getNavLinkClass(isActive('/'))}
@@ -255,7 +257,7 @@ export const GlobalNav: React.FC = () => {
                 to="/doctors"
                 className={getNavLinkClass(isActive('/doctors') && !location.search.includes('tab=clinics'))}
               >
-                Doctors
+                Find Doctors
               </Link>
               <Link
                 to="/doctors?tab=clinics"
@@ -272,7 +274,8 @@ export const GlobalNav: React.FC = () => {
                 to="/patient/appointments"
                 className={getNavLinkClass(isActive('/patient/appointments'))}
               >
-                Appointments
+                <Calendar className="w-3.5 h-3.5 text-current opacity-80" />
+                My Appointments
               </Link>
               <Link
                 to="/patient/profile"
@@ -289,19 +292,20 @@ export const GlobalNav: React.FC = () => {
                 to="/doctor/dashboard"
                 className={getNavLinkClass(isActive('/doctor/dashboard') && !location.search.includes('tab=affiliations'))}
               >
-                Queue
+                <Stethoscope className="w-3.5 h-3.5 text-current opacity-80" />
+                Doctor Console
               </Link>
               <Link
                 to="/doctor/dashboard?tab=affiliations"
                 className={getNavLinkClass(isActive('/doctor/dashboard') && location.search.includes('tab=affiliations'))}
               >
-                Clinics
+                Clinics & Schedule
               </Link>
               <Link
                 to="/doctor/profile"
                 className={getNavLinkClass(isActive('/doctor/profile'))}
               >
-                Profile
+                Profile & Settings
               </Link>
             </>
           )}
@@ -311,7 +315,8 @@ export const GlobalNav: React.FC = () => {
               to="/admin"
               className={getNavLinkClass(isActive('/admin'))}
             >
-              Admin
+              <ShieldCheck className="w-3.5 h-3.5 text-current opacity-80" />
+              Admin Portal
             </Link>
           )}
 
@@ -320,7 +325,8 @@ export const GlobalNav: React.FC = () => {
               to="/clinic/dashboard"
               className={getNavLinkClass(isActive('/clinic/dashboard'))}
             >
-              Dashboard
+              <Building2 className="w-3.5 h-3.5 text-current opacity-80" />
+              Clinic Dashboard
             </Link>
           )}
 
@@ -329,7 +335,8 @@ export const GlobalNav: React.FC = () => {
               to="/receptionist/dashboard"
               className={getNavLinkClass(isActive('/receptionist/dashboard'))}
             >
-              Desk
+              <Users className="w-3.5 h-3.5 text-current opacity-80" />
+              Reception Desk
             </Link>
           )}
 
@@ -361,7 +368,7 @@ export const GlobalNav: React.FC = () => {
 
             {moreMenuOpen && (
               <div className="absolute right-0 top-full pt-1.5 z-50 animate-fadeIn">
-                <div className="bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.12)] p-2 min-w-[210px] space-y-0.5 text-xs text-left">
+                <div className="bg-white/95 backdrop-blur-2xl border border-[#e5e5ea] rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] p-2 min-w-[210px] space-y-0.5 text-xs text-left">
                   <Link
                     to="/about"
                     onClick={() => setMoreMenuOpen(false)}
@@ -372,7 +379,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <Info className="w-4 h-4 text-[#86868b]" />
-                    <span>About</span>
+                    <span>About MediArca</span>
                   </Link>
 
                   <Link
@@ -398,7 +405,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <FileQuestion className="w-4 h-4 text-[#86868b]" />
-                    <span>FAQ</span>
+                    <span>FAQs & Help</span>
                   </Link>
 
                   <Link
@@ -411,7 +418,7 @@ export const GlobalNav: React.FC = () => {
                     }`}
                   >
                     <Mail className="w-4 h-4 text-[#86868b]" />
-                    <span>Contact</span>
+                    <span>Contact Support</span>
                   </Link>
                 </div>
               </div>
@@ -428,13 +435,13 @@ export const GlobalNav: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className="relative p-2 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors active:scale-95"
+                  className="relative p-2 rounded-full text-[#1d1d1f] hover:bg-black/[0.04] transition-all active:scale-95"
                   title="Notifications"
                   aria-label="Notifications"
                 >
                   <Bell className="w-4 h-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-[#0066cc] text-white text-[11px] font-semibold rounded-full flex items-center justify-center border-2 border-black">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-[#0066cc] text-white text-[11px] font-semibold rounded-full flex items-center justify-center shadow-xs border-2 border-white">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -455,25 +462,24 @@ export const GlobalNav: React.FC = () => {
                     ? '/receptionist/dashboard'
                     : '/admin'
                 }
-                className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full bg-white/10 hover:bg-white/15 transition-colors"
-                title="Profile"
+                className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#f5f5f7] hover:bg-[#ebebee] border border-[#e5e5ea] transition-all hover:border-[#d2d2d7]"
+                title="Manage Profile & Settings"
               >
-                <div className="w-6 h-6 rounded-full bg-[#0066cc] flex items-center justify-center text-[11px] font-bold text-white overflow-hidden flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-[#0066cc] flex items-center justify-center text-[11px] font-semibold text-white overflow-hidden flex-shrink-0">
                   {user.avatarUrl ? (
                     <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{getInitials(user.fullName)}</span>
                   )}
                 </div>
-                <span className="text-[12px] text-white/90 max-w-[140px] truncate font-normal">
+                <span className="text-xs text-[#1d1d1f] max-w-[140px] truncate font-normal">
                   {user.fullName}
                 </span>
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-white/60 hover:text-white transition-colors p-1.5 rounded-full hover:bg-white/10 active:scale-95"
+                className="text-[#86868b] hover:text-danger transition-colors p-1.5 rounded-full hover:bg-danger-soft/80 active:scale-95"
                 title="Sign out"
-                aria-label="Sign out"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -482,13 +488,13 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="text-white/80 hover:text-white px-3 py-1 text-[12px] font-normal transition-colors rounded-full"
+                className="text-[#1d1d1f] hover:text-[#0066cc] px-3.5 py-1.5 text-xs font-normal transition-colors hover:bg-black/[0.04] rounded-full"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
-                className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-3.5 py-1 rounded-full text-[12px] font-normal active:scale-95 transition-all"
+                className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-normal active:scale-95 transition-all"
               >
                 Register
               </Link>
@@ -503,12 +509,12 @@ export const GlobalNav: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-2 text-white/85 rounded-full hover:bg-white/10"
+                className="relative p-2.5 text-[#1d1d1f] rounded-full hover:bg-black/[0.04]"
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 bg-[#0066cc] text-white text-[11px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-0.5 bg-[#0066cc] text-white text-[11px] font-semibold rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
@@ -518,7 +524,7 @@ export const GlobalNav: React.FC = () => {
           )}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-white/85 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+            className="p-2 text-[#1d1d1f] hover:text-black focus:outline-none rounded-full hover:bg-black/[0.04] transition-colors"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -530,13 +536,13 @@ export const GlobalNav: React.FC = () => {
       {mobileMenuOpen && (
         <>
           <div
-            className="fixed inset-0 top-11 bg-black/25 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
+            className="fixed inset-0 top-14 bg-black/25 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
             onClick={closeMenu}
           />
-          <div className="relative z-50 md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-2xl px-5 py-5 animate-fadeIn space-y-3.5 text-sm ">
+          <div className="relative z-50 md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-2xl px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-2xl">
           {user && (
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
-              <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-bold text-white  overflow-hidden flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-semibold text-white  overflow-hidden flex-shrink-0">
                 {user.avatarUrl ? (
                   <img src={getFileUrl(user.avatarUrl)} alt={user.fullName} className="w-full h-full object-cover" />
                 ) : (

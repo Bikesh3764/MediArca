@@ -87,7 +87,7 @@ export const ClinicsGridSection: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setClinicMobileFiltersOpen(!clinicMobileFiltersOpen)}
-                  className="sm:hidden h-7 px-2.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-[11px] font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
+                  className="sm:hidden h-9 px-3.5 rounded-full border border-[#e5e5ea] bg-[#f5f5f7] text-xs font-normal text-[#1d1d1f] flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
                 >
                   <SlidersHorizontal className="w-3 h-3 text-[#86868b]" />
                   <span>Filters{(clinicSelectedState !== 'All' || clinicSelectedCity !== 'All') ? ' •' : ''}</span>

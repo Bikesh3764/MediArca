@@ -54,7 +54,7 @@ export const DoctorsTab: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto scrollbar-none self-start sm:self-auto">
+                  <div className="inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] overflow-x-auto no-scrollbar max-w-full self-start sm:self-auto">
                     {(['ALL', 'PENDING', 'VERIFIED', 'SUSPENDED', 'REJECTED'] as const).map((st) => {
                       const count = st === 'ALL'
                         ? doctors.length
@@ -113,7 +113,7 @@ export const DoctorsTab: React.FC = () => {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center font-bold text-[#0066cc]">
+                                  <div className="w-full h-full flex items-center justify-center font-semibold text-[#0066cc]">
                                     {doc.user.fullName[0]}
                                   </div>
                                 )}

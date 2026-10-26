@@ -7,7 +7,7 @@ export const RefundPolicy: React.FC = () => {
       <div className="max-w-3xl mx-auto space-y-8">
         {/* Header (No pill badge) */}
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f]">
             Cancellation and Refund Policy
           </h1>
           <p className="text-xs text-[#86868b]">
@@ -29,7 +29,7 @@ export const RefundPolicy: React.FC = () => {
           </div>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-base font-semibold text-[#1d1d1f]">
               1. No Online Charges
             </h2>
             <p>
@@ -38,7 +38,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-base font-semibold text-[#1d1d1f]">
               2. Free Appointment Cancellation
             </h2>
             <p>
@@ -47,7 +47,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-base font-semibold text-[#1d1d1f]">
               3. Clinic On-Site Payments
             </h2>
             <p>
@@ -56,7 +56,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-base font-semibold text-[#1d1d1f]">
               4. Doctor Shift Rescheduling or Cancellation
             </h2>
             <p>
@@ -65,7 +65,7 @@ export const RefundPolicy: React.FC = () => {
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-base font-bold text-[#1d1d1f]">
+            <h2 className="text-base font-semibold text-[#1d1d1f]">
               5. Questions and Support
             </h2>
             <p>

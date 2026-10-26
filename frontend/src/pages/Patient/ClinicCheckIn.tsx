@@ -232,7 +232,7 @@ export const ClinicCheckIn: React.FC = () => {
               <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#86868b]">Queue Token</span>
-                  <span className="text-lg font-bold text-[#0066cc]">#{successData.queueNumber}</span>
+                  <span className="text-lg font-semibold text-[#0066cc]">#{successData.queueNumber}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#86868b]">Doctor</span>

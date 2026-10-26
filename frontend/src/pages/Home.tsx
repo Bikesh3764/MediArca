@@ -35,7 +35,7 @@ export const Home: React.FC = () => {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1d1d1f] tracking-tight leading-[1.08] max-w-3xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.08] max-w-3xl mx-auto">
             Book doctor queue tokens. <span className="text-[#0066cc]">Skip the waiting room.</span>
           </h1>
 

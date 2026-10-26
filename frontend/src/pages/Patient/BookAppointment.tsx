@@ -363,7 +363,7 @@ export const BookAppointment: React.FC = () => {
               </p>
               <div className="mt-3.5 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <span className="text-xs font-normal text-[#86868b]">Estimated Token</span>
-                <span className="text-xl font-bold text-[#0066cc] tracking-tight">
+                <span className="text-xl font-semibold text-[#0066cc] tracking-tight">
                   #{confirmedAppointment.estimatedQueueNumber || (confirmedAppointment.queueNumber > 0 ? confirmedAppointment.queueNumber : 1)}
                 </span>
               </div>
@@ -384,7 +384,7 @@ export const BookAppointment: React.FC = () => {
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className="text-base font-bold text-[#1d1d1f] block">
+                  <span className="text-base font-semibold text-[#1d1d1f] block">
                     ₹{activeFee}
                   </span>
                   <span className="text-[11px] text-[#86868b]">Fee</span>
@@ -475,7 +475,7 @@ export const BookAppointment: React.FC = () => {
                 />
               ) : null}
               <div
-                className={`book-doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-bold text-xl text-white bg-[#0066cc]  select-none`}
+                className={`book-doc-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center font-semibold text-xl text-white bg-[#0066cc]  select-none`}
               >
                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
               </div>
@@ -608,7 +608,7 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getLocalDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
+                  className={`h-8 px-3.5 inline-flex items-center rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                     appointmentDate === getLocalDateString()
                       ? 'bg-[#0066cc] text-white border-[#0066cc]'
                       : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -619,7 +619,7 @@ export const BookAppointment: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAppointmentDate(getTomorrowDateString())}
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
+                  className={`h-8 px-3.5 inline-flex items-center rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                     appointmentDate === getTomorrowDateString()
                       ? 'bg-[#0066cc] text-white border-[#0066cc]'
                       : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -717,7 +717,7 @@ export const BookAppointment: React.FC = () => {
               <div className="flex items-baseline justify-between mb-2">
                 <div>
                   <span className="text-[11px] text-[#86868b] block font-normal">Token No.</span>
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0066cc]">
+                  <span className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#0066cc]">
                     {isSelectedSlotOnLeave
                       ? 'On Leave'
                       : isSelectedSlotDayOff

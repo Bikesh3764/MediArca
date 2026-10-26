@@ -42,32 +42,32 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Clinical Care
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#48484a]">
+            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
               <li>
-                <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Find Doctors
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?tab=clinics" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?tab=clinics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Verified Clinics
                 </Link>
               </li>
               <li>
                 <Link
                   to={user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login'}
-                  className="hover:text-[#0066cc] transition-colors py-0.5 inline-block"
+                  className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block"
                 >
                   Live Queue Passes
                 </Link>
               </li>
               <li>
-                <Link to="/clinic-checkin" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/clinic-checkin" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Clinic Arrival Guide
                 </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   How Queue Works
                 </Link>
               </li>
@@ -79,34 +79,34 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Specialties
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#48484a]">
+            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
               <li>
-                <Link to="/doctors?specialty=General+Medicine" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=General+Medicine" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   General Medicine
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?specialty=Cardiology" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=Cardiology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Cardiology
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?specialty=Dermatology" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=Dermatology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Dermatology
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?specialty=Pediatrics" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=Pediatrics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Pediatrics
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?specialty=Orthopedics" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=Orthopedics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Orthopedics
                 </Link>
               </li>
               <li>
-                <Link to="/doctors?specialty=Neurology" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/doctors?specialty=Neurology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Neurology
                 </Link>
               </li>
@@ -118,24 +118,24 @@ export const Footer: React.FC = () => {
             <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
               Company & Help
             </h4>
-            <ul className="space-y-2.5 text-sm text-[#48484a]">
+            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
               <li>
-                <Link to="/about" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/about" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   About MediArca
                 </Link>
               </li>
               <li>
-                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   How It Works
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/faq" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   FAQs & Help
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-[#0066cc] transition-colors py-0.5 inline-block">
+                <Link to="/contact" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
                   Contact Support
                 </Link>
               </li>

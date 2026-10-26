@@ -513,11 +513,11 @@ export const ManageSchedule: React.FC = () => {
                     <span>Practicing Facility</span>
                   </label>
                   {clinics.length > 1 ? (
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto min-w-0">
                       <select
                         value={selectedClinicId}
                         onChange={(e) => handleClinicChange(e.target.value)}
-                        className="h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm font-normal text-[#1d1d1f] bg-white  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
+                        className="w-full sm:w-auto max-w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] text-base sm:text-sm font-normal text-[#1d1d1f] bg-white truncate focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 appearance-none cursor-pointer transition-all"
                       >
                         {clinics.map((c) => (
                           <option key={c.clinicId} value={c.clinicId}>
@@ -575,21 +575,21 @@ export const ManageSchedule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('MON_SAT')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Sat
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('WEEKDAYS')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         Mon – Fri
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetWorkingDaysPreset('ALL')}
-                        className="h-7 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[11px] font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
+                        className="h-9 px-3.5 rounded-full bg-white hover:bg-[#e8e8ed] text-xs font-normal text-[#1d1d1f] border border-[#e5e5ea] transition-all cursor-pointer active:scale-95"
                       >
                         All Days
                       </button>
@@ -784,7 +784,7 @@ export const ManageSchedule: React.FC = () => {
                 <div className="p-5 rounded-2xl bg-white border border-[#e5e5ea] space-y-4 ">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#ff3b30]/10 flex items-center justify-center text-[#ff3b30] shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-danger-soft flex items-center justify-center text-danger shrink-0">
                         <CalendarX className="w-4 h-4" />
                       </div>
                       <div>
@@ -812,19 +812,19 @@ export const ManageSchedule: React.FC = () => {
                     <div className="flex items-center gap-2.5">
                       {isOnLeaveToday ? (
                         <>
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#ff3b30] shrink-0" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-danger shrink-0" />
                           <div>
                             <span className="text-xs font-semibold text-[#1d1d1f] block">
                               Marked on Leave Today
                             </span>
-                            <span className="text-[11px] text-[#ff3b30]">
+                            <span className="text-[11px] text-danger">
                               {todayLeave?.reason ? `Reason: ${todayLeave.reason}` : 'No patient consultations will be accepted today.'}
                             </span>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="w-2.5 h-2.5 rounded-full bg-[#34c759] shrink-0" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-success-dot shrink-0" />
                           <div>
                             <span className="text-xs font-semibold text-[#1d1d1f] block">
                               Available for Consultations Today
@@ -843,8 +843,8 @@ export const ManageSchedule: React.FC = () => {
                       disabled={saving}
                       className={`h-8 px-4 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 active:scale-95 disabled:opacity-60 ${
                         isOnLeaveToday
-                          ? 'bg-[#34c759] hover:bg-[#30b753] text-white '
-                          : 'bg-[#fff1f0] hover:bg-[#ffe2e0] text-[#ff3b30] border border-[#ff3b30]/20'
+                          ? 'bg-success-dot hover:bg-success-dot text-white '
+                          : 'bg-danger-soft hover:bg-danger-soft text-danger border border-danger-line'
                       }`}
                     >
                       {isOnLeaveToday ? (

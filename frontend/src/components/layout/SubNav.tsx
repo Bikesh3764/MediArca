@@ -19,7 +19,7 @@ const WIDTH: Record<NonNullable<SubNavProps['width']>, string> = {
 /** DESIGN.md sub-nav-frosted: sticky parchment bar under the global nav with the page title. */
 export const SubNav: React.FC<SubNavProps> = ({ title, subtitle, width = '7xl', children }) => {
   return (
-    <div className="sticky top-11 z-40 bg-[#f5f5f7]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-[#e5e5ea] min-h-[52px] py-1.5 sm:py-0 flex items-center">
+    <div className="sticky top-14 z-40 bg-[#f5f5f7]/85 backdrop-blur-xl backdrop-saturate-150 border-b border-[#e5e5ea] min-h-[52px] py-1.5 sm:py-0 flex items-center">
       <div className={`${WIDTH[width]} mx-auto w-full flex items-center justify-between gap-2`}>
         <div className="flex items-baseline gap-2 sm:gap-3 min-w-0">
           <h1 className="text-[19px] sm:text-[21px] font-semibold text-[#1d1d1f] tracking-tight truncate">{title}</h1>

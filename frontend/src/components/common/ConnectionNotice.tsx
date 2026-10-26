@@ -22,7 +22,7 @@ export const ConnectionNotice: React.FC = () => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-14 left-1/2 -translate-x-1/2 z-[60] pointer-events-none animate-fadeIn"
+      className="fixed top-[68px] left-1/2 -translate-x-1/2 z-[60] pointer-events-none animate-fadeIn"
     >
       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 backdrop-blur-xl border border-[#e5e5ea] shadow-[0_12px_32px_rgba(0,0,0,0.12)] text-[13px] text-[#1d1d1f]">
         <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin" />

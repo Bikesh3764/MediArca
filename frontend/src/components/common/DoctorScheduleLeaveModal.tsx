@@ -280,13 +280,13 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
 
         {/* FEEDBACK BANNERS */}
         {error && (
-          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-[#fff1f0] border border-[#ff3b30]/20 flex items-start gap-2.5 text-xs text-[#ff3b30]">
+          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-danger-soft border border-danger-line flex items-start gap-2.5 text-xs text-danger">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span className="flex-1 font-normal">{error}</span>
           </div>
         )}
         {successMsg && (
-          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-[#f2fbf4] border border-[#34c759]/20 flex items-start gap-2.5 text-xs text-[#34c759]">
+          <div className="mx-6 mt-4 p-3.5 rounded-2xl bg-success-soft border border-success-line flex items-start gap-2.5 text-xs text-success">
             <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
             <span className="flex-1 font-normal">{successMsg}</span>
           </div>
@@ -309,12 +309,12 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                       Today
                     </span>
                     {config?.isOnLeaveToday ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#fff1f0] text-[#ff3b30] border border-[#ff3b30]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-danger-soft text-danger border border-danger-line">
                         <CalendarX className="w-3 h-3" />
                         On Leave
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#f2fbf4] text-[#34c759] border border-[#34c759]/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-success-soft text-success border border-success-line">
                         <CalendarCheck className="w-3 h-3" />
                         Available
                       </span>
@@ -333,8 +333,8 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   disabled={savingLeave}
                   className={`h-9 px-4 rounded-full text-xs font-normal transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 ${
                     config?.isOnLeaveToday
-                      ? 'bg-[#34c759] hover:bg-[#30b753] text-white'
-                      : 'bg-[#ff3b30] hover:bg-[#e0352b] text-white'
+                      ? 'bg-success-dot hover:bg-success-dot text-white'
+                      : 'bg-danger hover:bg-[#b80012] text-white'
                   } disabled:opacity-50`}
                 >
                   {savingLeave ? (
@@ -433,7 +433,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-sm font-semibold text-[#1d1d1f] tracking-tight flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-[#ff3b30]" />
+                      <Clock className="w-4 h-4 text-danger" />
                       <span>Leave</span>
                     </h4>
                     <p className="text-xs text-[#86868b] mt-0.5">
@@ -573,7 +573,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                           <div
                             key={leave.id}
                             className={`p-3.5 flex items-center justify-between gap-3 text-xs transition-colors ${
-                              isTodayActive ? 'bg-[#fff1f0]/40' : 'bg-white hover:bg-[#fbfbfd]'
+                              isTodayActive ? 'bg-danger-soft/40' : 'bg-white hover:bg-[#fbfbfd]'
                             }`}
                           >
                             <div className="min-w-0 flex-1 space-y-0.5">
@@ -584,7 +584,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                                     : `${leave.startDate} → ${leave.endDate}`}
                                 </span>
                                 {isTodayActive && (
-                                  <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-[#ff3b30] text-white">
+                                  <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-danger text-white">
                                     Active Today
                                   </span>
                                 )}
@@ -604,7 +604,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                               type="button"
                               onClick={() => handleCancelLeave(leave.id)}
                               disabled={isCancelling}
-                              className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-[#fff1f0] hover:text-[#ff3b30] text-[#86868b] flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
+                              className="w-8 h-8 rounded-full bg-[#f5f5f7] hover:bg-danger-soft hover:text-danger text-[#86868b] flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                               title="Cancel this leave"
                             >
                               {isCancelling ? (

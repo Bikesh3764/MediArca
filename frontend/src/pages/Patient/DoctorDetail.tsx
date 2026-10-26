@@ -156,7 +156,7 @@ export const DoctorDetail: React.FC = () => {
                   }}
                 />
               ) : null}
-              <div className={`doc-detail-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-2xl sm:text-3xl font-bold bg-[#0066cc] text-white  select-none`}>
+              <div className={`doc-detail-fallback w-full h-full ${doctor.user?.avatarUrl ? 'hidden' : 'flex'} items-center justify-center text-2xl sm:text-3xl font-semibold bg-[#0066cc] text-white  select-none`}>
                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
               </div>
             </div>
@@ -338,7 +338,7 @@ export const DoctorDetail: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedDate(getLocalDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
+                      className={`h-8 px-3.5 inline-flex items-center rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                         selectedDate === getLocalDateString()
                           ? 'bg-[#0066cc] text-white border-[#0066cc]'
                           : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -349,7 +349,7 @@ export const DoctorDetail: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSelectedDate(getTomorrowDateString())}
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
+                      className={`h-8 px-3.5 inline-flex items-center rounded-full text-xs font-normal transition-all duration-150 cursor-pointer border ${
                         selectedDate === getTomorrowDateString()
                           ? 'bg-[#0066cc] text-white border-[#0066cc]'
                           : 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea] hover:bg-[#e8e8ed]'
@@ -417,7 +417,7 @@ export const DoctorDetail: React.FC = () => {
                   <div className="flex items-baseline justify-between mb-2">
                     <div>
                       <span className="text-[11px] text-[#86868b] block font-normal">Est. Token</span>
-                      <span className="text-2xl font-bold tracking-tight text-[#0066cc]">
+                      <span className="text-2xl font-semibold tracking-tight text-[#0066cc]">
                         #{queuePreview.nextQueueNumber}
                       </span>
                     </div>

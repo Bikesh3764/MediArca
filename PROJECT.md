@@ -33,6 +33,7 @@ MediArca is an Indian healthcare patient appointment and live queue management s
 | 21 | QR Arrival Synchronization & Scanner Lifecycle | Instant 0ms optimistic QR check-in state synchronization, persistent appointment refs, automatic scanner reset on re-open, anti-cache headers | M9 | User Requirement |
 | 22 | Silent Polling Updates & Apple Design System | Background polling updates directly in-place without flashing loading screens/skeletons; embed authentic Apple SF Pro fonts; Apple pill buttons; prune verbose copy; replace "View Standee" with "View QR Code" | M10 | User Requirement |
 | 23 | Platform Hardening & Live Updates | Supabase RLS lockdown, demo-account lock, sign-out on password change, Prisma joins + discovery cache, SSE live queue updates + turn alerts, DB integrity constraints, end-to-end flow tests, frontend tests & CI, monitoring | M11 | Audit 2026-10-25 |
+| M12 | Code Split & Design Consistency | FIX-039..FIX-042: split large files, DESIGN.md consistency pass, mobile fixes, loading UX | M11 | DONE (all gates + 24 flow tests pass) |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |

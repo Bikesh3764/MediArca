@@ -54,6 +54,15 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 
 10. **Live Refresh, Not Faster Polling**:
    To react to queue changes use `useLiveEvent('queue', handler)` from `utils/liveEvents.ts` alongside the existing `useVisibilityPolling` backup. Never shorten polling intervals to get "real-time" behaviour.
+12. **Design Tokens & Consistency (FIX-040)**:
+   - Status colors use Tailwind tokens, never raw hex: `text-success`/`bg-success-soft`/`border-success-line`/`bg-success-dot` (same for `danger`, `warning`; `primary` for blue).
+   - No `shadow-*` on cards, buttons or inputs. Floating layers (dropdowns, popovers, toasts, sticky bars) may use `shadow-[0_12px_32px_rgba(0,0,0,0.12)]`.
+   - Font weights: `font-normal` (400) and `font-semibold` (600) only. No `font-medium`, no `font-bold`.
+   - `text-xs` is 13px (tailwind.config). Nothing smaller than `text-[11px]`.
+   - Cards `rounded-2xl` (18px), inner elements `rounded-xl`, buttons and chips `rounded-full`.
+   - The global nav stays white and frosted (brand decision); don't change it to black.
+   - Page titles use `SubNav` with a `width` matching the page content; portals use `DashboardLayout` (including Admin).
+   - On phones, tap targets should be at least 36px tall and nothing may overflow the screen width; check at 390px.
 11. **Typography**:
    Do not load SF Pro from third-party CDNs (licence + render blocking). Apple devices get SF Pro via `-apple-system`; others use Inter.
 

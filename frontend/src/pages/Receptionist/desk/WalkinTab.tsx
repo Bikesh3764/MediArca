@@ -426,7 +426,7 @@ export const WalkinTab: React.FC = () => {
                       <span className="text-[11px] font-normal text-[#86868b] uppercase tracking-wider block">
                         Token Number
                       </span>
-                      <div className="text-4xl font-bold text-[#0066cc] tracking-tight my-1">
+                      <div className="text-4xl font-semibold text-[#0066cc] tracking-tight my-1">
                         #{walkinPreview?.nextQueueNumber || 1}
                       </div>
                       <span className="text-xs text-[#86868b]">

@@ -165,8 +165,8 @@ export const AppointmentsTab: React.FC = () => {
                       </div>
 
                       {/* Clinic Filter Selector */}
-                      <div className="flex items-center gap-2">
-                        <div className="relative min-w-[200px]">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-auto sm:min-w-[200px]">
                           <select
                             value={bookingClinicFilter}
                             onChange={(e) => setBookingClinicFilter(e.target.value)}
@@ -185,7 +185,7 @@ export const AppointmentsTab: React.FC = () => {
                         </div>
 
                         {/* Status Filter Selector */}
-                        <div className="relative min-w-[150px]">
+                        <div className="relative w-full sm:w-auto sm:min-w-[150px]">
                           <select
                             value={bookingStatusFilter}
                             onChange={(e) => setBookingStatusFilter(e.target.value)}
@@ -343,7 +343,7 @@ export const AppointmentsTab: React.FC = () => {
                                     {getDateBadge(appt.appointmentDate)}
                                   </div>
                                 </td>
-                                <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                 <td className="py-3 px-3">
                                   <div>
                                     <span className="font-normal text-[#1d1d1f]">
@@ -386,7 +386,7 @@ export const AppointmentsTab: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedAppointment(appt)}
-                                    className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                    className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                     title="Inspect Booking Details"
                                   >
                                     <Eye className="w-4 h-4" />
@@ -449,7 +449,7 @@ export const AppointmentsTab: React.FC = () => {
                                     const clinicInfo = resolveClinic(appt);
                                     return (
                                       <tr key={appt.id} className="hover:bg-[#f5f5f7]/60 transition-colors">
-                                        <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                        <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                         <td className="py-3 px-3">
                                           <div>
                                             <span className="font-normal text-[#1d1d1f]">
@@ -492,7 +492,7 @@ export const AppointmentsTab: React.FC = () => {
                                           <button
                                             type="button"
                                             onClick={() => setSelectedAppointment(appt)}
-                                            className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                            className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                             title="Inspect Booking Details"
                                           >
                                             <Eye className="w-4 h-4" />
@@ -572,7 +572,7 @@ export const AppointmentsTab: React.FC = () => {
                                           {getDateBadge(appt.appointmentDate)}
                                         </div>
                                       </td>
-                                      <td className="py-3 px-3 font-bold text-[#0066cc]">Queue #{appt.queueNumber}</td>
+                                      <td className="py-3 px-3 font-semibold text-[#0066cc]">Queue #{appt.queueNumber}</td>
                                       <td className="py-3 px-3">
                                         <div>
                                           <span className="font-normal text-[#1d1d1f]">
@@ -602,7 +602,7 @@ export const AppointmentsTab: React.FC = () => {
                                         <button
                                           type="button"
                                           onClick={() => setSelectedAppointment(appt)}
-                                          className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0055b3] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
+                                          className="p-1.5 rounded-full hover:bg-white text-[#0066cc] hover:text-[#0066cc] border border-transparent hover:border-[#e5e5ea] transition-all cursor-pointer"
                                           title="Inspect Booking Details"
                                         >
                                           <Eye className="w-4 h-4" />

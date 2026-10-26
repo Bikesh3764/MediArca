@@ -257,7 +257,7 @@ export const ClinicProfile: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-[#0066cc] text-white flex items-center justify-center font-bold text-3xl">
+                  <div className="w-full h-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-3xl">
                     {initialLetter}
                   </div>
                 )}

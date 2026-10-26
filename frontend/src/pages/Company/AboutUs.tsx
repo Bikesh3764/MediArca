@@ -8,7 +8,7 @@ export const AboutUs: React.FC = () => {
       <div className="max-w-4xl mx-auto space-y-10">
         {/* Header (Pure Typography, No pill badge) */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f]">
             About MediArca
           </h1>
           <p className="text-sm sm:text-base text-[#6e6e73] leading-relaxed">

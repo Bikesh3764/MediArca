@@ -40,7 +40,7 @@ export const MessagesTab: React.FC = () => {
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#f0f0f2]">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-bold text-xs text-[#1d1d1f]">
+                            <div className="w-9 h-9 rounded-full bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center font-semibold text-xs text-[#1d1d1f]">
                               {msg.fullName ? msg.fullName[0]?.toUpperCase() : 'U'}
                             </div>
                             <div>
