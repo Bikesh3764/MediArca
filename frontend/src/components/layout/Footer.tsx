@@ -4,191 +4,101 @@ import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 import { Mail } from 'lucide-react';
 
+type FooterLink = { label: string; to: string };
+
+const SPECIALTIES = ['General Medicine', 'Cardiology', 'Dermatology', 'Pediatrics', 'Orthopedics', 'Neurology'];
+
+const linkClass = 'hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block';
+
+const FooterColumn: React.FC<{ title: string; links: FooterLink[] }> = ({ title, links }) => (
+  <div>
+    <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight mb-3">{title}</h4>
+    <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
+      {links.map((l) => (
+        <li key={l.label}>
+          <Link to={l.to} className={linkClass}>
+            {l.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
 export const Footer: React.FC = () => {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
 
+  const patientLinks: FooterLink[] = [
+    { label: 'Doctors', to: '/doctors' },
+    { label: 'Clinics', to: '/doctors?tab=clinics' },
+    { label: 'Appointments', to: user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login' },
+    { label: 'Check In', to: '/clinic-checkin' },
+    { label: 'How It Works', to: '/how-it-works' },
+  ];
+  const specialtyLinks: FooterLink[] = SPECIALTIES.map((s) => ({
+    label: s,
+    to: `/doctors?specialty=${s.replace(/ /g, '+')}`,
+  }));
+  const companyLinks: FooterLink[] = [
+    { label: 'About', to: '/about' },
+    { label: 'FAQ', to: '/faq' },
+    { label: 'Contact', to: '/contact' },
+  ];
+  const signInLinks: FooterLink[] = [
+    { label: 'Patient', to: '/patient/login' },
+    { label: 'Doctor', to: '/doctor/login' },
+    { label: 'Clinic', to: '/clinic/login' },
+    { label: 'Receptionist', to: '/receptionist/login' },
+  ];
+
   return (
     <footer className="bg-[#f5f5f7] border-t border-[#e5e5ea] text-[#1d1d1f] mt-auto select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-12">
-        {/* Main 4-Column Balanced Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 sm:gap-10 lg:gap-12">
-          {/* Column 1: Brand & Contact (Spans 4 columns) */}
-          <div className="sm:col-span-2 lg:col-span-4 space-y-5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-10">
+        {/* Brand on the left, three even link columns on the right */}
+        <div className="flex flex-col lg:flex-row lg:justify-between gap-10 lg:gap-16">
+          <div className="space-y-4 lg:max-w-xs">
             <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto" />
             </Link>
-
-            {/* Simple, clear tagline */}
-            <p className="text-sm text-[#48484a] leading-relaxed max-w-sm">
+            <p className="text-sm text-[#48484a] leading-relaxed">
               Book a clinic visit, track your token live, and skip the waiting room. No advance payment.
             </p>
-
-            {/* Direct Contact Channels */}
-            <div className="space-y-2 pt-1 text-sm text-[#48484a]">
-              <p className="text-xs text-[#86868b] font-normal">Contact</p>
-              <a
-                href="mailto:contact@mediarca.in"
-                className="inline-flex items-center gap-2 font-normal text-[#1d1d1f] hover:text-[#0066cc] transition-colors"
-              >
-                <Mail className="w-4 h-4 text-[#0066cc] shrink-0" />
-                <span>contact@mediarca.in</span>
-              </a>
-            </div>
+            <a
+              href="mailto:contact@mediarca.in"
+              className="inline-flex items-center gap-2 text-sm text-[#1d1d1f] hover:text-[#0066cc] transition-colors py-1"
+            >
+              <Mail className="w-4 h-4 text-[#0066cc] shrink-0" />
+              <span>contact@mediarca.in</span>
+            </a>
           </div>
 
-          {/* Column 2: Clinical Care (Spans 3 columns) */}
-          <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-              Patients
-            </h4>
-            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
-              <li>
-                <Link to="/doctors" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Find Doctors
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?tab=clinics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Clinics
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to={user?.role === 'PATIENT' ? '/patient/appointments' : '/patient/login'}
-                  className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block"
-                >
-                  Appointments
-                </Link>
-              </li>
-              <li>
-                <Link to="/clinic-checkin" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Check In
-                </Link>
-              </li>
-              <li>
-                <Link to="/how-it-works" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  How It Works
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Specialties (Spans 2 columns) */}
-          <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-              Specialties
-            </h4>
-            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
-              <li>
-                <Link to="/doctors?specialty=General+Medicine" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  General Medicine
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?specialty=Cardiology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Cardiology
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?specialty=Dermatology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Dermatology
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?specialty=Pediatrics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Pediatrics
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?specialty=Orthopedics" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Orthopedics
-                </Link>
-              </li>
-              <li>
-                <Link to="/doctors?specialty=Neurology" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Neurology
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4: Company & Support (Spans 3 columns) */}
-          <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-              Company
-            </h4>
-            <ul className="space-y-1 sm:space-y-2.5 text-sm text-[#48484a]">
-              <li>
-                <Link to="/about" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5 inline-block">
-                  Contact
-                </Link>
-              </li>
-            </ul>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-8 sm:gap-x-16">
+            <FooterColumn title="Patients" links={patientLinks} />
+            <FooterColumn title="Specialties" links={specialtyLinks} />
+            <FooterColumn title="Company" links={companyLinks} />
           </div>
         </div>
 
-        {/* Operational Portals Strip (Shown only to guests/unauthenticated visitors; hidden once signed in) */}
+        {/* Sign-in links for visitors only */}
         {!user && (
-          <div className="mt-12 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">
-                Sign in as
-              </span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-              <Link
-                to="/patient/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
-              >
-                Patient
-              </Link>
-              <span className="text-[#d2d2d7]">•</span>
-              <Link
-                to="/doctor/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
-              >
-                Doctor
-              </Link>
-              <span className="text-[#d2d2d7]">•</span>
-              <Link
-                to="/clinic/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
-              >
-                Clinic
-              </Link>
-              <span className="text-[#d2d2d7]">•</span>
-              <Link
-                to="/receptionist/login"
-                className="text-[#48484a] hover:text-[#0066cc] transition-colors font-normal"
-              >
-                Receptionist
-              </Link>
+          <div className="mt-10 pt-6 border-t border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm">
+            <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight">Sign in as</span>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[#48484a]">
+              {signInLinks.map((l) => (
+                <Link key={l.label} to={l.to} className="hover:text-[#0066cc] transition-colors py-1.5 sm:py-0.5">
+                  {l.label}
+                </Link>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Bottom Disclaimer & Copyright Bar */}
-        <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-4 text-xs text-[#86868b]">
-          <p className="text-xs leading-relaxed text-[#86868b]">
-            <strong className="font-semibold">Not for emergencies.</strong> In an emergency, call 112 / 108 or go to the nearest hospital.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2">
-            <p className="text-xs sm:text-sm text-[#48484a]">
-              © {currentYear} MediArca. All rights reserved.
-            </p>
-            <div className="flex flex-wrap items-center gap-5 text-xs sm:text-sm text-[#48484a]">
+        {/* Copyright, legal links, emergency note */}
+        <div className="mt-8 pt-6 border-t border-[#e5e5ea] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm text-[#48484a]">
+            <p>© {currentYear} MediArca. All rights reserved.</p>
+            <div className="flex flex-wrap items-center gap-x-5">
               <Link to="/terms" className="hover:text-[#0066cc] transition-colors py-1.5 inline-block">
                 Terms
               </Link>
@@ -200,6 +110,9 @@ export const Footer: React.FC = () => {
               </Link>
             </div>
           </div>
+          <p className="text-xs leading-relaxed text-[#86868b]">
+            <strong className="font-semibold">Not for emergencies.</strong> Call 112 / 108 or go to the nearest hospital.
+          </p>
         </div>
       </div>
     </footer>
