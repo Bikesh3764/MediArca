@@ -10120,7 +10120,8 @@ Follow-up Date: 2026-10-15`;
   assert(
     doctorControllerContent.includes('Working days update would create an overlapping shift conflict') &&
     doctorControllerContent.includes('startA < endB && startB < endA') &&
-    doctorControllerContent.includes('newStart < affEnd && affStart < newEnd'),
+    // FIX-052: updateSchedule's default-shift path now compares every clinic via findShiftClash (utils/shiftClash.ts)
+    doctorControllerContent.includes('findShiftClash(set, sets)'),
     'Feature 2: updateDoctorWorkingDays and updateSchedule prevent overlapping shifts across clinics on common days'
   );
 
@@ -10389,7 +10390,8 @@ Follow-up Date: 2026-10-15`;
   assert(
     getPatientApptsBody.includes("isOnlyActive = statusQuery === 'active'") &&
     getPatientApptsBody.includes("isOnlyPast = statusQuery === 'past'") &&
-    getPatientApptsBody.includes("status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW', 'EXPIRED'] }") &&
+    // FIX-052: declined requests (REJECTED) are part of the patient's history too
+    getPatientApptsBody.includes("status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED', 'NO_SHOW', 'EXPIRED'] }") &&
     getPatientApptsBody.includes('hasMore: isOnlyPast ? enrichedAppointments.length === takeLimit : undefined'),
     'On-Demand Past Appointments: getPatientAppointments supports status=active vs status=past with 10-record pagination and hasMore'
   );

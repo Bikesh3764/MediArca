@@ -132,6 +132,12 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
       return;
     }
 
+    // A booking request is confirmed only through Approve, which records payment and gives the token
+    if (targetAppointment.status === 'PENDING_APPROVAL' && status === 'WAITING') {
+      res.status(400).json({ success: false, message: 'Use Approve to confirm a booking request.' });
+      return;
+    }
+
     const transition = canTransition(targetAppointment.status, status, req.user?.role || 'RECEPTIONIST');
     if (!transition.allowed) {
       res.status(400).json({
@@ -233,6 +239,9 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
         });
         if (!current) {
           throw new Error('Appointment not found');
+        }
+        if (current.status === 'PENDING_APPROVAL' && status === 'WAITING') {
+          throw new Error('Cannot transition appointment: use Approve to confirm a booking request.');
         }
         const stateCheck = canTransition(current.status, status, req.user?.role || 'RECEPTIONIST');
         if (!stateCheck.allowed) {

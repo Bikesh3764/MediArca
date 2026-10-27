@@ -71,8 +71,27 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
         }));
     }
 
+    // Unknown and already-verified emails get the same reply as a wrong code, so this
+    // endpoint can't be used to find out which emails have accounts (FIX-052)
+    const wrongCode = async (roleForCount: string | null) => {
+      const attemptResult = await recordFailedVerificationAttemptAsync(cleanEmail, roleForCount);
+      if (attemptResult.isLocked) {
+        res.status(429).json({
+          success: false,
+          message: 'Too many failed verification attempts. Your account has been temporarily locked for 15 minutes. Please try again later or request a new code once unlocked.',
+          remainingSeconds: attemptResult.remainingLockoutSeconds,
+        });
+        return;
+      }
+      res.status(400).json({
+        success: false,
+        message: `Invalid verification code. Please check your email and try again. (${attemptResult.remainingAttempts} ${attemptResult.remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining before temporary lockout)`,
+        remainingAttempts: attemptResult.remainingAttempts,
+      });
+    };
+
     if (!user) {
-      res.status(404).json({ success: false, message: 'Account not found with this email' });
+      await wrongCode(requestedRole);
       return;
     }
 
@@ -89,32 +108,14 @@ export const verifyEmailOtp = async (req: Request, res: Response): Promise<void>
       }
     }
 
+    // Already verified: never sign in through a code (Prevent A-01 Account Takeover). Same reply as a wrong code.
     if (user.isEmailVerified) {
-      // User is already verified: reject OTP verification and require standard password login (Prevent A-01 Account Takeover)
-      await clearVerificationStateAsync(cleanEmail, effectiveRole);
-      res.status(400).json({
-        success: false,
-        message: 'This email is already verified. Please sign in directly with your password.',
-        isAlreadyVerified: true,
-      });
+      await wrongCode(requestedRole);
       return;
     }
 
     if (!otpMatches(user.emailVerificationOtp, cleanOtp)) {
-      const attemptResult = await recordFailedVerificationAttemptAsync(cleanEmail, effectiveRole);
-      if (attemptResult.isLocked) {
-        res.status(429).json({
-          success: false,
-          message: 'Too many failed verification attempts. Your account has been temporarily locked for 15 minutes. Please try again later or request a new code once unlocked.',
-          remainingSeconds: attemptResult.remainingLockoutSeconds,
-        });
-        return;
-      }
-      res.status(400).json({
-        success: false,
-        message: `Invalid verification code. Please check your email and try again. (${attemptResult.remainingAttempts} ${attemptResult.remainingAttempts === 1 ? 'attempt' : 'attempts'} remaining before temporary lockout)`,
-        remainingAttempts: attemptResult.remainingAttempts,
-      });
+      await wrongCode(effectiveRole);
       return;
     }
 
@@ -304,7 +305,9 @@ export const resendEmailOtp = async (req: Request, res: Response): Promise<void>
     }
 
     if (user.isEmailVerified) {
-      res.status(400).json({ success: false, message: 'Email is already verified. Please sign in.' });
+      // Same reply as for an unknown email, so resend can't reveal which accounts exist (FIX-044/052)
+      recordResendAttempt(cleanEmail, effectiveRole);
+      res.json({ success: true, message: 'A fresh 6-digit verification code has been sent to your email.', data: {} });
       return;
     }
 

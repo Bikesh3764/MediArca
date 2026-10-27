@@ -31,6 +31,12 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
+    // Shown to patients and in notifications, so keep it short ("11:45 AM", "in 15 mins")
+    if (expectedReturnTime !== undefined && expectedReturnTime !== null && (typeof expectedReturnTime !== 'string' || expectedReturnTime.length > 40)) {
+      res.status(400).json({ success: false, message: 'Return time must be short text (up to 40 characters).' });
+      return;
+    }
+
     let doctor: any;
 
     if (req.user.role === 'DOCTOR') {

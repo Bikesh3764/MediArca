@@ -8,10 +8,11 @@ import crypto from 'crypto';
 import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
-import { resolveReceptionistContact } from './helpers';
+import { resolveReceptionistContact, estimateNextToken } from './helpers';
 import { pickWalkinAccount } from '../../utils/walkinMatch';
 import { findTooLong, LIMITS } from '../../utils/inputLimits';
-import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE } from '../../utils/scheduleUtils';
+import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE, getDayOfWeekCode } from '../../utils/scheduleUtils';
+import { activeShiftSets, clashWithEarlierClinic } from '../../utils/shiftClash';
 
 /** Active bookings (self plus family) one patient account may hold on a single date. */
 export const MAX_ACTIVE_BOOKINGS_PER_DAY = 4;
@@ -90,6 +91,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
       symptoms: [symptoms, LIMITS.symptoms],
       patientName: [patientName, LIMITS.name],
       patientPhone: [patientPhone, LIMITS.phone],
+      patientAge: [patientAge, 10],
+      patientGender: [patientGender, 20],
     });
     if (tooLong) {
       res.status(400).json({ success: false, message: tooLong });
@@ -371,6 +374,21 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         const st = evaluateSlotStatus(s, appointmentDate, 0, new Date());
         return !st.isPassed && !st.isFull;
       }) || slots[0];
+    }
+
+    // The doctor can't be at two clinics at once: a clinic that joined later can't take bookings
+    // for hours that clash with an earlier clinic until its own hours are changed (FIX-052)
+    if (req.user.role === 'PATIENT' && chosenSlot && activeClinics.length > 1) {
+      const sets = activeShiftSets(doctor, activeClinics);
+      const targetSet = sets.find((s) => s.clinicId === targetClinicId);
+      const clash = targetSet ? clashWithEarlierClinic(targetSet, sets, chosenSlot, getDayOfWeekCode(appointmentDate)) : null;
+      if (clash) {
+        res.status(409).json({
+          success: false,
+          message: `${withDr(doctor.user?.fullName)} sits at ${clash.clinicName} at this time. Please pick another shift or day.`,
+        });
+        return;
+      }
     }
 
     // Check if patient already has an active appointment with this doctor on this day (applies to PATIENT self-booking and DOCTOR walk-ins)
@@ -679,7 +697,18 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
     const visitWhen = `${formatVisitDate(appointmentDate)} (${chosenSlot.name})`;
 
     // The doctor sees new bookings live on the dashboard, so only the patient and the desk are told.
-    if (req.user?.id) {
+    if (req.user?.role === 'DOCTOR') {
+      // A doctor booked a walk-in: the patient gets the token, not the doctor who made it
+      const walkinUserId = patientUser?.id || newAppointment.patient?.userId;
+      if (walkinUserId) {
+        createNotification(
+          walkinUserId,
+          'Token booked',
+          `Token #${newAppointment.queueNumber} for ${cleanDocName} on ${formatVisitDate(appointmentDate)}.`,
+          'QUEUE'
+        ).catch(() => {});
+      }
+    } else if (req.user?.id) {
       if (isPendingBooking) {
         createNotification(
           req.user.id,
@@ -730,16 +759,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     let estimatedQueueNumber = newAppointment.queueNumber > 0 ? newAppointment.queueNumber : 1;
     if (isPendingBooking) {
-      const confirmedInSlotCount = await prisma.appointment.count({
-        where: {
-          doctorId: doctor.id,
-          appointmentDate,
-          ...(newAppointment.clinicId ? { clinicId: newAppointment.clinicId } : {}),
-          queueNumber: { gt: 0 },
-          ...(chosenSlot?.id ? { slotId: chosenSlot.id } : {}),
-        },
-      });
-      estimatedQueueNumber = Math.max(1, confirmedInSlotCount + 1);
+      // Same rule the desk uses on approval: next token after the highest one in this shift
+      estimatedQueueNumber = await estimateNextToken(doctor.id, appointmentDate, newAppointment.clinicId, chosenSlot?.id, chosenSlot?.name);
     }
 
     const appointmentResponseData = {

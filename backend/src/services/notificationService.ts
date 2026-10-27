@@ -55,6 +55,38 @@ export const createNotification = async (
   }
 };
 
+/**
+ * Finds the upcoming visits that are about to be cancelled because a doctor and a clinic part ways,
+ * so the patients can be told afterwards. Call before cancelling; send with `notifyDetachCancellations`.
+ */
+export const findVisitsCancelledByDetach = async (doctorId: string, clinicId: string, fromDate: string) =>
+  prisma.appointment.findMany({
+    where: {
+      clinicId,
+      doctorId,
+      appointmentDate: { gte: fromDate },
+      status: { in: ['PENDING_APPROVAL', 'WAITING'] },
+    },
+    select: {
+      appointmentDate: true,
+      patient: { select: { userId: true } },
+      doctor: { select: { user: { select: { fullName: true } } } },
+      clinic: { select: { clinicName: true } },
+    },
+  });
+
+export const notifyDetachCancellations = (visits: Awaited<ReturnType<typeof findVisitsCancelledByDetach>>): void => {
+  for (const v of visits) {
+    if (!v.patient?.userId) continue;
+    createNotification(
+      v.patient.userId,
+      'Visit cancelled',
+      `${withDr(v.doctor?.user?.fullName)} no longer sees patients at ${v.clinic?.clinicName || 'this clinic'}, so your visit on ${formatVisitDate(v.appointmentDate)} was cancelled. Please book again.`,
+      'APPOINTMENT'
+    ).catch(() => {});
+  }
+};
+
 export const getUserNotifications = async (userId: string, limit = 50): Promise<any[]> => {
   return prisma.notification.findMany({
     where: { userId },

@@ -106,11 +106,12 @@ export const getDoctors = async (req: Request, res: Response): Promise<void> => 
       whereClause.specialty = { equals: specialty, mode: 'insensitive' };
     }
 
-    if (minExp) {
+    // Filters that aren't numbers are ignored instead of crashing the query
+    if (minExp && Number.isFinite(Number(minExp))) {
       whereClause.experienceYears = { gte: Number(minExp) };
     }
 
-    if (maxFee) {
+    if (maxFee && Number.isFinite(Number(maxFee))) {
       whereClause.consultationFee = { lte: Number(maxFee) };
     }
 

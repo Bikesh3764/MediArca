@@ -377,7 +377,8 @@ export const evaluateSlotStatus = (
  */
 export const isValidAppointmentDate = (dateStr: any): boolean => {
   if (!dateStr || typeof dateStr !== 'string') return false;
-  const match = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  // No trimming: callers store the value as given, and "2026-10-28 " would be a different day string
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return false;
   const year = parseInt(match[1], 10);
   const month = parseInt(match[2], 10);
@@ -510,6 +511,16 @@ export const validateDoctorSlots = (
       maxPatients,
       avgConsultationMinutes,
     });
+  }
+
+  // Tokens are matched by shift name as well as id, so two shifts with one name would share token numbers
+  const seenNames = new Set<string>();
+  for (const s of formatted) {
+    const key = cleanSlotName(s.name, s.id).toLowerCase();
+    if (seenNames.has(key)) {
+      return { valid: false, error: `Two shifts can't have the same name ("${cleanSlotName(s.name, s.id)}"). Rename one.` };
+    }
+    seenNames.add(key);
   }
 
   // Check for overlapping shifts

@@ -5,6 +5,7 @@ import { findTooLongInBody } from '../../utils/inputLimits';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { isClinicActive } from '../../utils/authGuards';
+import { avatarUrlProblem } from '../../utils/avatarUrl';
 import { getLocalDateString, cleanSlotName, parseDoctorSlots, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { REPORT_MAX_ROWS, capReportRows } from '../../utils/reportLimits';
 
@@ -335,6 +336,11 @@ export const updateClinicProfile = async (req: AuthRequest, res: Response): Prom
         });
         return;
       }
+      const avatarProblem = avatarUrlProblem(avatarUrl, clinic.user?.avatarUrl);
+      if (avatarProblem) {
+        res.status(400).json({ success: false, message: avatarProblem });
+        return;
+      }
     }
 
     let formattedPhone: string | null | undefined = undefined;
@@ -382,7 +388,7 @@ export const updateClinicProfile = async (req: AuthRequest, res: Response): Prom
       userUpdatePayload.phone = formattedPhone;
     }
     if (avatarUrl !== undefined) {
-      userUpdatePayload.avatarUrl = avatarUrl;
+      userUpdatePayload.avatarUrl = avatarUrl || null;
     }
 
     const [updatedClinic, updatedUser] = await prisma.$transaction([

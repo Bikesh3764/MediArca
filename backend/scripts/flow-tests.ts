@@ -24,6 +24,7 @@ import prisma from '../src/config/database';
 import { getJwtSecret } from '../src/middleware/authMiddleware';
 import { getLocalDateString, getIndianTimeMinutes, MAX_BOOKING_DAYS_AHEAD } from '../src/utils/scheduleUtils';
 import { getCheckInWindow } from '../src/controllers/appointment/checkIn';
+import { expireStalePendingAppointments } from '../src/utils/maintenance';
 
 let passed = 0;
 let failed = 0;
@@ -166,6 +167,182 @@ async function cleanup() {
   // Walk-in records the tests created (synthetic emails, named after this run)
   await prisma.user.deleteMany({ where: { email: { endsWith: '@mediarca.local' }, fullName: { contains: RUN } } });
   await prisma.contactMessage.deleteMany({ where: { email: email('contact') } });
+}
+
+/**
+ * FIX-052: bugs found in the 27 Oct bug hunt (docs/audits/2026-10-27-bug-hunt.md).
+ * Uses its own clinics, doctors and patients so it can't disturb the main visit flow above.
+ */
+async function bugHuntChecks() {
+  const hash = await bcrypt.hash('Temp-Pass-123', 4);
+  const days = JSON.stringify(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
+  const now = getIndianTimeMinutes(new Date());
+  const live = { id: 'bh_live', name: 'Live Shift', startTime: hhmm(Math.max(0, now - 60)), endTime: hhmm(Math.min(24 * 60 - 1, now + 120)), maxPatients: 50, avgConsultationMinutes: 5 };
+  const dayOffset = (n: number) => getLocalDateString(new Date(Date.now() + n * 86400000));
+  const today = getLocalDateString();
+  const tomorrow = dayOffset(1);
+  let n = 0;
+  const user = (who: string, role: string, extra: Record<string, unknown> = {}) =>
+    prisma.user.create({ data: { email: email(`bh${++n}${who}`), passwordHash: hash, fullName: `${who} ${RUN} ${n}`, role, phone: '+91 9800000001', ...extra } });
+  const clinicWithDesk = async (tag: string) => {
+    const cu = await user(`clinic${tag}`, 'CLINIC');
+    const clinic = await prisma.clinicProfile.create({ data: { userId: cu.id, clinicName: `BH ${tag} ${RUN}`, address: 'x', city: 'Pune', state: 'Maharashtra', isVerified: true, verificationStatus: 'VERIFIED', checkinCode: `bh-${tag}-${RUN}` } });
+    const ru = await user(`desk${tag}`, 'RECEPTIONIST');
+    const rec = await prisma.receptionistProfile.create({ data: { userId: ru.id, clinicId: clinic.id, status: 'ACTIVE', phone: '+91 9800000003' } });
+    return { cu, clinic, ru, rec, clinicToken: sign(cu), deskToken: sign(ru) };
+  };
+  const doctorWith = async (tag: string, slots: any[]) => {
+    const du = await user(`doc${tag}`, 'DOCTOR');
+    const doctor = await prisma.doctorProfile.create({ data: { userId: du.id, specialty: 'General Physician', qualifications: 'MBBS', consultationFee: 300, isVerified: true, verificationStatus: 'VERIFIED', slots: JSON.stringify(slots), workingDays: days, cabinStatus: 'IN_CABIN' } });
+    return { du, doctor, token: sign(du) };
+  };
+  const join = async (c: any, d: any, slots?: any[]) => {
+    await prisma.clinicDoctor.create({ data: { clinicId: c.clinic.id, doctorId: d.doctor.id, status: 'ACTIVE', consultationFee: 300, slots: slots ? JSON.stringify(slots) : null, workingDays: days } });
+    await prisma.doctorReceptionist.create({ data: { doctorId: d.doctor.id, receptionistId: c.rec.id, status: 'ACTIVE' } });
+  };
+  const patient = async (tag: string) => {
+    const pu = await user(`pat${tag}`, 'PATIENT');
+    await prisma.patientProfile.create({ data: { userId: pu.id, dateOfBirth: '1990-01-01', gender: 'Female' } });
+    return { pu, token: sign(pu) };
+  };
+
+  const A = await clinicWithDesk('A');
+  const D = await doctorWith('A', [live]);
+  await join(A, D, [live]);
+  const bookAt = (t: string, extra: Record<string, unknown> = {}) =>
+    call('POST', '/api/appointments/book', t, { doctorId: D.doctor.id, clinicId: A.clinic.id, appointmentDate: today, slotId: live.id, ...extra });
+
+  // Desk can't confirm an unpaid request through the status button
+  const P1 = await patient('1');
+  const pend = await bookAt(P1.token);
+  const viaStatus = await call('PATCH', `/api/receptionist/appointments/${pend.json?.data?.id}/status`, A.deskToken, { status: 'WAITING' });
+  check(viaStatus.status === 400, 'FIX-052: desk "status=WAITING" on a request is refused (Approve gives the token)', viaStatus);
+
+  // Desk walk-in: the doctor gets no notification
+  const before = await prisma.notification.count({ where: { userId: D.du.id } });
+  const walk = await call('POST', '/api/receptionist/book-walkin', A.deskToken, { doctorId: D.doctor.id, patientName: `Walk ${RUN}`, patientPhone: '9811100001', slotId: live.id });
+  await wait(300);
+  check(walk.status === 201 && (await prisma.notification.count({ where: { userId: D.du.id } })) === before, 'FIX-052: desk walk-in sends the doctor no notification', walk.status);
+
+  // Doctor-made walk-in: "token booked" goes to the patient record, not the doctor
+  const docBook = await call('POST', '/api/appointments/book', D.token, { clinicId: A.clinic.id, appointmentDate: today, slotId: live.id, patientName: `DocWalk ${RUN}`, patientPhone: '9811100002' });
+  await wait(300);
+  const docNotes = await prisma.notification.count({ where: { userId: D.du.id } });
+  const walkUserNotes = await prisma.notification.count({ where: { user: { fullName: `DocWalk ${RUN}` }, title: 'Token booked' } });
+  check(docBook.status === 201 && docNotes === before && walkUserNotes === 1, 'FIX-052: doctor walk-in token notice goes to the patient, not the doctor', [docBook.status, docNotes - before, walkUserNotes]);
+
+  // Estimated token on the Appointments page matches the token the desk then gives
+  const P2 = await patient('2');
+  const pend2 = await bookAt(P2.token);
+  const list = await call('GET', '/api/appointments/patient?status=active', P2.token);
+  const shown = (list.json?.data || []).find((a: any) => a.id === pend2.json?.data?.id)?.estimatedQueueNumber;
+  const approved = await call('POST', `/api/receptionist/appointments/${pend2.json?.data?.id}/approve`, A.deskToken, {});
+  check(approved.status === 200 && shown === approved.json?.data?.queueNumber && pend2.json?.data?.estimatedQueueNumber === shown, 'FIX-052: estimated token (booking, Appointments page) equals the token given on approval', [pend2.json?.data?.estimatedQueueNumber, shown, approved.json?.data?.queueNumber]);
+
+  // Patient can't move a confirmed token by API
+  const moved = await call('POST', `/api/appointments/${pend2.json?.data?.id}/reschedule`, P2.token, { newDate: tomorrow, newSlotId: live.id });
+  check(moved.status === 403, 'FIX-052: patient cannot move a confirmed token themselves', moved);
+
+  // Patient cancel: desk notification carries the patient's name
+  await call('PATCH', `/api/appointments/${pend2.json?.data?.id}/cancel`, P2.token);
+  await wait(300);
+  const cancelNote = await prisma.notification.findFirst({ where: { userId: A.ru.id, title: 'Booking cancelled' }, orderBy: { createdAt: 'desc' } });
+  check(Boolean(cancelNote?.message?.startsWith(P2.pu.fullName)), 'FIX-052: desk "booking cancelled" notice names the patient', cancelNote?.message);
+
+  // History: declined requests show in Past; missed visits get closed and show there too
+  const prof = await prisma.patientProfile.findUnique({ where: { userId: P1.pu.id } });
+  const missed = await prisma.appointment.create({ data: { patientId: prof!.id, doctorId: D.doctor.id, clinicId: A.clinic.id, appointmentDate: dayOffset(-3), queueNumber: 7, slotId: live.id, checkingWindow: live.name, estimatedTime: '10:00 AM', status: 'WAITING', paymentStatus: 'PAID' } });
+  const declined = await prisma.appointment.create({ data: { patientId: prof!.id, doctorId: D.doctor.id, clinicId: A.clinic.id, appointmentDate: dayOffset(-2), queueNumber: -9, slotId: live.id, checkingWindow: live.name, estimatedTime: '10:00 AM', status: 'REJECTED', paymentStatus: 'FAILED' } });
+  await expireStalePendingAppointments(true);
+  const missedAfter = await prisma.appointment.findUnique({ where: { id: missed.id } });
+  const past = await call('GET', '/api/appointments/patient?status=past&limit=50', P1.token);
+  const pastIds = (past.json?.data || []).map((a: any) => a.id);
+  check(missedAfter?.status === 'EXPIRED' && pastIds.includes(missed.id), 'FIX-052: a missed visit from an earlier day is closed and shows in Past', [missedAfter?.status, pastIds.includes(missed.id)]);
+  check(pastIds.includes(declined.id), 'FIX-052: a declined request shows in Past');
+
+  // Bad input: clear 400s, no crashes, no stored junk
+  const spaced = await bookAt(P1.token, { appointmentDate: `${tomorrow} ` });
+  check(spaced.status === 400, 'FIX-052: a date with a trailing space is refused', spaced.status);
+  const badMinExp = await call('GET', '/api/doctors?minExp=abc');
+  const badPage = await call('GET', '/api/appointments/patient?status=past&page=abc', P1.token);
+  const twice = await call('GET', `/api/consultations/queue?clinicId=${A.clinic.id}&clinicId=x`, D.token);
+  check(badMinExp.status === 200 && badPage.status === 200 && twice.status === 200, 'FIX-052: bad or repeated query values no longer crash (500)', [badMinExp.status, badPage.status, twice.status]);
+  const longBack = await call('PUT', '/api/doctors/cabin-status', D.token, { status: 'STEPPED_OUT', expectedReturnTime: 'x'.repeat(500) });
+  const longLeave = await call('POST', '/api/doctors/me/leaves', D.token, { type: 'DATE_RANGE', startDate: dayOffset(40), endDate: dayOffset(40), reason: 'x'.repeat(5000) });
+  check(longBack.status === 400 && longLeave.status === 400, 'FIX-052: "back by" text and leave reason have length limits', [longBack.status, longLeave.status]);
+
+  // Photos only through upload; removing is fine
+  const outside = await call('PUT', '/api/auth/profile', A.clinicToken, { avatarUrl: 'https://tracker.example.com/p.gif' });
+  const outsideClinic = await call('PUT', '/api/clinics/profile', A.clinicToken, { avatarUrl: 'https://tracker.example.com/p.gif' });
+  const removePhoto = await call('PUT', '/api/auth/profile', P1.token, { avatarUrl: null });
+  check(outside.status === 400 && outsideClinic.status === 400 && removePhoto.status === 200, 'FIX-052: profile photo can only be uploaded, not set to a link', [outside.status, outsideClinic.status, removePhoto.status]);
+
+  // Receptionist's new phone reaches patients
+  const P3 = await patient('3');
+  const b3 = await bookAt(P3.token);
+  const newPhone = await call('PUT', '/api/auth/profile', A.deskToken, { phone: '9876501234' });
+  const seen = await call('GET', `/api/appointments/${b3.json?.data?.id}`, P3.token);
+  check(newPhone.status === 200 && seen.json?.data?.receptionistPhone === '+91 9876501234', 'FIX-052: patients see the receptionist\'s updated phone', seen.json?.data?.receptionistPhone);
+
+  // Two shifts can't share a name
+  const dupNames = await call('PUT', '/api/doctors/schedule', D.token, { slots: [{ id: 'a', name: 'Morning', startTime: '06:00', endTime: '07:00', maxPatients: 5 }, { id: 'b', name: 'morning', startTime: '07:30', endTime: '08:00', maxPatients: 5 }] });
+  check(dupNames.status === 400, 'FIX-052: two shifts with the same name are refused', dupNames.json?.message);
+
+  // A shift with bookings can't be removed (used to fail with 500)
+  if (now + 300 < 24 * 60) {
+    const S = await clinicWithDesk('S');
+    const morning = { ...live, id: 'sm', name: 'Morning' };
+    const evening = { id: 'se', name: 'Evening', startTime: hhmm(now + 180), endTime: hhmm(now + 240), maxPatients: 20, avgConsultationMinutes: 5 };
+    const DS = await doctorWith('S', [morning, evening]);
+    await join(S, DS, [morning, evening]);
+    await call('POST', '/api/receptionist/book-walkin', S.deskToken, { doctorId: DS.doctor.id, patientName: `Eve ${RUN}`, patientPhone: '9811100012', slotId: 'se', appointmentDate: tomorrow });
+    const drop = await call('PUT', '/api/doctors/schedule', DS.token, { clinicId: S.clinic.id, slots: [morning] });
+    check(drop.status === 400 && /booking/i.test(drop.json?.message || ''), 'FIX-052: removing a shift that has bookings gives a clear message, not a crash', [drop.status, drop.json?.message]);
+  }
+
+  // Doctor in two clinics at the same hours
+  const B = await clinicWithDesk('B');
+  const C = await clinicWithDesk('C');
+  const shared = { ...live, id: 'slot_1', name: 'Shift 1' };
+  const DM = await doctorWith('M', [shared]);
+  await join(B, DM); // clinic B uses the doctor's default hours
+  const invite = await call('POST', '/api/clinic/doctors', C.clinicToken, { doctorId: DM.doctor.id });
+  const accept = await call('PUT', `/api/doctors/me/affiliations/${invite.json?.data?.id}/respond`, DM.token, { action: 'ACCEPT' });
+  check(accept.status === 200 && Boolean(accept.json?.warning), 'FIX-052: joining a clinic with clashing hours warns the doctor', accept.json?.message);
+  await prisma.doctorReceptionist.create({ data: { doctorId: DM.doctor.id, receptionistId: C.rec.id, status: 'ACTIVE' } });
+  const PB = await patient('B'), PC = await patient('C');
+  const atB = await call('POST', '/api/appointments/book', PB.token, { doctorId: DM.doctor.id, clinicId: B.clinic.id, appointmentDate: today, slotId: 'slot_1' });
+  const atC = await call('POST', '/api/appointments/book', PC.token, { doctorId: DM.doctor.id, clinicId: C.clinic.id, appointmentDate: today, slotId: 'slot_1' });
+  check(atB.status === 201 && atC.status === 409, 'FIX-052: the later clinic can\'t take bookings for hours that clash with the first clinic', [atB.status, atC.status]);
+  const clashing = await call('PUT', '/api/doctors/schedule', DM.token, { clinicId: C.clinic.id, slots: [{ ...shared, id: 'c1', name: 'C shift' }] });
+  check(clashing.status === 400, 'FIX-052: clinic hours that clash with a clinic on default hours are refused', clashing.json?.message);
+
+  // A desk can't remove another clinic's leave for a shared doctor
+  const leave = await call('POST', `/api/doctors/${DM.doctor.id}/leaves`, C.deskToken, { type: 'DATE_RANGE', startDate: dayOffset(5), endDate: dayOffset(6), reason: 'Conference' });
+  const otherDesk = await call('DELETE', `/api/doctors/${DM.doctor.id}/leaves/${leave.json?.data?.id}`, B.deskToken);
+  const ownDesk = await call('DELETE', `/api/doctors/${DM.doctor.id}/leaves/${leave.json?.data?.id}`, C.deskToken);
+  check(leave.status === 200 && otherDesk.status === 404 && ownDesk.status === 200, 'FIX-052: only the clinic that set a leave (or the doctor) can remove it', [leave.status, otherDesk.status, ownDesk.status]);
+
+  // Doctor leaving a clinic: patients whose visits are cancelled are told
+  await call('POST', `/api/receptionist/appointments/${atB.json?.data?.id}/approve`, B.deskToken, {});
+  const notesBefore = await prisma.notification.count({ where: { userId: PB.pu.id } });
+  const leaveClinic = await call('DELETE', `/api/doctors/me/clinics/${B.clinic.id}`, DM.token);
+  await wait(300);
+  const visitAfter = await prisma.appointment.findUnique({ where: { id: atB.json?.data?.id } });
+  const toldPatient = await prisma.notification.findFirst({ where: { userId: PB.pu.id, title: 'Visit cancelled' } });
+  check(leaveClinic.status === 200 && visitAfter?.status === 'CANCELLED' && Boolean(toldPatient) && (await prisma.notification.count({ where: { userId: PB.pu.id } })) > notesBefore, 'FIX-052: patients are told when a doctor leaving the clinic cancels their visit', [leaveClinic.status, visitAfter?.status]);
+
+  // Code endpoints answer the same for real and unknown emails
+  const resendReal = await call('POST', '/api/auth/resend-otp', undefined, { email: P1.pu.email, role: 'PATIENT' });
+  const resendNone = await call('POST', '/api/auth/resend-otp', undefined, { email: email('nobody'), role: 'PATIENT' });
+  const verifyReal = await call('POST', '/api/auth/verify-otp', undefined, { email: P3.pu.email, otp: '123456', role: 'PATIENT' });
+  const verifyNone = await call('POST', '/api/auth/verify-otp', undefined, { email: email('nobody2'), otp: '123456', role: 'PATIENT' });
+  check(
+    resendReal.status === resendNone.status && resendReal.json?.message === resendNone.json?.message &&
+      verifyReal.status === verifyNone.status && verifyReal.json?.message === verifyNone.json?.message,
+    'FIX-052: resend/verify code replies don\'t reveal which emails have accounts',
+    [resendReal.status, resendNone.status, verifyReal.status, verifyNone.status]
+  );
 }
 
 async function main() {
@@ -490,6 +667,9 @@ async function main() {
     );
     const demoChange = await call('PUT', '/api/auth/change-password', demoToken, { currentPassword: 'x', newPassword: 'Whatever-123' });
     check(demoChange.status === 403, 'Demo accounts cannot change their password', demoChange.status);
+
+    // ---- Bug hunt fixes (FIX-052) ---------------------------------------------
+    await bugHuntChecks();
 
     // ---- Long reports are complete (FIX-051: used to stop at 2000 without saying so) ----
     {

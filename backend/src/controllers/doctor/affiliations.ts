@@ -4,6 +4,8 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, getLocalDateString, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
 import { createNotification, withDr } from '../../services/notificationService';
+import { findVisitsCancelledByDetach, notifyDetachCancellations } from '../../services/notificationService';
+import { joinClashWarning } from '../../utils/shiftClash';
 
 /**
  * Get doctor's affiliated clinics and linked receptionists
@@ -272,9 +274,11 @@ export const addDoctorClinic = async (req: AuthRequest, res: Response): Promise<
             `${withDr(req.user.fullName)} joined your clinic.`,
             'SYSTEM'
           ).catch(() => {});
+          const clashNote = await joinClashWarning(doctor.id, clinic.id);
           res.status(200).json({
             success: true,
-            message: `Affiliation with ${clinic.clinicName} accepted successfully`,
+            message: `Affiliation with ${clinic.clinicName} accepted successfully${clashNote ? `. ${clashNote}` : ''}`,
+            warning: clashNote,
             data: sanitizeClinicAffiliation(accepted),
           });
           return;
@@ -427,9 +431,11 @@ export const respondToClinicAffiliation = async (req: AuthRequest, res: Response
         `${withDr(req.user.fullName)} joined your clinic.`,
         'SYSTEM'
       ).catch(() => {});
+      const clashNote = await joinClashWarning(doctor.id, affiliation.clinicId);
       res.json({
         success: true,
-        message: `Accepted affiliation with ${clinicName}. It is now in your active clinics roster.`,
+        message: `Accepted affiliation with ${clinicName}. It is now in your active clinics roster.${clashNote ? ` ${clashNote}` : ''}`,
+        warning: clashNote,
         data: updated,
       });
     } else {
@@ -490,6 +496,7 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
     const recIds = clinicReceptionists.map((r) => r.id);
 
     const todayStr = getLocalDateString();
+    const cancelledVisits = await findVisitsCancelledByDetach(doctor.id, clinicId, todayStr).catch(() => []);
     await prisma.$transaction([
       prisma.clinicDoctor.deleteMany({
         where: { clinicId, doctorId: doctor.id },
@@ -522,6 +529,8 @@ export const removeDoctorClinic = async (req: AuthRequest, res: Response): Promi
           ]
         : []),
     ]);
+    // Patients whose visit was cancelled are told (they used to find out at the clinic)
+    notifyDetachCancellations(cancelledVisits);
 
     res.json({ success: true, message: 'Clinic affiliation removed successfully' });
   } catch (error: any) {

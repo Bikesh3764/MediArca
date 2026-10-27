@@ -1,4 +1,36 @@
 import { format12Hour, calculateSlotMetrics } from '../../utils/scheduleUtils';
+import prisma from '../../config/database';
+
+/**
+ * Token an unconfirmed request will most likely get: the next number after the highest
+ * token already given in that doctor's shift (any status), which is exactly what the desk
+ * assigns on approval. Booking, the Appointments page and the visit page all use this.
+ */
+export const estimateNextToken = async (
+  doctorId: string,
+  appointmentDate: string,
+  clinicId?: string | null,
+  slotId?: string | null,
+  slotName?: string | null
+): Promise<number> => {
+  const slotFilter = slotId
+    ? { OR: [{ slotId }, ...(slotName ? [{ checkingWindow: slotName }] : [])] }
+    : slotName
+    ? { checkingWindow: slotName }
+    : {};
+  const highest = await prisma.appointment.findFirst({
+    where: {
+      doctorId,
+      appointmentDate,
+      ...(clinicId ? { clinicId } : {}),
+      queueNumber: { gt: 0 },
+      ...slotFilter,
+    },
+    orderBy: { queueNumber: 'desc' },
+    select: { queueNumber: true },
+  });
+  return Math.max(1, (highest?.queueNumber || 0) + 1);
+};
 
 // Helper to calculate estimated time given start time "09:00" and offset minutes (retained for backward compatibility)
 export const calculateEstimatedTime = (startTime24: string, offsetMinutes: number): string => {

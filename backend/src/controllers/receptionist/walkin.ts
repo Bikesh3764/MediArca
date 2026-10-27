@@ -104,6 +104,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       patientPhone: [patientPhone, LIMITS.phone],
       reasonForVisit: [reasonForVisit, LIMITS.reason],
       symptoms: [symptoms, LIMITS.symptoms],
+      patientAge: [patientAge, 10],
+      gender: [gender, 20],
     });
     if (tooLong) {
       res.status(400).json({ success: false, message: tooLong });
@@ -524,16 +526,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
       ).catch(() => {});
     }
 
-    if (newAppointment?.doctor?.userId || (newAppointment?.doctor as any)?.user?.id) {
-      const doctorUserId = newAppointment.doctor.userId || (newAppointment.doctor as any).user?.id;
-      const displayPatient = patientName ? String(patientName).trim() : (newAppointment.patient?.user?.fullName || 'Walk-in Patient');
-      createNotification(
-        doctorUserId,
-        'Walk-in Patient Added',
-        `Walk-in Patient ${displayPatient} was added to your queue (Token #${newAppointment.queueNumber}) at ${newAppointment.clinic?.clinicName || 'Clinic'}.`,
-        'QUEUE'
-      ).catch(() => {});
-    }
+    // No doctor notification: walk-ins appear live in the doctor's queue (FIX-044)
 
     invalidateDoctorQueueCache(doctorId, appointmentDate);
 

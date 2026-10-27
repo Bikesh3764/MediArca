@@ -1,12 +1,17 @@
 import prisma from '../config/database';
-import { getLocalDateString } from './scheduleUtils';
+import { getLocalDateString, getIndianTimeMinutes } from './scheduleUtils';
+
+/** Doctors may still call yesterday's checked-in patients until 6 AM (overnight carryover). */
+const CARRYOVER_ENDS_MINUTES = 6 * 60;
 
 /**
- * Dedicated background maintenance to auto-expire past unconfirmed PENDING_APPROVAL appointments.
- * Strictly separates write/expiry logic from high-frequency GET/polling paths (Eliminating Write-on-Read).
- * Only targets records that have genuinely expired (status === 'PENDING_APPROVAL' with appointmentDate < today).
+ * Background clean-up that closes visits whose day is over. Runs every 15 minutes, never on GET paths.
+ * - Unconfirmed requests (PENDING_APPROVAL) from past dates become EXPIRED.
+ * - Confirmed tokens still WAITING after their day (the patient never came) become EXPIRED,
+ *   so they leave the "Upcoming" list and show in the patient's history. Yesterday's tokens
+ *   wait until 6 AM because a late shift may still call them.
  */
-export const expireStalePendingAppointments = async (force: boolean = false): Promise<number> => {
+export const expireStalePendingAppointments = async (force: boolean = false, now: Date = new Date()): Promise<number> => {
   if (!force && (process.env.NODE_ENV === 'test' || process.env.MEDIARCA_TEST_SUITE)) {
     return 0;
   }
@@ -14,8 +19,8 @@ export const expireStalePendingAppointments = async (force: boolean = false): Pr
     return 0;
   }
   try {
-    const istTodayStr = getLocalDateString(new Date());
-    const result = await prisma.appointment.updateMany({
+    const istTodayStr = getLocalDateString(now);
+    const pending = await prisma.appointment.updateMany({
       where: {
         status: 'PENDING_APPROVAL',
         appointmentDate: { lt: istTodayStr },
@@ -25,12 +30,27 @@ export const expireStalePendingAppointments = async (force: boolean = false): Pr
       },
     });
 
-    if (result.count > 0) {
-      console.log(`[Maintenance] Auto-expired ${result.count} stale pending appointment(s).`);
+    const waitingCutoff =
+      getIndianTimeMinutes(now) >= CARRYOVER_ENDS_MINUTES
+        ? istTodayStr
+        : getLocalDateString(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+    const missed = await prisma.appointment.updateMany({
+      where: {
+        status: 'WAITING',
+        appointmentDate: { lt: waitingCutoff },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+
+    const total = pending.count + missed.count;
+    if (total > 0) {
+      console.log(`[Maintenance] Closed ${pending.count} stale request(s) and ${missed.count} missed visit(s).`);
     }
-    return result.count;
+    return total;
   } catch (error) {
-    console.error('[Maintenance] Error expiring stale pending appointments:', error);
+    console.error('[Maintenance] Error expiring stale appointments:', error);
     return 0;
   }
 };

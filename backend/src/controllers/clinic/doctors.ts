@@ -3,6 +3,8 @@ import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
 import { createNotification } from '../../services/notificationService';
+import { findVisitsCancelledByDetach, notifyDetachCancellations } from '../../services/notificationService';
+import { joinClashWarning } from '../../utils/shiftClash';
 import { getLocalDateString } from '../../utils/scheduleUtils';
 
 /**
@@ -131,9 +133,11 @@ export const addDoctorToClinic = async (req: AuthRequest, res: Response): Promis
             'SYSTEM'
           ).catch(() => {});
 
+          const clashNote = await joinClashWarning(doctor.id, clinic.id);
           res.status(200).json({
             success: true,
-            message: `Accepted affiliation request from Dr. ${doctor.user.fullName}`,
+            message: `Accepted affiliation request from Dr. ${doctor.user.fullName}${clashNote ? `. ${clashNote}` : ''}`,
+            warning: clashNote,
             data: accepted,
           });
           return;
@@ -312,9 +316,11 @@ export const respondToDoctorAffiliation = async (req: AuthRequest, res: Response
         ).catch(() => {});
       }
 
+      const clashNote = await joinClashWarning(affiliation.doctorId, clinic.id);
       res.json({
         success: true,
-        message: `Accepted affiliation with Dr. ${docName}. Doctor is now in your active roster.`,
+        message: `Accepted affiliation with Dr. ${docName}. Doctor is now in your active roster.${clashNote ? ` ${clashNote}` : ''}`,
+        warning: clashNote,
         data: updated,
       });
     } else {
@@ -379,6 +385,7 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
     const recIds = clinicReceptionists.map((r) => r.id);
 
     const todayStr = getLocalDateString();
+    const cancelledVisits = await findVisitsCancelledByDetach(doctorId, clinic.id, todayStr).catch(() => []);
     await prisma.$transaction([
       prisma.clinicDoctor.deleteMany({
         where: {
@@ -414,6 +421,8 @@ export const removeDoctorFromClinic = async (req: AuthRequest, res: Response): P
           ]
         : []),
     ]);
+    // Patients whose visit was cancelled are told (they used to find out at the clinic)
+    notifyDetachCancellations(cancelledVisits);
 
     res.json({
       success: true,

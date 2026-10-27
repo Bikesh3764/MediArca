@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
+import { estimateNextToken } from './helpers';
 import { parseDoctorSlots, evaluateSlotStatus, SlotStatusResult, isValidAppointmentDate, isDoctorOnLeave, isDoctorWorkingOnDate, parseDoctorWorkingDays, parseDoctorLeaves } from '../../utils/scheduleUtils';
 
 export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -180,16 +181,14 @@ export const getQueuePreview = async (req: AuthRequest, res: Response): Promise<
       selectedSlotStatus = availableSlots.find((s) => !s.isPassed && !s.isFull) || availableSlots[0];
     }
 
-    // Shift-specific token number: count how many patients are already confirmed in this specific shift (queueNumber > 0)
-    // Matching bookAppointment logic where estimatedQueueNumber = count(queueNumber > 0 in slot) + 1
-    const confirmedInSlotCount = dayAppointments.filter((a) => {
-      if (a.queueNumber <= 0) return false;
-      if (selectedSlotStatus?.slot.id && a.slotId) return a.slotId === selectedSlotStatus.slot.id;
-      if (selectedSlotStatus?.slot.startTime && a.checkingWindow) return a.checkingWindow.includes(selectedSlotStatus.slot.startTime);
-      return slots.length === 1;
-    }).length;
-
-    const nextSlotQueueNumber = Math.max(1, confirmedInSlotCount + 1);
+    // Next token in this shift: same rule the desk uses on approval (highest token given + 1)
+    const nextSlotQueueNumber = await estimateNextToken(
+      doctor.id,
+      dateStr,
+      selectedAffiliation?.clinicId || null,
+      selectedSlotStatus?.slot.id,
+      selectedSlotStatus?.slot.name
+    );
 
     // Clean shift name (stripping any legacy period descriptors like "(Afternoon)" or "(Morning)")
     const rawShiftName = selectedSlotStatus?.slot?.name || 'Shift';

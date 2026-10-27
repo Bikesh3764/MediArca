@@ -113,6 +113,17 @@ if (isProduction) {
 // Trust proxy for accurate client IP behind Render / reverse proxies (Finding #34)
 app.set('trust proxy', 1);
 
+// Every query value is a plain string (first one wins). A repeated key such as
+// ?clinicId=a&clinicId=b used to arrive as an array and crash database filters with a 500.
+export const parseQueryString = (raw: string): Record<string, string> => {
+  const out: Record<string, string> = {};
+  for (const [key, value] of new URLSearchParams(raw || '')) {
+    if (!(key in out)) out[key] = value;
+  }
+  return out;
+};
+app.set('query parser', parseQueryString);
+
 // Mount Helmet HTTP security headers (FIX-007)
 // crossOriginResourcePolicy: 'cross-origin' allows cross-origin clients (e.g. GitHub Pages) to load static assets/avatars
 app.use(

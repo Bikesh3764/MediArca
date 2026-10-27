@@ -6,6 +6,7 @@ import { parseDoctorSlots, evaluateSlotStatus, getLocalDateString, getIndianTime
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
+import { MAX_ACTIVE_BOOKINGS_PER_DAY } from '../appointment/booking';
 
 export const determineRescheduleTarget = (
   currentStatus: string,
@@ -166,6 +167,37 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
         message: 'Access denied: Unauthorized role for appointment rescheduling',
       });
       return;
+    }
+
+    // A paid token is moved by the clinic (it may change the token); patients can move only unconfirmed requests
+    if (req.user.role === 'PATIENT' && appointment.status === 'WAITING') {
+      res.status(403).json({
+        success: false,
+        message: 'Your token is confirmed. Call the clinic to move it to another day.',
+      });
+      return;
+    }
+    // Moving a request must not get around the per-day booking limit
+    if (
+      req.user.role === 'PATIENT' &&
+      newDate !== appointment.appointmentDate &&
+      typeof (prisma.appointment as any)?.count === 'function'
+    ) {
+      const activeThatDay = await prisma.appointment.count({
+        where: {
+          id: { not: appointment.id },
+          patient: { userId: req.user.id },
+          appointmentDate: newDate,
+          status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+        },
+      });
+      if (activeThatDay >= MAX_ACTIVE_BOOKINGS_PER_DAY) {
+        res.status(429).json({
+          success: false,
+          message: `You already have ${MAX_ACTIVE_BOOKINGS_PER_DAY} bookings on this date. Cancel one first.`,
+        });
+        return;
+      }
     }
 
     if (['COMPLETED', 'CANCELLED', 'REJECTED', 'EXPIRED', 'IN_CONSULTATION'].includes(appointment.status)) {
@@ -496,8 +528,8 @@ export const rescheduleAppointment = async (req: AuthRequest, res: Response): Pr
       ? `Your token is #${updatedAppt.queueNumber}.`
       : 'The clinic will confirm your token.';
 
-    // Dispatch notification to patient
-    if (appointment.patient?.userId) {
+    // Tell the patient, unless they moved it themselves
+    if (appointment.patient?.userId && appointment.patient.userId !== req.user.id) {
       createNotification(
         appointment.patient.userId,
         'Visit moved',

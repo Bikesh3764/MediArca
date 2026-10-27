@@ -10,6 +10,7 @@ import { isValidDobDate, validateDoctorSlots, timeToMinutes, validateDoctorNumer
 import { validateMagicBytes } from '../../middleware/uploadMiddleware';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { sanitizeClinicalHistoryList, sanitizeUserPayload } from './helpers';
+import { avatarUrlProblem, ownAvatarKey } from '../../utils/avatarUrl';
 
 export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -103,6 +104,13 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
           success: false,
           message: 'Base64 image data URLs are not permitted. Please upload your avatar via the official avatar upload endpoint.',
         });
+        return;
+      }
+      // Only removing the photo or keeping the current one is allowed here
+      const current = await prisma.user.findUnique({ where: { id: req.user.id }, select: { avatarUrl: true } });
+      const avatarProblem = avatarUrlProblem(avatarUrl, current?.avatarUrl);
+      if (avatarProblem) {
+        res.status(400).json({ success: false, message: avatarProblem });
         return;
       }
     }
@@ -360,7 +368,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     const userUpdatePayload: any = {};
     if (fullName) userUpdatePayload.fullName = String(fullName).trim();
     if (formattedPhone !== undefined) userUpdatePayload.phone = formattedPhone;
-    if (avatarUrl !== undefined) userUpdatePayload.avatarUrl = avatarUrl;
+    if (avatarUrl !== undefined) userUpdatePayload.avatarUrl = avatarUrl || null;
 
     await prisma.$transaction(async (tx) => {
       if (Object.keys(userUpdatePayload).length > 0) {
@@ -390,6 +398,14 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
             ...safeDoctorData,
           },
         });
+      } else if (req.user!.role === 'RECEPTIONIST') {
+        // Patients are shown the desk number from the receptionist profile, so keep it in step
+        if (formattedPhone !== undefined) {
+          await tx.receptionistProfile.updateMany({
+            where: { userId: req.user!.id },
+            data: { phone: formattedPhone },
+          });
+        }
       } else if (req.user!.role === 'CLINIC') {
         await tx.clinicProfile.upsert({
           where: { userId: req.user!.id },
@@ -484,8 +500,10 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
       where: { id: req.user.id },
       select: { avatarUrl: true },
     });
-    if (existingUser?.avatarUrl && (existingUser.avatarUrl.includes('.r2.dev') || existingUser.avatarUrl.startsWith('avatars/'))) {
-      await deleteFromR2(existingUser.avatarUrl);
+    // Only ever delete this user's own previous upload, never another file in the bucket
+    const oldKey = ownAvatarKey(existingUser?.avatarUrl, req.user.id);
+    if (oldKey) {
+      await deleteFromR2(oldKey);
     }
 
     const updatedUser = await prisma.user.update({

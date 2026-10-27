@@ -6,7 +6,7 @@ import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, isClinicActive } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../../utils/queueStateCache';
-import { resolveReceptionistContact } from './helpers';
+import { resolveReceptionistContact, estimateNextToken } from './helpers';
 import { estimateQueueWait, minutesBetween } from '../../utils/queueEta';
 
 export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -82,18 +82,13 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
 
     let estimatedQueueNumber = appointment.queueNumber > 0 ? appointment.queueNumber : 1;
     if (appointment.status === 'PENDING_APPROVAL') {
-      const maxConfirmed = await prisma.appointment.findFirst({
-        where: {
-          doctorId: appointment.doctorId,
-          appointmentDate: appointment.appointmentDate,
-          ...(appointment.clinicId ? { clinicId: appointment.clinicId } : {}),
-          queueNumber: { gt: 0 },
-          ...(appointment.slotId ? { slotId: appointment.slotId } : {}),
-        },
-        orderBy: { queueNumber: 'desc' },
-        select: { queueNumber: true },
-      });
-      estimatedQueueNumber = Math.max(1, (maxConfirmed?.queueNumber || 0) + 1);
+      estimatedQueueNumber = await estimateNextToken(
+        appointment.doctorId,
+        appointment.appointmentDate,
+        appointment.clinicId,
+        appointment.slotId,
+        appointment.checkingWindow
+      );
     }
 
     const recContact = resolveReceptionistContact(appointment.clinic, appointment.doctorId, appointment.doctor);
@@ -185,14 +180,15 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
       };
       takeLimit = 50;
     } else if (isOnlyPast) {
-      const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
-      const limit = Math.min(Math.max(1, parseInt(String(req.query.limit || '10'), 10)), 50);
+      const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1);
+      const limit = Math.min(Math.max(1, parseInt(String(req.query.limit || '10'), 10) || 10), 50);
       takeLimit = limit;
       skipCount = (page - 1) * limit;
 
       whereClause = {
         patientId: patient.id,
-        status: { in: ['COMPLETED', 'CANCELLED', 'NO_SHOW', 'EXPIRED'] },
+        // Declined requests belong in the history too
+        status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED', 'NO_SHOW', 'EXPIRED'] },
       };
     } else {
       whereClause = {
@@ -290,6 +286,19 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             })
           )
         : [];
+
+    // Unconfirmed requests: the token the desk will give on approval (same rule as approval)
+    const pendingTokenEstimate = new Map<string, number>();
+    await Promise.all(
+      appointments
+        .filter((a) => a.status === 'PENDING_APPROVAL')
+        .map(async (a) => {
+          pendingTokenEstimate.set(
+            a.id,
+            await estimateNextToken(a.doctorId, a.appointmentDate, a.clinicId, a.slotId, a.checkingWindow)
+          );
+        })
+    );
 
     // Calculate real-time queue position for active appointments in-memory
     const enrichedAppointments = appointments.map((appt) => {
@@ -445,7 +454,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true)
         );
         const maxConfirmedQueue = confirmedForShift.length;
-        const estimatedQueueNumber = Math.max(1, maxConfirmedQueue + 1);
+        const estimatedQueueNumber = pendingTokenEstimate.get(appt.id) ?? Math.max(1, maxConfirmedQueue + 1);
 
         if (slot) {
           const slotStartMins = timeToMinutes(slot.startTime);
@@ -505,7 +514,7 @@ export const cancelAppointment = async (req: AuthRequest, res: Response): Promis
     const appointment: any = await prisma.appointment.findUnique({
       where: { id },
       include: {
-        patient: true,
+        patient: { include: { user: { select: { fullName: true } } } },
         doctor: {
           include: {
             user: { select: { fullName: true } },

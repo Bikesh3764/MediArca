@@ -1,9 +1,43 @@
 import { Response } from 'express';
 import prisma from '../../config/database';
+import { LIMITS } from '../../utils/inputLimits';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, validateDoctorSlots, timeToMinutes, getLocalDateString, cleanSlotName, cleanWorkingDays, parseDoctorWorkingDays, parseDoctorLeaves, isDoctorOnLeave, isDoctorWorkingOnDate, DoctorLeave, isValidAppointmentDate, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess, isClinicActive } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
+import { activeShiftSets, findShiftClash } from '../../utils/shiftClash';
+
+/**
+ * Message when the new shift list drops a shift that still has upcoming bookings at these clinics, else null.
+ * `includeNoClinic`: also look at bookings without a clinic (they use the doctor's default shifts).
+ */
+const findRemovedShiftWithBookings = async (
+  doctorId: string,
+  clinicIds: string[],
+  newSlots: Array<{ id: string }>,
+  includeNoClinic: boolean
+): Promise<string | null> => {
+  if (clinicIds.length === 0 && !includeNoClinic) return null;
+  const keep = new Set(newSlots.map((s) => s.id));
+  const upcoming = await prisma.appointment.findMany({
+    where: {
+      doctorId,
+      OR: [
+        ...(clinicIds.length > 0 ? [{ clinicId: { in: clinicIds } }] : []),
+        ...(includeNoClinic ? [{ clinicId: null }] : []),
+      ],
+      appointmentDate: { gte: getLocalDateString() },
+      status: { in: ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'] },
+      slotId: { not: null },
+    },
+    select: { slotId: true, checkingWindow: true },
+  });
+  const stranded = upcoming.filter((a) => a.slotId && !keep.has(a.slotId));
+  if (stranded.length === 0) return null;
+  const name = cleanSlotName(stranded[0].checkingWindow, 'This shift');
+  const count = stranded.filter((a) => a.slotId === stranded[0].slotId).length;
+  return `${name} still has ${count} upcoming booking${count === 1 ? '' : 's'}. Move or cancel them before removing the shift.`;
+};
 
 export const updateSchedule = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -139,6 +173,15 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         return;
       }
 
+      // A shift that still has upcoming bookings can't be removed (its tokens would clash with another shift's)
+      if (formattedSlots.length > 0) {
+        const blocked = await findRemovedShiftWithBookings(doctor.id, [clinicId], formattedSlots, false);
+        if (blocked) {
+          res.status(400).json({ success: false, message: blocked });
+          return;
+        }
+      }
+
       // Prevent physical doctor from configuring overlapping shifts across multiple clinics simultaneously (Issue 7 / Fix #8, Finding 7)
       const clinicUpdateData: any = {};
       await prisma.$transaction(async (tx) => {
@@ -154,25 +197,23 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
             ? parseDoctorWorkingDays(req.body.workingDays)
             : parseDoctorWorkingDays(clinicAffiliation.workingDays);
 
+          // Clinics without their own shifts use the doctor's default shifts, so they are compared too
           const otherAffiliations = await tx.clinicDoctor.findMany({
             where: {
               doctorId: doctor.id,
               clinicId: { not: clinicId },
               status: { in: ['ACTIVE', 'ACCEPTED'] },
-              slots: { not: null },
             },
             include: { clinic: true },
           });
 
           for (const otherAff of otherAffiliations) {
             if (!isClinicActive(otherAff.clinic).active) continue;
-            let otherSlots: any[] = [];
-            try {
-              const parsed = typeof otherAff.slots === 'string' ? JSON.parse(otherAff.slots) : otherAff.slots;
-              if (Array.isArray(parsed)) otherSlots = parsed;
-            } catch {}
+            const otherSlots: any[] = parseAffiliationSlots(otherAff.slots) ?? parseDoctorSlots(doctor);
 
-            const otherWorkingDays = parseDoctorWorkingDays(otherAff.workingDays);
+            const otherWorkingDays = otherAff.workingDays
+              ? parseDoctorWorkingDays(otherAff.workingDays)
+              : parseDoctorWorkingDays((doctor as any).workingDays);
 
             for (const newSlot of formattedSlots) {
               const daysA = (Array.isArray((newSlot as any).days) && (newSlot as any).days.length > 0)
@@ -295,7 +336,6 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         where: {
           doctorId: doctor.id,
           status: { in: ['ACTIVE', 'ACCEPTED'] },
-          slots: { not: null },
         },
         include: { clinic: true },
       });
@@ -304,51 +344,23 @@ export const updateSchedule = async (req: AuthRequest, res: Response): Promise<v
         ? cleanWorkingDays(req.body.workingDays)
         : parseDoctorWorkingDays((doctor as any).workingDays);
 
-      for (const aff of activeAffiliations) {
-        if (!isClinicActive(aff.clinic).active) continue;
-        let affSlots: any[] = [];
-        try {
-          const parsed = typeof aff.slots === 'string' ? JSON.parse(aff.slots) : aff.slots;
-          if (Array.isArray(parsed)) affSlots = parsed;
-        } catch {}
+      // Clinics without their own shifts will use these new default shifts
+      const defaultClinicIds = activeAffiliations.filter((aff) => !parseAffiliationSlots(aff.slots)).map((aff) => aff.clinicId);
+      const blocked = await findRemovedShiftWithBookings(doctor.id, defaultClinicIds, formattedSlots, true);
+      if (blocked) {
+        res.status(400).json({ success: false, message: blocked });
+        return;
+      }
 
-        const affWorkingDays = aff.workingDays ? parseDoctorWorkingDays(aff.workingDays) : profileWorkingDays;
-
-        for (const sNew of formattedSlots) {
-          const daysA = (Array.isArray((sNew as any).days) && (sNew as any).days.length > 0)
-            ? cleanWorkingDays((sNew as any).days)
-            : (Array.isArray((sNew as any).workingDays) && (sNew as any).workingDays.length > 0)
-            ? cleanWorkingDays((sNew as any).workingDays)
-            : profileWorkingDays;
-
-          const newStart = timeToMinutes(sNew.startTime);
-          let newEnd = timeToMinutes(sNew.endTime);
-          if (newEnd <= newStart) newEnd += 24 * 60;
-
-          for (const sAff of affSlots) {
-            if (!sAff?.startTime || !sAff?.endTime) continue;
-
-            const daysB = (Array.isArray(sAff.days) && sAff.days.length > 0)
-              ? cleanWorkingDays(sAff.days)
-              : (Array.isArray(sAff.workingDays) && sAff.workingDays.length > 0)
-              ? cleanWorkingDays(sAff.workingDays)
-              : affWorkingDays;
-
-            const commonDays = daysA.filter((d: string) => daysB.includes(d));
-            if (commonDays.length === 0) continue;
-
-            const affStart = timeToMinutes(sAff.startTime);
-            let affEnd = timeToMinutes(sAff.endTime);
-            if (affEnd <= affStart) affEnd += 24 * 60;
-
-            if (newStart < affEnd && affStart < newEnd) {
-              res.status(400).json({
-                success: false,
-                message: `Configured practice hours (${sNew.startTime}–${sNew.endTime}) overlap with an active shift (${sAff.startTime}–${sAff.endTime}) at ${aff.clinic?.clinicName || 'another affiliated clinic'} on common day(s): ${commonDays.join(', ')}. Practitioners cannot practice at multiple clinics simultaneously.`,
-              });
-              return;
-            }
-          }
+      // Compare every clinic that would use the new default shifts with every other clinic
+      const futureDoctor = { ...doctor, slots: JSON.stringify(formattedSlots), workingDays: JSON.stringify(profileWorkingDays) };
+      const sets = activeShiftSets(futureDoctor, activeAffiliations);
+      for (const set of sets) {
+        if (!defaultClinicIds.includes(set.clinicId)) continue;
+        const clash = findShiftClash(set, sets);
+        if (clash) {
+          res.status(400).json({ success: false, message: clash });
+          return;
         }
       }
 
@@ -805,6 +817,11 @@ export const addDoctorLeave = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    if (reason !== undefined && reason !== null && (typeof reason !== 'string' || reason.length > LIMITS.reason)) {
+      res.status(400).json({ success: false, message: `Reason must be text up to ${LIMITS.reason} characters.` });
+      return;
+    }
+
     let targetClinicId: string | null = reqClinicId || null;
     const creatorName = req.user.fullName || 'Desk Staff';
 
@@ -949,6 +966,8 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
 
     let doctorId = req.params.doctorId ? String(req.params.doctorId) : undefined;
     const leaveId = String(req.params.leaveId);
+    // A receptionist may only remove leaves for their own clinic, never another clinic's or the doctor's own
+    let deskClinicId: string | null = null;
 
     if (req.user.role === 'DOCTOR') {
       const docProfile = await prisma.doctorProfile.findUnique({ where: { userId: req.user.id } });
@@ -985,6 +1004,7 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
         res.status(403).json({ success: false, message: access.reason || 'Unauthorized for this practitioner' });
         return;
       }
+      deskClinicId = recProfile.clinicId;
     }
 
     // Check both ClinicDoctor affiliations and DoctorProfile
@@ -1001,8 +1021,9 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
 
     const todayStr = getLocalDateString();
 
-    // Check DoctorProfile.leaves
-    const docLeaves = parseDoctorLeaves((doctor as any).leaves);
+    // Check DoctorProfile.leaves: the doctor's own leaves, which only the doctor can remove
+    // (desk leaves are always saved on the clinic link below)
+    const docLeaves = deskClinicId ? [] : parseDoctorLeaves((doctor as any).leaves);
     const targetDocLeave = docLeaves.find((l) => l.id === leaveId);
     const filteredDocLeaves = docLeaves.filter(
       (l) => l.id !== leaveId && !(targetDocLeave?.type === 'TODAY' && l.type === 'TODAY' && l.startDate === todayStr)
@@ -1015,8 +1036,9 @@ export const cancelDoctorLeave = async (req: AuthRequest, res: Response): Promis
       removed = true;
     }
 
-    // Check each clinic affiliation
+    // Check each clinic affiliation (a desk only sees its own clinic)
     for (const cd of doctor.clinics) {
+      if (deskClinicId && cd.clinicId !== deskClinicId) continue;
       const cdLeaves = parseDoctorLeaves((cd as any).leaves);
       const targetCdLeave = cdLeaves.find((l) => l.id === leaveId);
       const filteredCdLeaves = cdLeaves.filter(

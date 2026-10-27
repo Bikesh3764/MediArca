@@ -106,7 +106,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       appointment = await prisma.appointment.findUnique({
         where: { id: String(appointmentId) },
         include: {
-          patient: true,
+          patient: { include: { user: { select: { fullName: true } } } },
           doctor: { include: { user: { select: { fullName: true } } } },
           clinic: true,
         },
@@ -142,7 +142,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
             clinicId: clinic.id,
           },
           include: {
-            patient: true,
+            patient: { include: { user: { select: { fullName: true } } } },
             doctor: { include: { user: { select: { fullName: true } } } },
             clinic: true,
           },
@@ -164,7 +164,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
             clinicId: clinic.id,
           },
           include: {
-            patient: true,
+            patient: { include: { user: { select: { fullName: true } } } },
             doctor: { include: { user: { select: { fullName: true } } } },
             clinic: true,
           },
