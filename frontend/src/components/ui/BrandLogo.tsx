@@ -1,6 +1,6 @@
 import React from 'react';
-import mediarcaLogo from '../../assets/mediarca-logo.png';
-import mediarcaIcon from '../../assets/mediarca-icon.png';
+import mediarcaLogo from '../../assets/mediarca-logo.webp';
+import mediarcaIcon from '../../assets/mediarca-icon.webp';
 
 export interface BrandLogoProps {
   variant?: 'full' | 'icon';

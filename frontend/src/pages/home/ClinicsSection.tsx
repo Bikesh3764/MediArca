@@ -1,7 +1,7 @@
 import React from 'react';
 import { parseDoctorSlots, format12Hour, formatDoctorDegrees, getFileUrl } from '../../services/api';
 import { AppleButton } from '../../components/ui/AppleButton';
-import clinicLobbyBg from '../../assets/clinic-lobby-bg.jpg';
+import clinicLobbyBg from '../../assets/clinic-lobby-bg.webp';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
 import { MapPin, Clock, ArrowLeft, Phone, Building2 } from 'lucide-react';
 import { EmptyState } from '../../components/common/EmptyState';

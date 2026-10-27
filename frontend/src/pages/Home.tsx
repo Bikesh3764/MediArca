@@ -1,5 +1,5 @@
 import React from 'react';
-import healthcareHeroBg from '../assets/healthcare-hero-bg.jpg';
+import healthcareHeroBg from '../assets/healthcare-hero-bg.webp';
 import { Search, MapPin, X } from 'lucide-react';
 import { useHomeState, HomeContext } from './home/state';
 import { ClinicsGridSection } from './home/ClinicsGridSection';

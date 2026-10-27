@@ -16,7 +16,8 @@ RUN npm run build
 # Production Runner
 FROM node:20-alpine AS runner
 
-RUN apk add --no-cache openssl ca-certificates
+# postgresql17-client: pg_dump for the nightly database backup (FIX-050)
+RUN apk add --no-cache openssl ca-certificates postgresql17-client
 
 WORKDIR /app
 

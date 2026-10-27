@@ -15,7 +15,7 @@ import {
 import { AppleButton } from '../../components/ui/AppleButton';
 import { AppleFilterSelect } from '../../components/ui/AppleFilterSelect';
 import { SubNav } from '../../components/layout/SubNav';
-import clinicLobbyBg from '../../assets/clinic-lobby-bg.jpg';
+import clinicLobbyBg from '../../assets/clinic-lobby-bg.webp';
 import {
   Clock,
   SlidersHorizontal,

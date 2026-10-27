@@ -10634,6 +10634,29 @@ Follow-up Date: 2026-10-15`;
     }
   }
 
+  // FIX-050: nightly database backup to a private R2 bucket
+  {
+    const { istDate, istHour, backupKey, keysToDelete, shouldBackUpNow, pgDumpUrl, BACKUP_BUCKET, BACKUP_KEEP_DAYS } = await import('../src/utils/dbBackup');
+    // 2026-10-27 21:00 UTC is 28 Oct 02:30 IST
+    const lateNight = new Date('2026-10-27T21:00:00Z');
+    assert(istDate(lateNight) === '2026-10-28' && istHour(lateNight) === 2, 'FIX-050: backup day and hour use Indian time');
+    assert(backupKey('2026-10-28') === 'daily/2026-10-28.dump', 'FIX-050: one file per day under daily/');
+    assert(!shouldBackUpNow(lateNight, '2026-10-27'), 'FIX-050: no backup before 3 AM IST');
+    const afterThree = new Date('2026-10-27T21:45:00Z'); // 03:15 IST on 28 Oct
+    assert(shouldBackUpNow(afterThree, '2026-10-27') && shouldBackUpNow(afterThree, null), 'FIX-050: backup runs after 3 AM IST when today has none');
+    assert(!shouldBackUpNow(afterThree, '2026-10-28'), 'FIX-050: only one backup per day');
+    const keys = ['daily/2026-10-01.dump', 'daily/2026-10-14.dump', 'daily/2026-10-15.dump', 'daily/2026-10-28.dump', 'notes.txt'];
+    const del = keysToDelete(keys, '2026-10-28');
+    assert(BACKUP_KEEP_DAYS === 14 && del.length === 2 && del.includes('daily/2026-10-01.dump') && del.includes('daily/2026-10-14.dump'), 'FIX-050: keeps the last 14 days and deletes only older backup files');
+    const dumpUrl = pgDumpUrl('postgresql://prisma.ref:p%40ss@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=5&sslmode=require');
+    assert(dumpUrl.includes(':5432/') && !dumpUrl.includes('pgbouncer') && !dumpUrl.includes('connection_limit') && dumpUrl.includes('sslmode=require') && dumpUrl.includes('p%40ss'), 'FIX-050: pg_dump uses session mode and drops Prisma-only options');
+    assert(BACKUP_BUCKET !== 'mediarca-vault', 'FIX-050: backups never go to the public photo bucket');
+    const serverSrc = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf8');
+    assert(serverSrc.includes('startDbBackupSchedule();'), 'FIX-050: live server starts the nightly backup');
+    const dockerSrc = fs.readFileSync(path.join(__dirname, '../Dockerfile'), 'utf8');
+    assert(dockerSrc.includes('postgresql17-client'), 'FIX-050: server image includes pg_dump 17 (matches Supabase Postgres 17)');
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

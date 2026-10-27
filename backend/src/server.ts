@@ -82,6 +82,7 @@ import { streamLiveEvents, publishOnQueueWrite, closeAllLiveStreams } from './ut
 import { requestLogger, receiveClientError } from './middleware/requestLogger';
 import { getTrustedClientIp } from './utils/clientIp';
 import { requireHuman } from './middleware/requireHuman';
+import { startDbBackupSchedule } from './utils/dbBackup';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -620,6 +621,8 @@ if (process.env.NODE_ENV !== 'test' && !process.env.MEDIARCA_TEST_SUITE) {
     console.log(`Health: http://localhost:${PORT}/api/health`);
     console.log(`=========================================`);
   });
+  // Nightly database backup to private R2 (FIX-050)
+  startDbBackupSchedule();
 }
 
 export default app;
