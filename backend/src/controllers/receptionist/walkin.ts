@@ -9,7 +9,8 @@ import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../.
 import { verifyReceptionistDoctorAccess } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
-import { pickWalkinAccount } from '../../utils/walkinMatch';
+import { pickWalkinAccount, isSameWalkinName } from '../../utils/walkinMatch';
+import { pickFreeWalkinCode } from '../../utils/walkinCode';
 import { findTooLong, LIMITS } from '../../utils/inputLimits';
 import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE } from '../../utils/scheduleUtils';
 
@@ -233,7 +234,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     const isOther = Boolean(
-      isForOther || (patientUser && patientName && patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+      isForOther || (patientUser && patientName && !isSameWalkinName(patientUser.fullName, patientName))
     );
 
     let patientProfile = patientUser.patientProfile;
@@ -426,6 +427,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           }
           const checkingWindow = cleanSlotName(chosenSlot.name, 'Shift 1');
           const isTodayBooking = appointmentDate === istTodayStr;
+          const walkInCode = await pickFreeWalkinCode(tx, appointmentDate);
 
           const created = await tx.appointment.create({
             data: {
@@ -447,6 +449,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               patientGender: gender || null,
               isCheckedIn: isTodayBooking,
               checkedInAt: isTodayBooking ? new Date() : null,
+              walkInCode,
             },
             include: {
               doctor: {

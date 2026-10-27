@@ -11,6 +11,8 @@ export interface TokenPassData {
   doctorSpecialty?: string;
   clinicName?: string;
   clinicAddress?: string;
+  /** Code the patient uses with their mobile number to track the queue (FIX-058). */
+  walkInCode?: string | null;
 }
 export const cleanDoctorName = (name?: string | null): string => {
   if (!name) return 'Doctor';

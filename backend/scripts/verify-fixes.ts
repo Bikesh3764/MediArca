@@ -10717,6 +10717,143 @@ Follow-up Date: 2026-10-15`;
     }
   }
 
+  // FIX-058: remove profile photo, walk-in tracking code, name match ignores spaces and case
+  {
+    const { generateWalkinCode, normalizeWalkinCode, pickFreeWalkinCode, WALKIN_CODE_ALPHABET } = await import('../src/utils/walkinCode');
+    const { pickWalkinAccount, isSameWalkinName } = await import('../src/utils/walkinMatch');
+    const { trackWalkin } = await import('../src/controllers/appointmentController');
+
+    // Codes: 6 characters, no look-alike characters, normalized from what people type
+    let codesOk = true;
+    const seen = new Set<string>();
+    for (let i = 0; i < 2000; i++) {
+      const c = generateWalkinCode();
+      seen.add(c);
+      if (!/^[A-HJKMNP-Z2-9]{6}$/.test(c)) codesOk = false;
+    }
+    assert(codesOk && seen.size > 1990, 'FIX-058: walk-in codes are 6 easy-to-read characters and vary');
+    assert(!/[01ILO]/.test(WALKIN_CODE_ALPHABET), 'FIX-058: code alphabet leaves out 0, 1, I, L and O');
+    assert(normalizeWalkinCode(' k7m-x4p ') === 'K7MX4P', 'FIX-058: typed code is uppercased and spaces/dashes dropped');
+    assert(
+      normalizeWalkinCode('K7MX4') === null && normalizeWalkinCode('K7MX40') === null && normalizeWalkinCode(123456) === null,
+      'FIX-058: wrong length, look-alike or non-text codes are refused'
+    );
+    let probes = 0;
+    const freeCode = await pickFreeWalkinCode(
+      { appointment: { findFirst: async () => (probes++ < 2 ? { id: 'taken' } : null) } },
+      '2026-10-28'
+    );
+    assert(probes === 3 && /^[A-HJKMNP-Z2-9]{6}$/.test(freeCode), 'FIX-058: a code already used that day is skipped');
+
+    // Names: spaces and capital letters don't matter; different names still don't match
+    assert(isSameWalkinName('Ram Kumar', 'ramkumar') && isSameWalkinName('  RAM   KUMAR ', 'Ram Kumar'), 'FIX-058: names match ignoring spaces and case');
+    assert(!isSameWalkinName('Ram Kumar', 'Shyam Kumar') && !isSameWalkinName('', ''), 'FIX-058: different or empty names do not match');
+    const acct = pickWalkinAccount([{ fullName: 'Ram Kumar', email: 'ram@example.com', isEmailVerified: true }], 'RAMKUMAR');
+    assert(acct?.email === 'ram@example.com', 'FIX-058: walk-in goes into the account when only spacing/case differ');
+    assert(pickWalkinAccount([{ fullName: 'Ram Kumar', email: 'ram@example.com' }], 'Sita Devi') === null, 'FIX-058: different name stays a separate walk-in');
+
+    // Both walk-in paths save a code; the tracker needs number + code, today or later, and hides the phone
+    const walkinSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/receptionist/walkin.ts'), 'utf8');
+    const bookingSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/appointment/booking.ts'), 'utf8');
+    assert(
+      walkinSrc.includes('const walkInCode = await pickFreeWalkinCode(tx, appointmentDate);') && walkinSrc.includes('              walkInCode,'),
+      'FIX-058: desk walk-ins get a code inside the booking transaction'
+    );
+    assert(
+      bookingSrc.includes('const walkInCode = isPatientBooking ? null : await pickFreeWalkinCode(tx, appointmentDate);'),
+      'FIX-058: doctor walk-ins get a code, app bookings do not'
+    );
+    const schemaSrc = fs.readFileSync(path.join(__dirname, '../prisma/schema.prisma'), 'utf8');
+    assert(schemaSrc.includes('@@unique([appointmentDate, walkInCode])'), 'FIX-058: code is unique per day in the database');
+    const apptRoutesSrc = fs.readFileSync(path.join(__dirname, '../src/routes/appointmentRoutes.ts'), 'utf8');
+    const srvSrc = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf8');
+    assert(apptRoutesSrc.includes("router.post('/walkin-track', trackWalkin);"), 'FIX-058: tracker is a POST so the number stays out of URLs');
+    assert(
+      srvSrc.includes("authRateLimiter(15, 60, 'walkin-track')") && srvSrc.includes("authRateLimiter(60, 3600, 'walkin-track-hour')"),
+      'FIX-058: tracker is rate limited against guessing'
+    );
+
+    const runTrack = async (body: any) => {
+      const out: any = { status: 200, body: null };
+      const res: any = {
+        status(code: number) {
+          out.status = code;
+          return res;
+        },
+        json(payload: any) {
+          out.body = payload;
+          return res;
+        },
+      };
+      await trackWalkin({ body } as any, res);
+      return out;
+    };
+    const trackToday = getLocalDateString();
+    const fakeAppt = {
+      id: 'appt_track_1',
+      doctorId: 'doc_track',
+      clinicId: null,
+      appointmentDate: trackToday,
+      queueNumber: 4,
+      status: 'COMPLETED',
+      walkInCode: 'K7MX4P',
+      patientName: 'Ram Kumar',
+      checkingWindow: 'Morning',
+      estimatedTime: '10:00 AM',
+      slotId: null,
+      doctor: { specialty: 'General', cabinStatus: 'IN_CABIN', expectedReturnTime: null, user: { fullName: 'Asha', avatarUrl: null }, receptionists: [] },
+      clinic: null,
+      patient: { user: { phone: '+91 98765 43210' } },
+    };
+    const originalFindMany = (prisma.appointment as any).findMany;
+    let lastWhere: any = null;
+    (prisma.appointment as any).findMany = async (args: any) => {
+      lastWhere = args?.where;
+      return [fakeAppt];
+    };
+    try {
+      const bad = await runTrack({ phone: '98765', code: 'K7MX4P' });
+      assert(bad.status === 400, 'FIX-058: tracker refuses a bad number or code');
+      const wrongPhone = await runTrack({ phone: '9123456789', code: 'k7mx4p' });
+      assert(wrongPhone.status === 404, "FIX-058: right code with someone else's number shows nothing");
+      const ok = await runTrack({ phone: '9876543210', code: 'k7mx4p' });
+      assert(
+        ok.status === 200 && ok.body?.data?.queueNumber === 4 && ok.body?.data?.status === 'COMPLETED',
+        'FIX-058: number + code shows the visit (Done after completion)'
+      );
+      assert(
+        lastWhere?.walkInCode === 'K7MX4P' && lastWhere?.appointmentDate?.gte === trackToday,
+        "FIX-058: only today's and upcoming visits are found, so codes expire after the day"
+      );
+      const payload = JSON.stringify(ok.body);
+      assert(
+        !payload.includes('98765') && !payload.includes('appt_track_1') && !payload.includes('doc_track'),
+        'FIX-058: tracker never returns the phone number or internal IDs'
+      );
+    } finally {
+      (prisma.appointment as any).findMany = originalFindMany;
+    }
+
+    // Remove photo: own route, deletes only the user's own file
+    const authRoutesSrc = fs.readFileSync(path.join(__dirname, '../src/routes/authRoutes.ts'), 'utf8');
+    const profileSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/auth/profile.ts'), 'utf8');
+    assert(
+      /router\.delete\(\s*'\/avatar',\s*authenticate,\s*blockDemoAccountChanges,\s*removeAvatar/.test(authRoutesSrc),
+      'FIX-058: remove photo needs sign-in and is blocked for demo accounts'
+    );
+    const removeFn = profileSrc.slice(profileSrc.indexOf('export const removeAvatar'));
+    assert(
+      removeFn.includes('ownAvatarKey(existingUser?.avatarUrl, req.user.id)') && removeFn.includes('data: { avatarUrl: null }'),
+      "FIX-058: remove photo clears the photo and deletes only the user's own file"
+    );
+    for (const page of ['Doctor/DoctorProfile.tsx', 'Clinic/ClinicProfile.tsx']) {
+      const src = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages', page), 'utf8');
+      assert(src.includes('onClick={handleRemoveAvatar}') && src.includes('api.removeAvatar()'), `FIX-058: ${page} has a Remove photo button`);
+    }
+    const homeSrc = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Home.tsx'), 'utf8');
+    assert(homeSrc.includes('to="/track"'), 'FIX-058: home page links to Track walk-in');
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

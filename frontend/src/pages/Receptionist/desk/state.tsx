@@ -556,6 +556,7 @@ export const useReceptionistDashboardState = () => {
       const queueNum = res?.queueNumber ?? res?.data?.queueNumber;
       const estTime = res?.estimatedTime ?? res?.data?.estimatedTime ?? 'Active';
       const chkWindow = res?.checkingWindow ?? res?.data?.checkingWindow ?? 'General Hours';
+      const walkInCode = res?.walkInCode ?? res?.data?.walkInCode ?? null;
 
       setBookedPass({
         queueNumber: queueNum,
@@ -568,6 +569,7 @@ export const useReceptionistDashboardState = () => {
         doctorSpecialty: queuedDoctor?.specialty,
         clinicName: data?.clinic?.clinicName,
         clinicAddress: data?.clinic?.address,
+        walkInCode,
       });
       setSuccessMsg(`Token #${queueNum} issued for ${savedPatientName}`);
 

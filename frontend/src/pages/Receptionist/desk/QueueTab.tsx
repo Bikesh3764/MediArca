@@ -647,6 +647,7 @@ export const QueueTab: React.FC = () => {
                                     doctorSpecialty: queueDoctor?.specialty,
                                     clinicName: data?.clinic?.clinicName,
                                     clinicAddress: data?.clinic?.address,
+                                    walkInCode: appt.walkInCode,
                                   });
                                 }}
                                 className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"

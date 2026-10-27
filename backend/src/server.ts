@@ -484,6 +484,10 @@ app.use('/api', publishOnQueueWrite);
 app.use(['/api/doctors', '/api/clinics/public', '/api/clinic/public'], publicResponseCache(15000));
 
 // Mount dedicated rate limiting on public contact form submissions (FIX-017)
+// Walk-in tracker: limit guessing of mobile number + code pairs (FIX-058)
+app.use('/api/appointments/walkin-track', authRateLimiter(15, 60, 'walkin-track'));
+app.use('/api/appointments/walkin-track', authRateLimiter(60, 3600, 'walkin-track-hour'));
+
 // 5 submissions per 10 minutes (600 seconds) per IP/client scope
 export const contactRateLimiter = authRateLimiter(5, 600, 'contact');
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import healthcareHeroBg from '../assets/healthcare-hero-bg.webp';
-import { Search, MapPin, X } from 'lucide-react';
+import { Search, MapPin, X, Ticket } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useHomeState, HomeContext } from './home/state';
 import { ClinicsGridSection } from './home/ClinicsGridSection';
 import { DoctorsIntroSection } from './home/DoctorsIntroSection';
@@ -95,6 +96,15 @@ export const Home: React.FC = () => {
               <span>Search</span>
             </button>
           </div>
+
+          {/* Walk-in patients track their queue with mobile number + code (FIX-058) */}
+          <Link
+            to="/track"
+            className="mt-4 inline-flex items-center gap-2 h-10 px-5 rounded-full bg-white/95 hover:bg-white border border-black/[0.1] text-sm font-normal text-[#1d1d1f] transition-all active:scale-[0.98]"
+          >
+            <Ticket className="w-4 h-4 text-[#0066cc]" />
+            <span>Track walk-in</span>
+          </Link>
         </div>
       </section>
 

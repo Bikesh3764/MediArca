@@ -6,12 +6,19 @@
  * name, and the visit would land in a stranger's app). With no match the caller
  * creates a separate walk-in record.
  */
+// Spaces and capital letters are ignored: "Ram Kumar", "ramkumar" and "RAM  KUMAR" match (FIX-058)
 const normalizeName = (name: unknown): string =>
   String(name ?? '')
     .trim()
     .replace(/^dr\.?\s+/i, '')
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, '')
     .toLowerCase();
+
+/** True when two typed names are the same person's name by the walk-in matching rule. */
+export const isSameWalkinName = (a: unknown, b: unknown): boolean => {
+  const left = normalizeName(a);
+  return left !== '' && left === normalizeName(b);
+};
 
 const isSynthetic = (u: any): boolean => {
   const em = String(u?.email || '').toLowerCase();

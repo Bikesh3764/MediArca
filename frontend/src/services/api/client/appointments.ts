@@ -1,7 +1,7 @@
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { SlotStatusResult, evaluateSlotStatus, parseDoctorSlots } from '../schedule';
-import { Appointment, QueuePreview } from '../types';
+import { Appointment, QueuePreview, WalkinTrackResult } from '../types';
 import { getHeaders, handleResponse } from '../http';
 import { DEMO_DOCTORS } from '../demoData';
 
@@ -175,6 +175,15 @@ export const appointmentsApi = {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify(isCheckedIn !== undefined ? { isCheckedIn } : {}),
+    });
+    return handleResponse(res);
+  },
+  /** Public: walk-in patient's live queue from mobile number + 6-character code (FIX-058). */
+  async trackWalkin(phone: string, code: string): Promise<WalkinTrackResult> {
+    const res = await safeFetch(`${API_BASE_URL}/appointments/walkin-track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code }),
     });
     return handleResponse(res);
   },

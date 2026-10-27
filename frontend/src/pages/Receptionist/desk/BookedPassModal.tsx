@@ -53,6 +53,14 @@ export const BookedPassModal: React.FC = () => {
               </div>
             </div>
 
+            {bookedPass.walkInCode && (
+              <div className="mb-4 p-4 rounded-2xl border border-[#0066cc]/30 bg-[#0066cc]/5 text-center">
+                <span className="text-[11px] text-[#86868b] block">Tracking code</span>
+                <div className="text-2xl font-semibold tracking-[0.25em] text-[#1d1d1f] select-all">{bookedPass.walkInCode}</div>
+                <p className="text-[11px] text-[#86868b] mt-1">{window.location.host} → Track walk-in</p>
+              </div>
+            )}
+
             <div className="space-y-2 text-xs mb-6 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
               <div className="flex justify-between">
                 <span className="text-[#86868b]">Patient</span>

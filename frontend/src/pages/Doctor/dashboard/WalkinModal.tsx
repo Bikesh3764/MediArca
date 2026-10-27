@@ -30,29 +30,29 @@ export const WalkinModal: React.FC = () => {
     setWalkinError,
     walkinSuccess,
     setWalkinSuccess,
+    walkinCode,
+    setWalkinCode,
     handleCreateWalkin,
   } = useDoctorDashboard();
   if (!showAddModal) return null;
+  const closeModal = () => {
+    setShowAddModal(false);
+    setWalkinError(null);
+    setWalkinSuccess(null);
+    setWalkinCode(null);
+  };
   return (
 <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-md animate-fadeIn"
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowAddModal(false);
-              setWalkinError(null);
-              setWalkinSuccess(null);
-            }
+            if (e.target === e.currentTarget) closeModal();
           }}
         >
           <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-[#e5e5ea] max-w-md w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 pb-[max(env(safe-area-inset-bottom),1.5rem)] sm:pb-8  relative text-left">
             <div className="sm:hidden w-10 h-1 bg-[#d2d2d7] rounded-full mx-auto mb-3" />
             <button aria-label="Close"
               type="button"
-              onClick={() => {
-                setShowAddModal(false);
-                setWalkinError(null);
-                setWalkinSuccess(null);
-              }}
+              onClick={closeModal}
               className="absolute top-5 right-5 p-2 text-[#86868b] hover:text-[#1d1d1f] rounded-full hover:bg-[#f5f5f7] transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -78,6 +78,22 @@ export const WalkinModal: React.FC = () => {
               </div>
             )}
 
+            {walkinCode ? (
+              <div className="space-y-4">
+                <div className="p-5 rounded-2xl border border-[#0066cc]/30 bg-[#0066cc]/5 text-center">
+                  <span className="text-[11px] text-[#86868b] block">Tracking code</span>
+                  <div className="text-3xl font-semibold tracking-[0.25em] text-[#1d1d1f] select-all my-1">{walkinCode}</div>
+                  <p className="text-[11px] text-[#86868b]">{window.location.host} → Track walk-in</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleCreateWalkin} className="space-y-4">
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
@@ -267,6 +283,7 @@ export const WalkinModal: React.FC = () => {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
   );

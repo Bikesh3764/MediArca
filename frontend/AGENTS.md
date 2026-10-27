@@ -43,6 +43,7 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 7. **Physical QR Scanner Only (No Manual Code Entry)**:
    - Patient arrival verification is strictly camera-driven (`CameraQrScannerModal`).
    - Do NOT offer manual numeric code entry or display printed desk codes on standees.
+   - Exception (FIX-058): walk-ins get a 6-character tracking code on their slip. `/track` (Track walk-in) takes mobile number + code to show the live queue. It is view-only and never marks arrival.
    - Do NOT expose internal technical database IDs (e.g. `cp_demo_clinic`, raw UUIDs) in user-facing settings.
 8. **Dynamic Facility Photography & Logo Support**:
    - Discovery cards, clinic profiles, and headers MUST dynamically render the clinic's uploaded `avatarUrl` (using `getFileUrl(clinic.avatarUrl)`) with `clinicLobbyBg` as fallback.

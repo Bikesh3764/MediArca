@@ -19,6 +19,7 @@ import {
   Camera,
   Sparkles,
   Calendar,
+  Trash2,
 } from 'lucide-react';
 import { AvatarCropModal } from '../../components/ui/AvatarCropModal';
 import { useToast } from '../../context/ToastContext';
@@ -67,6 +68,23 @@ export const DoctorProfile: React.FC = () => {
       setErrorMsg('Couldn’t read that image. Try another one.');
     };
     reader.readAsDataURL(rawFile);
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm('Remove photo?')) return;
+    setAvatarLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await api.removeAvatar();
+      updateUser(res.user);
+      await refreshUser();
+      setSuccessMsg('Photo removed.');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Couldn’t remove photo. Try again.');
+    } finally {
+      setAvatarLoading(false);
+    }
   };
 
   const handleCroppedAvatarComplete = async (croppedFile: File) => {
@@ -262,6 +280,17 @@ export const DoctorProfile: React.FC = () => {
                   <Camera className="w-3.5 h-3.5 text-[#86868b]" />
                   <span>{avatarLoading ? 'Uploading...' : 'Change Photo'}</span>
                 </button>
+                {user?.avatarUrl && (
+                  <button
+                    type="button"
+                    disabled={avatarLoading}
+                    onClick={handleRemoveAvatar}
+                    className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#ff3b30] text-xs font-normal flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                )}
               </div>
 
               {avatarOptimization && (

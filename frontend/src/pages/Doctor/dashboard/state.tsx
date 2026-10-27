@@ -219,6 +219,8 @@ export const useDoctorDashboardState = () => {
   const [walkinSubmitting, setWalkinSubmitting] = useState(false);
   const [walkinError, setWalkinError] = useState<string | null>(null);
   const [walkinSuccess, setWalkinSuccess] = useState<string | null>(null);
+  // Tracking code shown after adding a walk-in with a phone number (FIX-058)
+  const [walkinCode, setWalkinCode] = useState<string | null>(null);
   const handleCreateWalkin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!walkinName.trim()) {
@@ -257,7 +259,8 @@ export const useDoctorDashboardState = () => {
     setWalkinError(null);
     try {
       const targetDoctorId = user?.doctorProfile?.id || user?.id || '';
-      await api.bookAppointment({
+      const hadPhone = Boolean(walkinPhone.trim());
+      const booked: any = await api.bookAppointment({
         doctorId: targetDoctorId,
         appointmentDate: walkinDate || getLocalDateString(),
         slotId: walkinSlotId || undefined,
@@ -270,6 +273,7 @@ export const useDoctorDashboardState = () => {
         clinicId: effectiveClinicId,
       });
       setWalkinSuccess(`${walkinName} added to the queue`);
+      const code: string | null = hadPhone ? booked?.walkInCode ?? booked?.data?.walkInCode ?? null : null;
       setWalkinName('');
       setWalkinAge('');
       setWalkinPhone('');
@@ -277,10 +281,15 @@ export const useDoctorDashboardState = () => {
       setWalkinReason('');
       setWalkinClinicId('');
       refreshQueueQuietly();
-      setTimeout(() => {
-        setShowAddModal(false);
-        setWalkinSuccess(null);
-      }, 1200);
+      if (code) {
+        // Keep the modal open so the code can be read out to the patient
+        setWalkinCode(code);
+      } else {
+        setTimeout(() => {
+          setShowAddModal(false);
+          setWalkinSuccess(null);
+        }, 1200);
+      }
     } catch (err: any) {
       setWalkinError(err.message || 'Couldn’t add walk-in. Try again.');
     } finally {
@@ -770,6 +779,8 @@ export const useDoctorDashboardState = () => {
     setWalkinError,
     walkinSuccess,
     setWalkinSuccess,
+    walkinCode,
+    setWalkinCode,
     handleCreateWalkin,
     handleAddClinic,
     handleRemoveClinic,

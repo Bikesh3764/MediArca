@@ -9,7 +9,8 @@ import { formatIndianPhone, sanitizeIndianPhone, isValidIndianPhone } from '../.
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { resolveReceptionistContact, estimateNextToken } from './helpers';
-import { pickWalkinAccount } from '../../utils/walkinMatch';
+import { pickWalkinAccount, isSameWalkinName } from '../../utils/walkinMatch';
+import { pickFreeWalkinCode } from '../../utils/walkinCode';
 import { findTooLong, LIMITS } from '../../utils/inputLimits';
 import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE, getDayOfWeekCode } from '../../utils/scheduleUtils';
 import { activeShiftSets, clashWithEarlierClinic } from '../../utils/shiftClash';
@@ -398,7 +399,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
         (req.user.role === 'DOCTOR' &&
           patientUser &&
           patientName &&
-          patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+          !isSameWalkinName(patientUser.fullName, patientName))
       );
       const existingPatientBooking = await prisma.appointment.findFirst({
         where: {
@@ -476,7 +477,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               (req.user?.role === 'DOCTOR' &&
                 patientUser &&
                 patientName &&
-                patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())
+                !isSameWalkinName(patientUser.fullName, patientName))
             );
             const duplicateInTx = await tx.appointment.findFirst({
               where: {
@@ -619,6 +620,8 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
           const cleanWalkinPhone = patientPhone ? String(patientPhone).trim() : '';
           const normalizedWalkinPhone = cleanWalkinPhone ? formatIndianPhone(cleanWalkinPhone) : '';
           const isSameDayWalkin = !isPatientBooking && appointmentDate === istTodayStr;
+          // Staff-made walk-ins get a code to track the queue from the home page (FIX-058)
+          const walkInCode = isPatientBooking ? null : await pickFreeWalkinCode(tx, appointmentDate);
 
           const created = await tx.appointment.create({
             data: {
@@ -634,12 +637,13 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
               paymentStatus,
               reasonForVisit: reasonForVisit || 'General Medical Consultation',
               symptoms: symptoms || null,
-              isForOther: Boolean(isForOther || (req.user?.role === 'DOCTOR' && patientUser && patientName && patientUser.fullName.trim().toLowerCase() !== String(patientName).trim().toLowerCase())),
+              isForOther: Boolean(isForOther || (req.user?.role === 'DOCTOR' && patientUser && patientName && !isSameWalkinName(patientUser.fullName, patientName))),
               patientName: (isForOther && patientName) || (req.user?.role === 'DOCTOR' && patientName) ? String(patientName).trim() : null,
               patientAge: patientAge ? String(patientAge).trim() : null,
               patientGender: patientGender || null,
               isCheckedIn: isSameDayWalkin,
               checkedInAt: isSameDayWalkin ? new Date() : null,
+              walkInCode,
             },
             include: {
               doctor: {

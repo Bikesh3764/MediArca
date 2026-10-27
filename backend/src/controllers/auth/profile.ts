@@ -535,3 +535,52 @@ export const uploadAvatar = async (req: AuthRequest, res: Response): Promise<voi
     });
   }
 };
+
+/** Remove the signed-in user's profile photo and delete their uploaded file (FIX-058). */
+export const removeAvatar = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Not authenticated' });
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { avatarUrl: true },
+    });
+
+    // Only ever delete this user's own upload, never another file in the bucket
+    const oldKey = ownAvatarKey(existingUser?.avatarUrl, req.user.id);
+    if (oldKey) {
+      try {
+        await deleteFromR2(oldKey);
+      } catch (cleanupError) {
+        console.error('removeAvatar cleanup error:', cleanupError);
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatarUrl: null },
+      include: {
+        patientProfile: true,
+        doctorProfile: true,
+        clinicProfile: true,
+        receptionistProfile: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Photo removed',
+      data: { avatarUrl: null, user: sanitizeUserPayload(updatedUser) },
+    });
+  } catch (error: any) {
+    console.error('removeAvatar error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove photo',
+      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
+    });
+  }
+};

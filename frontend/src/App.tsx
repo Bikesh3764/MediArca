@@ -33,6 +33,7 @@ const ClinicDashboard = lazy(() => import('./pages/Clinic/ClinicDashboard').then
 const ClinicProfile = lazy(() => import('./pages/Clinic/ClinicProfile').then(m => ({ default: m.ClinicProfile })));
 const ReceptionistAuth = lazy(() => import('./pages/Receptionist/ReceptionistAuth').then(m => ({ default: m.ReceptionistAuth })));
 const ReceptionistDashboard = lazy(() => import('./pages/Receptionist/ReceptionistDashboard').then(m => ({ default: m.ReceptionistDashboard })));
+const TrackWalkin = lazy(() => import('./pages/Patient/TrackWalkin'));
 const ClinicCheckIn = lazy(() => import('./pages/Patient/ClinicCheckIn').then(m => ({ default: m.ClinicCheckIn })));
 
 // Global Network & Document Title Utilities
@@ -179,6 +180,7 @@ function AppShell() {
             <Route path="/doctor/login" element={<Login portal="DOCTOR" />} />
             <Route path="/doctor/signup" element={<Signup initialRole="DOCTOR" />} />
             <Route path="/clinic-checkin" element={<ClinicCheckIn />} />
+            <Route path="/track" element={<TrackWalkin />} />
 
             {/* Company & Informational Pages */}
             <Route path="/about" element={<AboutUs />} />

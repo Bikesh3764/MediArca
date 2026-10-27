@@ -113,10 +113,12 @@ model Appointment {
   checkedInAt     DateTime?
   calledAt        DateTime?      // When the patient was last called into the cabin (live wait estimate)
   completedAt     DateTime?      // When the visit finished (doctor's real pace for the wait estimate)
+  walkInCode      String?        // 6-char code staff give a walk-in to track the queue from the home page (FIX-058)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
   @@unique([clinicId, doctorId, appointmentDate, slotId, queueNumber])
+  @@unique([appointmentDate, walkInCode])
   @@index([patientId])
   @@index([doctorId, appointmentDate])
   @@index([doctorId, appointmentDate, status])

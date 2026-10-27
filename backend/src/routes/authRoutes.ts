@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, updateProfile, googleAuth, uploadAvatar, verifyEmailOtp, resendEmailOtp, requestPasswordReset, resetPasswordWithCode, changeOwnPassword, deleteOwnAccount } from '../controllers/authController';
+import { register, login, getMe, updateProfile, googleAuth, uploadAvatar, removeAvatar, verifyEmailOtp, resendEmailOtp, requestPasswordReset, resetPasswordWithCode, changeOwnPassword, deleteOwnAccount } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 import { upload } from '../middleware/uploadMiddleware';
 import { blockDemoAccountChanges } from '../utils/demoAccounts';
@@ -43,6 +43,14 @@ router.post(
     });
   },
   uploadAvatar
+);
+
+// Remove profile photo
+router.delete(
+  '/avatar',
+  authenticate,
+  blockDemoAccountChanges,
+  removeAvatar
 );
 
 export default router;

@@ -271,6 +271,7 @@ export interface ReceptionistQueueItem {
   queueNumber: number;
   patientName: string;
   patientPhone: string;
+  walkInCode?: string | null;
   gender?: string;
   bloodGroup?: string;
   checkingWindow: string;
@@ -469,6 +470,8 @@ export interface Appointment {
   patientPhone?: string;
   patientAge?: string;
   patientGender?: string;
+  /** 6-character code staff give a walk-in to track the queue on the home page (FIX-058). */
+  walkInCode?: string | null;
   isCheckedIn?: boolean;
   checkedInAt?: string | null;
   completedAt?: string | null;
@@ -499,6 +502,37 @@ export interface Appointment {
     delayReason?: 'BEFORE_SHIFT' | 'STEPPED_OUT' | 'DOCTOR_NOT_IN' | null;
     estimatedQueueNumber?: number;
   };
+}
+
+/** Public walk-in tracker answer (POST /appointments/walkin-track, FIX-058). */
+export interface WalkinTrackResult {
+  walkInCode: string;
+  patientName: string | null;
+  queueNumber: number;
+  status: string;
+  appointmentDate: string;
+  checkingWindow: string;
+  estimatedTime: string;
+  doctor: {
+    fullName: string | null;
+    avatarUrl: string | null;
+    specialty: string | null;
+    cabinStatus: string | null;
+    expectedReturnTime: string | null;
+  };
+  clinic: { clinicName: string; address: string; city: string | null; avatarUrl: string | null } | null;
+  receptionistName: string | null;
+  receptionistPhone: string | null;
+  liveQueue: {
+    currentServingQueueNumber: number;
+    patientsAway: number;
+    estimatedWaitMinutes: number;
+    isYourTurn: boolean;
+    isShiftActive: boolean;
+    isShiftPassed: boolean;
+    liveEstimatedTime: string;
+    delayReason: 'BEFORE_SHIFT' | 'STEPPED_OUT' | 'DOCTOR_NOT_IN' | null;
+  } | null;
 }
 
 export interface AppNotification {

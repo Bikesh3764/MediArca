@@ -196,6 +196,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
             patientName: a.patientName || a.patient?.user?.fullName || 'Walk-in Patient',
             registeredUserName: a.patient?.user?.fullName,
             patientPhone: a.patient?.user?.phone || 'N/A',
+            walkInCode: a.walkInCode || null,
             gender: a.patientGender || a.patient?.gender,
             bloodGroup: a.patient?.bloodGroup,
             checkingWindow: a.checkingWindow,

@@ -181,6 +181,14 @@ export const ReceptionistDashboard: React.FC = () => {
             </div>
           </div>
 
+          {bookedPass.walkInCode && (
+            <div className="pb-3 text-center">
+              <div className="text-[11px] uppercase text-[#6e6e73] tracking-wider">Tracking code</div>
+              <div className="text-2xl font-semibold tracking-[0.25em] my-0.5">{bookedPass.walkInCode}</div>
+              <div className="text-[11px] text-[#48484a]">{window.location.host} → Track walk-in</div>
+            </div>
+          )}
+
           <div className="space-y-1.5 py-3 border-t-2 border-b-2 border-dashed border-[#a1a1a6] text-xs">
             <div className="flex justify-between">
               <span className="text-[#6e6e73]">Patient:</span>

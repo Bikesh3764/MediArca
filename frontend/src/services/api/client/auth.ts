@@ -132,4 +132,12 @@ export const authApi = {
     });
     return await handleResponse(res);
   },
+
+  async removeAvatar(): Promise<{ avatarUrl: null; user: User }> {
+    const res = await safeFetch(`${API_BASE_URL}/auth/avatar`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return await handleResponse(res);
+  },
 };
