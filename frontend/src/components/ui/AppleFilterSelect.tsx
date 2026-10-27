@@ -21,6 +21,8 @@ export interface AppleFilterSelectProps {
   className?: string;
   icon?: React.ReactNode;
   align?: 'left' | 'right';
+  /** false = show only the name on the button, no (n) count */
+  showCount?: boolean;
 }
 
 export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
@@ -37,6 +39,7 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
   className = '',
   icon,
   align = 'left',
+  showCount = true,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,11 +81,11 @@ export const AppleFilterSelect: React.FC<AppleFilterSelectProps> = ({
 
   const displayLabel = useMemo(() => {
     if (!selectedOption) return placeholder;
-    if (selectedOption.count !== undefined && selectedOption.count > 0) {
+    if (showCount && selectedOption.count !== undefined && selectedOption.count > 0) {
       return `${selectedOption.label} (${selectedOption.count})`;
     }
     return selectedOption.label;
-  }, [selectedOption, placeholder]);
+  }, [selectedOption, placeholder, showCount]);
 
   const handleSelect = (val: string) => {
     onChange(val);

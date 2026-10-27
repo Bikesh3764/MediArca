@@ -283,7 +283,7 @@ export const QueueTab: React.FC = () => {
                         <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0">
                           Clinic:
                         </span>
-                        <div className="h-9 min-w-[200px] max-w-[280px] bg-[#f5f5f7] hover:bg-[#e8e8ed]/60 border border-[#e5e5ea] rounded-full px-2 flex items-center transition-all">
+                        <div className="h-9 max-w-[280px] bg-[#f5f5f7] hover:bg-[#e8e8ed]/60 border border-[#e5e5ea] rounded-full px-2 flex items-center transition-all">
                           <AppleFilterSelect
                             value={selectedClinicId === 'all' ? 'All' : selectedClinicId}
                             onChange={(val) => handleClinicChange(val === 'All' ? 'all' : val)}
@@ -292,6 +292,7 @@ export const QueueTab: React.FC = () => {
                             allLabel="All Clinics"
                             allCount={queueData?.waitingQueue?.length || 0}
                             variant="bar"
+                            showCount={false}
                             icon={<Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />}
                           />
                         </div>
@@ -303,7 +304,7 @@ export const QueueTab: React.FC = () => {
                         <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0">
                           Shift:
                         </span>
-                        <div className="h-9 min-w-[190px] max-w-[260px] bg-[#f5f5f7] hover:bg-[#e8e8ed]/60 border border-[#e5e5ea] rounded-full px-2 flex items-center transition-all">
+                        <div className="h-9 max-w-[260px] bg-[#f5f5f7] hover:bg-[#e8e8ed]/60 border border-[#e5e5ea] rounded-full px-2 flex items-center transition-all">
                           <AppleFilterSelect
                             value={selectedSlotId === 'all' ? 'All' : selectedSlotId}
                             onChange={(val) => setSelectedSlotId(val === 'All' ? 'all' : val)}
@@ -312,6 +313,7 @@ export const QueueTab: React.FC = () => {
                             allLabel="All Shifts"
                             allCount={totalShiftQueueCount}
                             variant="bar"
+                            showCount={false}
                             icon={<Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />}
                           />
                         </div>
@@ -382,6 +384,7 @@ export const QueueTab: React.FC = () => {
                               allLabel="All Clinics"
                               allCount={queueData?.waitingQueue?.length || 0}
                               variant="bar"
+                              showCount={false}
                               icon={<Building2 className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />}
                             />
                           </div>
@@ -400,6 +403,7 @@ export const QueueTab: React.FC = () => {
                               allLabel="All Shifts"
                               allCount={totalShiftQueueCount}
                               variant="bar"
+                              showCount={false}
                               icon={<Clock className="w-3.5 h-3.5 text-[#0066cc] shrink-0" />}
                             />
                           </div>

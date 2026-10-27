@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../../services/api';
-import { Check, AlertCircle, Timer } from 'lucide-react';
+import { AlertCircle, Timer } from 'lucide-react';
 
 export type CabinStatus = 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN';
 
@@ -85,7 +85,6 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
   const [returnTime, setReturnTime] = useState<string | null>(initialReturnTime || null);
   const [selectedMins, setSelectedMins] = useState<number | null>(15);
   const [loading, setLoading] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Sync with prop changes if they happen externally
@@ -110,7 +109,6 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
   ) => {
     setLoading(true);
     setErrorMsg(null);
-    setFeedback(null);
     // Select the new status at once; go back to the old one if saving fails
     const previousStatus = status;
     setStatus(newStatus);
@@ -158,8 +156,6 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
       if (onStatusChange) {
         onStatusChange(updatedStatus, updatedReturn);
       }
-      setFeedback('Saved');
-      setTimeout(() => setFeedback(null), 2500);
     } catch (err: any) {
       console.error('Failed to update doctor presence:', err);
       setStatus(previousStatus);
@@ -179,12 +175,6 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
           <span className="text-xs font-normal text-[#86868b] tracking-tight">
             Cabin Status
           </span>
-          {feedback && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-normal text-[#0066cc] bg-[#0066cc]/8 px-2 py-0.5 rounded-full">
-              <Check className="w-3 h-3 text-[#0066cc]" />
-              {feedback}
-            </span>
-          )}
           {errorMsg && (
             <span className="inline-flex items-center gap-1 text-[11px] font-normal text-danger bg-danger-soft px-2 py-0.5 rounded-full border border-danger-line">
               <AlertCircle className="w-3 h-3" />
