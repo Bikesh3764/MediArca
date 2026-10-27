@@ -56,6 +56,11 @@ export const QueueTab: React.FC = () => {
     clinicFilterOptions,
     shiftFilterOptions,
   } = useDoctorDashboard();
+  // A filter or label with only one possible value adds nothing, so hide it
+  const showClinicFilter = (affiliations?.clinics?.length || 0) > 1 || selectedClinicId !== 'all';
+  const showShiftFilter = availableShifts.length > 1 || selectedSlotId !== 'all';
+  const showShiftLabel = availableShifts.length > 1 && selectedSlotId === 'all';
+  const showClinicLabel = (affiliations?.clinics?.length || 0) > 1 && selectedClinicId === 'all';
   return (
 <div className="space-y-6">
             {/* Verification Warning if Doctor is unverified or suspended/rejected */}
@@ -274,11 +279,11 @@ export const QueueTab: React.FC = () => {
               </div>
 
               {/* Clinic & Shift Differentiation Controls */}
-              {((affiliations?.clinics && affiliations.clinics.length > 0) || availableShifts.length > 0) && (
+              {(showClinicFilter || showShiftFilter) && (
                 <div className="pt-3.5 border-t border-[#f0f0f2] flex flex-col gap-3">
                   {/* Desktop View: Sleek Apple Dropdown Selectors */}
                   <div className="hidden sm:flex items-center gap-3.5 flex-wrap">
-                    {affiliations?.clinics && affiliations.clinics.length > 0 && (
+                    {showClinicFilter && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0">
                           Clinic:
@@ -299,7 +304,7 @@ export const QueueTab: React.FC = () => {
                       </div>
                     )}
 
-                    {availableShifts.length > 0 && (
+                    {showShiftFilter && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-[#1d1d1f] tracking-tight shrink-0">
                           Shift:
@@ -372,7 +377,7 @@ export const QueueTab: React.FC = () => {
                         </button>
                       </div>
 
-                      {affiliations?.clinics && affiliations.clinics.length > 0 && (
+                      {showClinicFilter && (
                         <div className="space-y-1">
                           <label className="text-[11px] font-normal text-[#86868b]">Clinic</label>
                           <div className="w-full h-10 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full px-2 flex items-center">
@@ -391,7 +396,7 @@ export const QueueTab: React.FC = () => {
                         </div>
                       )}
 
-                      {availableShifts.length > 0 && (
+                      {showShiftFilter && (
                         <div className="space-y-1">
                           <label className="text-[11px] font-normal text-[#86868b]">Shift</label>
                           <div className="w-full h-10 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full px-2 flex items-center">
@@ -464,20 +469,9 @@ export const QueueTab: React.FC = () => {
                       In cabin
                     </h3>
                     {displayedActiveInConsultation ? (
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 font-semibold text-xs px-2.5 py-0.5 rounded-full">
-                          Token #{displayedActiveInConsultation.queueNumber}
-                        </span>
-                        <span className="bg-[#f5f5f7] text-[#0066cc] border border-[#0066cc]/20 font-semibold text-xs px-2.5 py-0.5 rounded-full">
-                          {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
-                        </span>
-                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
-                          <span className="bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] font-normal text-xs px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-[#0066cc]" />
-                            <span className="truncate max-w-[140px]">{displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}</span>
-                          </span>
-                        )}
-                      </div>
+                      <span className="bg-[#0066cc]/10 text-[#0066cc] font-semibold text-xs px-2.5 py-0.5 rounded-full">
+                        #{displayedActiveInConsultation.queueNumber}
+                      </span>
                     ) : (
                       <span className="bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] font-normal text-xs px-2.5 py-0.5 rounded-full">
                         Available
@@ -491,35 +485,21 @@ export const QueueTab: React.FC = () => {
                         <h4 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
                           {displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName || 'Patient'}
                         </h4>
-                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20">
-                          {getSlotShortLabel(displayedActiveInConsultation, availableShifts)}
-                        </span>
-                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
-                          <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-[#0066cc]" />
-                            <span>{displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}</span>
-                          </span>
-                        )}
                         {displayedActiveInConsultation.isForOther && (
-                          <span className="text-[11px] font-normal px-2.5 py-0.5 rounded-full bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#48484a]">
                             {displayedActiveInConsultation.reasonForVisit?.toLowerCase().includes('walk-in')
-                              ? `Walk-in${displayedActiveInConsultation.patientAge ? ` (Age ${displayedActiveInConsultation.patientAge})` : ''}`
-                              : `Family (${displayedActiveInConsultation.patientAge ? `Age ${displayedActiveInConsultation.patientAge}` : 'Other'})`}
+                              ? `Walk-in${displayedActiveInConsultation.patientAge ? ` · ${displayedActiveInConsultation.patientAge}y` : ''}`
+                              : `Family${displayedActiveInConsultation.patientAge ? ` · ${displayedActiveInConsultation.patientAge}y` : ''}`}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-normal text-[#1d1d1f] mt-1 flex items-center gap-1.5 flex-wrap">
-                        <span className="font-semibold text-[#0066cc]">{getSlotShortLabel(displayedActiveInConsultation, availableShifts)}</span>
-                        {selectedClinicId === 'all' && (displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress) && (
-                          <>
-                            <span className="text-[#86868b]">•</span>
-                            <span className="text-[#86868b] flex items-center gap-1">
-                              <Building2 className="w-3 h-3 text-[#0066cc]" />
-                              {displayedActiveInConsultation.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress}
-                            </span>
-                          </>
-                        )}
-                      </p>
+                      {(() => {
+                        const line = [
+                          showShiftLabel ? getSlotShortLabel(displayedActiveInConsultation, availableShifts) : null,
+                          showClinicLabel ? displayedActiveInConsultation.clinic?.clinicName : null,
+                        ].filter(Boolean).join(' · ');
+                        return line ? <p className="text-[13px] text-[#86868b] mt-0.5">{line}</p> : null;
+                      })()}
 
                       {(() => {
                         const cleanReason = getCleanReason(
@@ -528,7 +508,7 @@ export const QueueTab: React.FC = () => {
                         );
                         if (!cleanReason && !displayedActiveInConsultation.symptoms) return null;
                         return (
-                          <div className="my-4 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
+                          <div className="mt-3 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
                             {cleanReason && (
                               <div className="whitespace-pre-wrap break-words">
                                 <span className="text-[#86868b] font-normal">Reason: </span>
@@ -545,7 +525,7 @@ export const QueueTab: React.FC = () => {
                         );
                       })()}
 
-                      <div className="flex flex-col sm:flex-row items-center gap-2.5">
+                      <div className="mt-4 flex flex-col sm:flex-row items-center gap-2.5">
                         <button
                           type="button"
                           disabled={completingId === displayedActiveInConsultation.id}
@@ -636,7 +616,7 @@ export const QueueTab: React.FC = () => {
                               <Play className="w-3.5 h-3.5 fill-current" />
                               {callingId === nextPresentTarget.id
                                 ? 'Calling...'
-                                : `Call #${nextPresentTarget.queueNumber} (${getSlotShortLabel(nextPresentTarget, availableShifts)})`}
+                                : `Call #${nextPresentTarget.queueNumber}${showShiftLabel ? ` (${getSlotShortLabel(nextPresentTarget, availableShifts)})` : ''}`}
                             </button>
                           )}
                         </div>
@@ -713,24 +693,14 @@ export const QueueTab: React.FC = () => {
                                       : `Family${appt.patientAge ? ` · ${appt.patientAge}y` : ''}`}
                                   </span>
                                 )}
-                                {appt.isCheckedIn ? (
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-success-soft text-success inline-flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-success-dot" />
-                                    Arrived
-                                  </span>
-                                ) : (
-                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#86868b]">
-                                    Not arrived
-                                  </span>
-                                )}
                               </div>
                               <p className="text-[13px] text-[#86868b] mt-0.5 truncate">
                                 {[
                                   appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && queueScope !== 'all-upcoming'
                                     ? (appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate)
                                     : null,
-                                  shiftLabel,
-                                  selectedClinicId === 'all' ? clinicDisplay : null,
+                                  showShiftLabel ? shiftLabel : null,
+                                  showClinicLabel ? clinicDisplay : null,
                                   getCleanReason(appt.reasonForVisit, appt.patientName || appt.patient?.user?.fullName),
                                 ]
                                   .filter(Boolean)
@@ -859,14 +829,14 @@ export const QueueTab: React.FC = () => {
                   <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                        Completed Consultations ({displayedCompletedQueue.length})
+                        Completed ({displayedCompletedQueue.length})
                       </h4>
                     </div>
                     <div className="space-y-2.5">
                       {displayedCompletedQueue.map((appt) => (
                         <div
                           key={appt.id}
-                          className="p-3.5 rounded-2xl bg-[#f5f5f7]/60 border border-[#e5e5ea] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs"
+                          className="p-3.5 rounded-2xl bg-[#f5f5f7]/60 border border-[#e5e5ea] flex flex-row justify-between items-center gap-2 text-xs"
                         >
                           <div className="flex items-center gap-2.5 flex-wrap">
                             <span className="font-semibold text-[#86868b]">#{appt.queueNumber}</span>
@@ -875,9 +845,6 @@ export const QueueTab: React.FC = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[#0066cc] bg-[#0066cc]/10 px-2.5 py-0.5 rounded-full font-normal">
-                              Completed
-                            </span>
                             <button
                               type="button"
                               onClick={() => navigate(`/doctor/consultation/${appt.id}`)}

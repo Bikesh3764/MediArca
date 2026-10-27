@@ -16,7 +16,6 @@ export const QueueTab: React.FC = () => {
     setRescheduleDate,
     setRescheduleSlotId,
     setRescheduleError,
-    selectedDoctorId,
     setBookedPass,
     queueDoctorId,
     setQueueDoctorId,
@@ -45,13 +44,10 @@ export const QueueTab: React.FC = () => {
                   <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
                     Queue
                   </h3>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                    {queueAppointments.length}
-                  </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                  {linkedDoctors.length > 0 && (
+                  {linkedDoctors.length > 1 && (
                     <div className="relative">
                       <select
                         value={queueDoctorId}
@@ -59,7 +55,7 @@ export const QueueTab: React.FC = () => {
                           setQueueDoctorId(e.target.value);
                           setQueueShiftFilter('ALL');
                         }}
-                        className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                        className="h-10 pl-4 pr-8 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       >
                         {linkedDoctors.map((doc) => (
                           <option key={doc.doctorId} value={doc.doctorId}>
@@ -71,12 +67,12 @@ export const QueueTab: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Shift Selector Drawer (Like Doctor Wise) */}
+                  {(availableQueueShifts.length > 1 || queueShiftFilter !== 'ALL') && (
                   <div className="relative">
                     <select
                       value={queueShiftFilter}
                       onChange={(e) => setQueueShiftFilter(e.target.value)}
-                      className="h-10 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
+                      className="h-10 pl-4 pr-8 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
                       title="Filter by shift"
                     >
                       <option value="ALL">All Shifts</option>
@@ -88,19 +84,20 @@ export const QueueTab: React.FC = () => {
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <input
                       type="date"
                       value={queueDate}
                       onChange={(e) => setQueueDate(e.target.value)}
-                      className="h-10 px-3.5 rounded-xl border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f]  transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
+                      className="h-10 px-4 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
                     />
                     {queueDate !== getLocalDateString() && (
                       <button
                         type="button"
                         onClick={() => setQueueDate(getLocalDateString())}
-                        className="h-10 px-3.5 rounded-xl bg-[#f5f5f7] hover:bg-[#e8e8ed] text-xs font-normal text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
+                        className="h-10 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-xs font-normal text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
                       >
                         Today
                       </button>
@@ -114,7 +111,13 @@ export const QueueTab: React.FC = () => {
                 const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
                 if (!targetDoctor) return null;
                 return (
-                  <div className="pb-4 border-b border-[#f0f0f2]">
+                  <div className="pb-4 border-b border-[#f0f0f2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#1d1d1f] truncate">{cleanDoctorName(targetDoctor.fullName)}</p>
+                      {targetDoctor.specialty && (
+                        <p className="text-xs text-[#86868b] truncate">{targetDoctor.specialty}</p>
+                      )}
+                    </div>
                     <CabinStatusControl
                       currentStatus={targetDoctor.cabinStatus}
                       expectedReturnTime={targetDoctor.expectedReturnTime}
@@ -418,6 +421,8 @@ export const QueueTab: React.FC = () => {
                   return a.localeCompare(b);
                 });
 
+                const showShiftHeaders = sortedShiftKeys.length > 1 || availableQueueShifts.length > 1;
+
                 return (
                   <div className="space-y-5">
                     {sortedShiftKeys.map((shiftName) => {
@@ -429,17 +434,15 @@ export const QueueTab: React.FC = () => {
 
                       return (
                         <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white ">
-                          {/* Apple Shift Section Header */}
-                          <div className="px-4 sm:px-5 py-3 bg-[#f5f5f7] border-b border-[#e5e5ea] flex items-center justify-between gap-3 flex-wrap">
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-[13px] font-semibold text-[#1d1d1f]">
-                                {shiftName}
-                              </span>
-                              <span className="text-[11px] font-normal text-[#86868b] px-2.5 py-0.5 rounded-full bg-white border border-[#e5e5ea]">
-                                {shiftAppts.length} {shiftAppts.length === 1 ? 'patient' : 'patients'}
-                              </span>
-                            </div>
+                          {showShiftHeaders && (
+                          <div className="px-4 sm:px-5 py-2.5 bg-[#f5f5f7] border-b border-[#e5e5ea] flex items-center justify-between gap-3 flex-wrap">
+                            <span className="text-[13px] font-semibold text-[#1d1d1f]">
+                              {shiftName}
+                            </span>
 
+                            {statusFilter !== 'ALL' ? (
+                              <span className="text-xs text-[#86868b]">{shiftAppts.length}</span>
+                            ) : (
                             <div className="flex items-center gap-2 text-xs text-[#86868b] flex-wrap">
                               {inCabinCount > 0 && (
                                 <span className="inline-flex items-center gap-1 font-normal text-[#0066cc]">
@@ -463,7 +466,9 @@ export const QueueTab: React.FC = () => {
                                 </span>
                               )}
                             </div>
+                            )}
                           </div>
+                          )}
 
                           <div className="divide-y divide-[#f0f0f2]">
                             {shiftAppts.map((appt) => {
@@ -508,37 +513,12 @@ export const QueueTab: React.FC = () => {
                                 >
                                   {appt.patientName}
                                 </span>
-                                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-                                  {cleanShiftDisplayName(appt.checkingWindow)}
-                                </span>
-                                {(() => {
-                                  const doc = linkedDoctors.find((d) => d.doctorId === (appt.doctorId || selectedDoctorId));
-                                  if (!doc?.fullName) return null;
-                                  return (
-                                    <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]">
-                                      {cleanDoctorName(doc.fullName)}
-                                    </span>
-                                  );
-                                })()}
-                                <span
-                                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-normal border ${
-                                    appt.status === 'IN_CONSULTATION'
-                                      ? 'bg-[#0066cc]/10 text-[#0066cc] border-[#0066cc]/20'
-                                      : appt.status === 'WAITING'
-                                      ? 'bg-[#f5f5f7] text-[#1d1d1f] border-[#e5e5ea]'
-                                      : 'bg-[#f5f5f7] text-[#86868b] border-[#e5e5ea]'
-                                  }`}
-                                >
-                                  {appt.status === 'IN_CONSULTATION'
-                                    ? 'In Cabin'
-                                    : appt.status === 'WAITING'
-                                    ? 'Waiting'
-                                    : appt.status === 'COMPLETED'
-                                    ? 'Completed'
-                                    : appt.status === 'CANCELLED'
-                                    ? 'Cancelled'
-                                    : 'Expired'}
-                                </span>
+                                {/* The tab, shift group and doctor picker already say the rest; only the All tab needs a status */}
+                                {statusFilter === 'ALL' && !['WAITING', 'IN_CONSULTATION'].includes(appt.status) && (
+                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b]">
+                                    {appt.status === 'COMPLETED' ? 'Done' : appt.status === 'CANCELLED' ? 'Cancelled' : 'Expired'}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="flex items-center gap-x-2.5 gap-y-0.5 text-xs text-[#86868b] mt-1 flex-wrap">
