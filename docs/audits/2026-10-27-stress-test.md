@@ -66,7 +66,7 @@ Heavy load ran only on a local copy (backend in production mode plus a local Pos
   - Phone layout has no sideways scroll.
 - **Supabase advisors:**
   - Info-level only. "RLS on, no policy" is intended (the public API stays closed).
-  - One missing index on `ReceptionistProfile.clinicId` (minor).
+  - One missing index on `ReceptionistProfile.clinicId` (minor). Added the same day (migration `20261027160000_receptionist_clinic_index`).
 
 Not from the site: on this PC, curl fails HTTPS revocation checks, port 80 is blocked, and Chrome shows occasional `ERR_HTTP2_PING_FAILED`.
 
