@@ -47,7 +47,7 @@ jobs:
           VITE_BASE: /MediArca/
           # Backend in Singapore (moved from Oregon on 2026-10-26). Set here so an old repo secret can't override it.
           VITE_API_URL: https://mediarca-api-sg.onrender.com/api
-          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID || vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID || vars.VITE_GOOGLE_CLIENT_ID || '868507235434-76q4g3c560hklhploh8p3dihp9q0ugs0.apps.googleusercontent.com' }}
           VITE_R2_PUBLIC_URL: ${{ secrets.VITE_R2_PUBLIC_URL || vars.VITE_R2_PUBLIC_URL }}
         run: |
           cd frontend
