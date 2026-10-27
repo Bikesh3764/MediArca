@@ -103,8 +103,36 @@ const RouteLoadingFallback: React.FC = () => (
 );
 
 
+// Pages each kind of user moves between. Their code is downloaded while the browser is idle,
+// so switching pages doesn't blank the screen behind a spinner while it downloads.
+const PAGES_BY_ROLE: Record<string, Array<{ preload: () => void }>> = {
+  PATIENT: [MyAppointments, DoctorDiscovery, DoctorDetail, BookAppointment, PatientProfile, ClinicCheckIn],
+  DOCTOR: [DoctorDashboard, ConsultationView, ManageSchedule, DoctorProfile],
+  CLINIC: [ClinicDashboard, ClinicProfile],
+  RECEPTIONIST: [ReceptionistDashboard],
+  ADMIN: [AdminDashboard],
+};
+const VISITOR_PAGES = [DoctorDiscovery, DoctorDetail, Login];
+
+function usePreloadPages() {
+  const { user } = useAuth();
+  const role = user?.role?.toUpperCase() || '';
+  React.useEffect(() => {
+    const pages = PAGES_BY_ROLE[role] || VISITOR_PAGES;
+    const run = () => pages.forEach((p) => p.preload());
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) {
+      w.requestIdleCallback(run, { timeout: 3000 });
+      return;
+    }
+    const t = window.setTimeout(run, 1500);
+    return () => window.clearTimeout(t);
+  }, [role]);
+}
+
 function AppShell() {
   const location = useLocation();
+  usePreloadPages();
 
   React.useEffect(() => {
     // Eager background warm-up ping to wake up backend if sleeping

@@ -111,6 +111,9 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
     setLoading(true);
     setErrorMsg(null);
     setFeedback(null);
+    // Select the new status at once; go back to the old one if saving fails
+    const previousStatus = status;
+    setStatus(newStatus);
     if (estimateMinutes !== undefined) {
       setSelectedMins(estimateMinutes);
     }
@@ -159,6 +162,7 @@ export const CabinStatusControl: React.FC<CabinStatusControlProps> = ({
       setTimeout(() => setFeedback(null), 2500);
     } catch (err: any) {
       console.error('Failed to update doctor presence:', err);
+      setStatus(previousStatus);
       setErrorMsg(err.message || 'Update failed');
       setTimeout(() => setErrorMsg(null), 3500);
     } finally {

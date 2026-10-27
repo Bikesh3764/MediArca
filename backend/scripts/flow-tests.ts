@@ -436,6 +436,46 @@ async function loadFixChecks() {
   // Doctor queue says whose queue it is, so the screen can ignore other doctors' events
   const dq = await call('GET', `/api/consultations/queue?date=${today}`, DA.token);
   check(dq.status === 200 && dq.json?.data?.doctorId === DA.doctor.id, 'FIX-053: doctor queue response carries the doctor id', dq.json?.data?.doctorId);
+
+  // ---- FIX-054 ----
+  // Each patient is sent once (the unused duplicate list is gone), still with the walk-in in line
+  check(
+    dq.json?.data?.allAppointments === undefined && (dq.json?.data?.waitingQueue || []).some((a: any) => a.id === walk.json?.data?.id),
+    'FIX-054: doctor queue lists each patient once',
+    Object.keys(dq.json?.data || {})
+  );
+
+  // Saving notes doesn't tell every screen the queue moved; a real queue change still does
+  const live = await openLiveStream(DA.token);
+  await wait(300);
+  const notes = await call('PUT', '/api/consultations/notes', DA.token, { appointmentId: walk.json?.data?.id, clinicalNotes: 'FIX-054 note' });
+  await wait(500);
+  const queueEventsAfterNotes = live.events.filter((e) => e === 'queue').length;
+  const cabin = await call('PUT', '/api/doctors/cabin-status', DA.token, { status: 'IN_CABIN' });
+  await wait(500);
+  const queueEventsAfterCabin = live.events.filter((e) => e === 'queue').length;
+  live.close();
+  check(
+    notes.status === 200 && queueEventsAfterNotes === 0 && cabin.status === 200 && queueEventsAfterCabin >= 1,
+    'FIX-054: saving notes sends no queue event, a cabin change still does',
+    [notes.status, queueEventsAfterNotes, cabin.status, queueEventsAfterCabin]
+  );
+
+  // Public doctor list stays cached through writes that can't change it (reading notifications,
+  // saving notes) and is cleared by ones that can (cabin status)
+  const listPath = '/api/doctors?limit=5&flow=' + RUN;
+  await call('GET', listPath);
+  const warm = await call('GET', listPath);
+  await call('PATCH', '/api/notifications/read-all', DA.token);
+  await call('PUT', '/api/consultations/notes', DA.token, { appointmentId: walk.json?.data?.id, clinicalNotes: 'FIX-054 note 2' });
+  const afterHarmless = await call('GET', listPath);
+  await call('PUT', '/api/doctors/cabin-status', DA.token, { status: 'IN_CABIN' });
+  const afterCabin = await call('GET', listPath);
+  check(
+    warm.headers.get('x-cache') === 'HIT' && afterHarmless.headers.get('x-cache') === 'HIT' && afterCabin.headers.get('x-cache') === 'MISS',
+    'FIX-054: public doctor list cache survives harmless writes and clears on real changes',
+    [warm.headers.get('x-cache'), afterHarmless.headers.get('x-cache'), afterCabin.headers.get('x-cache')]
+  );
 }
 
 async function main() {

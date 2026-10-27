@@ -18,7 +18,6 @@ export const consultationApi = {
     activeInConsultation: Appointment | null;
     waitingQueue: Appointment[];
     completedQueue: Appointment[];
-    allAppointments: Appointment[];
     upcomingSummary?: {
       tomorrowDate: string;
       tomorrowCount: number;

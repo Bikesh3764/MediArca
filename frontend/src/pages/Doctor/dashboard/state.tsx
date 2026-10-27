@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, createContext, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, DoctorAffiliationsData, ClinicProfile, cleanSlotName, formatDisplayDate } from '../../../services/api';
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
@@ -13,9 +13,50 @@ import { useConfirm } from '../../../context/ConfirmContext';
 import { AppleFilterOption } from '../../../components/ui/AppleFilterSelect';
 import { getYesterdayDateString, matchesSlot } from './helpers';
 
+type DoctorQueueData = {
+  doctorId?: string;
+  date: string;
+  scope?: string;
+  totalQueue: number;
+  activeInConsultation: Appointment | null;
+  waitingQueue: Appointment[];
+  completedQueue: Appointment[];
+  upcomingSummary?: {
+    tomorrowDate: string;
+    tomorrowCount: number;
+    totalUpcomingCount: number;
+    futureCountFromSelectedDate: number;
+    nextDateWithBookings: string | null;
+  };
+};
+
+// Last data shown, kept while the doctor visits other pages (Shifts, Settings, a consultation),
+// so coming back shows it at once and refreshes quietly instead of starting from a spinner.
+const lastSeen: {
+  userId?: string;
+  queueKey?: string;
+  queue?: DoctorQueueData;
+  affiliations?: DoctorAffiliationsData;
+  publicClinics?: ClinicProfile[];
+} = {};
+
+/** Marks a visit done in the remembered queue, so the dashboard opened after a consultation
+ *  doesn't show that patient still in the cabin for the moment before it refreshes. */
+export const markRememberedVisitDone = (appointmentId: string): void => {
+  const q = lastSeen.queue;
+  if (!q?.activeInConsultation || q.activeInConsultation.id !== appointmentId) return;
+  lastSeen.queue = {
+    ...q,
+    activeInConsultation: null,
+    completedQueue: [...q.completedQueue, { ...q.activeInConsultation, status: 'COMPLETED' } as Appointment],
+  };
+};
+
 /** All data, effects and actions for DoctorDashboard, shared with its parts through context. */
 export const useDoctorDashboardState = () => {
   const { user, loading: loadingAuth, updateUser } = useAuth();
+  const userId = user?.id;
+  const remembered = userId && lastSeen.userId === userId ? lastSeen : undefined;
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
@@ -40,8 +81,9 @@ export const useDoctorDashboardState = () => {
       return next;
     });
   }, [setSearchParams]);
-  const [affiliations, setAffiliations] = useState<DoctorAffiliationsData | null>(null);
-  const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>([]);
+  const [affiliations, setAffiliations] = useState<DoctorAffiliationsData | null>(() => remembered?.affiliations ?? null);
+  const [publicClinics, setPublicClinics] = useState<ClinicProfile[]>(() => remembered?.publicClinics ?? []);
+  const hasAffiliationsRef = useRef(Boolean(remembered?.affiliations));
   const [affiliationsLoading, setAffiliationsLoading] = useState(false);
   // Form and modal states for clinic affiliation
   const [isAffiliateModalOpen, setIsAffiliateModalOpen] = useState(false);
@@ -59,24 +101,10 @@ export const useDoctorDashboardState = () => {
   const [selectedSlotId, setSelectedSlotId] = useState<string>('all');
   const [queueFiltersDrawerOpen, setQueueFiltersDrawerOpen] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
-  const [queueData, setQueueData] = useState<{
-    doctorId?: string;
-    date: string;
-    scope?: string;
-    totalQueue: number;
-    activeInConsultation: Appointment | null;
-    waitingQueue: Appointment[];
-    completedQueue: Appointment[];
-    allAppointments: Appointment[];
-    upcomingSummary?: {
-      tomorrowDate: string;
-      tomorrowCount: number;
-      totalUpcomingCount: number;
-      futureCountFromSelectedDate: number;
-      nextDateWithBookings: string | null;
-    };
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [queueData, setQueueData] = useState<DoctorQueueData | null>(() =>
+    remembered?.queueKey === `${getLocalDateString()}|date` ? remembered.queue ?? null : null
+  );
+  const [loading, setLoading] = useState(() => !queueData);
   const [callingId, setCallingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const handleClinicChange = (clinicId: string) => {
@@ -92,15 +120,37 @@ export const useDoctorDashboardState = () => {
       );
       setQueueData(data);
       setFetchError(null);
+      if (userId) {
+        if (lastSeen.userId !== userId) {
+          lastSeen.affiliations = undefined;
+          lastSeen.publicClinics = undefined;
+        }
+        lastSeen.userId = userId;
+        lastSeen.queueKey = `${date}|${queueScope}`;
+        lastSeen.queue = data;
+      }
     } catch (err: any) {
       console.error('Failed to load doctor queue:', err);
       setFetchError(err.message || 'Unable to connect to healthcare backend');
     } finally {
       setLoading(false);
     }
-  }, [date, queueScope]);
+  }, [date, queueScope, userId]);
+  // Shows the result of a button at once; the quiet refresh that follows brings the full truth.
+  const patchQueue = useCallback((change: (q: DoctorQueueData) => DoctorQueueData) => {
+    setQueueData((prev) => {
+      if (!prev) return prev;
+      const next = change(prev);
+      if (lastSeen.queue === prev) lastSeen.queue = next;
+      return next;
+    });
+  }, []);
+  const refreshQueueQuietly = useCallback(() => {
+    fetchQueue(false).catch(() => {});
+  }, [fetchQueue]);
   const fetchAffiliations = useCallback(async (showLoading = true) => {
-    if (showLoading) setAffiliationsLoading(true);
+    // Spinner only before the first load; later refreshes keep the list on screen
+    if (showLoading && !hasAffiliationsRef.current) setAffiliationsLoading(true);
     try {
       const [affRes, pubClinics] = await Promise.all([
         api.getDoctorAffiliations(),
@@ -108,12 +158,22 @@ export const useDoctorDashboardState = () => {
       ]);
       setAffiliations(affRes);
       setPublicClinics(pubClinics);
+      hasAffiliationsRef.current = true;
+      if (userId) {
+        if (lastSeen.userId !== userId) {
+          lastSeen.queue = undefined;
+          lastSeen.queueKey = undefined;
+        }
+        lastSeen.userId = userId;
+        lastSeen.affiliations = affRes;
+        lastSeen.publicClinics = pubClinics;
+      }
     } catch (err: any) {
       console.error('Failed to load affiliations:', err);
     } finally {
       setAffiliationsLoading(false);
     }
-  }, []);
+  }, [userId]);
   useEffect(() => {
     let mounted = true;
     if (loadingAuth) return;
@@ -228,7 +288,7 @@ export const useDoctorDashboardState = () => {
       setWalkinDate(getLocalDateString());
       setWalkinReason('');
       setWalkinClinicId('');
-      await fetchQueue();
+      refreshQueueQuietly();
       setTimeout(() => {
         setShowAddModal(false);
         setWalkinSuccess(null);
@@ -318,7 +378,7 @@ export const useDoctorDashboardState = () => {
     try {
       await api.holdConsultation(appointmentId);
       toast.info('Consultation placed on hold');
-      await fetchQueue(false);
+      refreshQueueQuietly();
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t put on hold. Try again.');
     } finally {
@@ -351,8 +411,17 @@ export const useDoctorDashboardState = () => {
     setCallingId(appointmentId);
     try {
       await api.callPatient(appointmentId);
-      await fetchQueue();
-      navigate(`/doctor/consultation/${appointmentId}`);
+      // Open the visit straight away with what we already know; the queue refreshes behind it
+      const called = target ? ({ ...target, status: 'IN_CONSULTATION' } as Appointment) : undefined;
+      if (called) {
+        patchQueue((q) => ({
+          ...q,
+          activeInConsultation: called,
+          waitingQueue: q.waitingQueue.filter((a) => a.id !== appointmentId),
+        }));
+      }
+      refreshQueueQuietly();
+      navigate(`/doctor/consultation/${appointmentId}`, called ? { state: { appointment: called } } : undefined);
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t call patient. Try again.');
     } finally {
@@ -365,7 +434,16 @@ export const useDoctorDashboardState = () => {
     try {
       await api.completeConsultation({ appointmentId });
       toast.success('Consultation done');
-      await fetchQueue();
+      patchQueue((q) =>
+        q.activeInConsultation?.id === appointmentId
+          ? {
+              ...q,
+              activeInConsultation: null,
+              completedQueue: [...q.completedQueue, { ...q.activeInConsultation, status: 'COMPLETED' } as Appointment],
+            }
+          : q
+      );
+      refreshQueueQuietly();
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t complete consultation. Try again.');
     } finally {
@@ -375,12 +453,20 @@ export const useDoctorDashboardState = () => {
   const [togglingCheckinId, setTogglingCheckinId] = useState<string | null>(null);
   const handleToggleCheckIn = async (appointmentId: string, currentStatus?: boolean) => {
     setTogglingCheckinId(appointmentId);
+    const nextStatus = !currentStatus;
+    // Flip it on screen now; put it back if the server says no
+    const setArrived = (value: boolean) =>
+      patchQueue((q) => ({
+        ...q,
+        waitingQueue: q.waitingQueue.map((a) => (a.id === appointmentId ? { ...a, isCheckedIn: value } : a)),
+      }));
+    setArrived(nextStatus);
     try {
-      const nextStatus = !currentStatus;
       await api.checkInAppointmentDirect(appointmentId, nextStatus);
       toast.success(nextStatus ? 'Patient marked arrived' : 'Arrival status removed');
-      await fetchQueue();
+      refreshQueueQuietly();
     } catch (err: any) {
+      setArrived(Boolean(currentStatus));
       toast.error(err.message || 'Couldn’t update arrival. Try again.');
     } finally {
       setTogglingCheckinId(null);
@@ -400,7 +486,8 @@ export const useDoctorDashboardState = () => {
     try {
       await api.cancelAppointment(appointmentId);
       toast.success(`Appointment for ${patientName} cancelled`);
-      await fetchQueue(false);
+      patchQueue((q) => ({ ...q, waitingQueue: q.waitingQueue.filter((a) => a.id !== appointmentId) }));
+      refreshQueueQuietly();
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t cancel appointment. Try again.');
     } finally {
@@ -457,7 +544,7 @@ export const useDoctorDashboardState = () => {
       );
       setTimeout(() => setRescheduleSuccess(null), 5000);
       setRescheduleTarget(null);
-      await fetchQueue(false);
+      refreshQueueQuietly();
     } catch (err: any) {
       setRescheduleError(err.message || 'Couldn’t reschedule appointment. Try again.');
     } finally {

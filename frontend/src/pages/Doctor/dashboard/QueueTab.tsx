@@ -751,7 +751,7 @@ export const QueueTab: React.FC = () => {
                             <CheckCircle2
                               className={`w-3.5 h-3.5 ${appt.isCheckedIn ? 'text-[#0066cc]' : 'text-[#86868b]'}`}
                             />
-                            <span>{togglingCheckinId === appt.id ? 'Saving…' : appt.isCheckedIn ? 'Arrived' : 'Mark arrived'}</span>
+                            <span>{appt.isCheckedIn ? 'Arrived' : 'Mark arrived'}</span>
                           </button>
 
                           {/* Call Patient (if arrived and today) */}

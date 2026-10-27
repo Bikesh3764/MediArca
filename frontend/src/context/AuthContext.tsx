@@ -40,13 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
   const [token, setToken] = useState<string | null>(() => safeStorage.getItem('mediarca_token'));
-  const [loading, setLoading] = useState<boolean>(true);
+  // A saved session shows the app at once and is re-checked in the background;
+  // waiting for the server first put a blank spinner on every page load.
+  const [loading, setLoading] = useState<boolean>(
+    () => !(safeStorage.getItem('mediarca_token') && safeStorage.getItem('mediarca_user'))
+  );
 
   const refreshUser = async () => {
     try {
       if (safeStorage.getItem('mediarca_token')) {
         const currentUser = await api.getMe();
-        setUser(currentUser);
+        // Same data: keep the same object so screens don't reload everything again
+        setUser((prev) => (prev && JSON.stringify(prev) === JSON.stringify(currentUser) ? prev : currentUser));
         safeStorage.setItem('mediarca_user', JSON.stringify(currentUser));
       } else {
         setUser(null);

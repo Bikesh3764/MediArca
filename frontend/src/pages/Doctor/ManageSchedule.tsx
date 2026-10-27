@@ -1,6 +1,6 @@
 import { formatClinicAddress } from '../../utils/address';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   api,
@@ -143,15 +143,25 @@ export const ManageSchedule: React.FC = () => {
     [user]
   );
 
-  // Fetch affiliations and active clinics
+  // Read through a ref: depending on searchParams made this reload (and blank the page)
+  // right after it wrote the chosen clinic into the address bar.
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+  const hasLoadedClinicsRef = useRef(false);
+
+  // Fetch affiliations and active clinics. The placeholder shows only on the first load;
+  // later refreshes (after a save) keep the form on screen.
   const fetchAffiliations = useCallback(async () => {
-    setLoadingClinics(true);
+    if (!hasLoadedClinicsRef.current) setLoadingClinics(true);
     try {
       const aff = await api.getDoctorAffiliations();
       const activeClinics = aff.clinics || [];
       setClinics(activeClinics);
+      hasLoadedClinicsRef.current = true;
 
-      const targetClinicId = searchParams.get('clinic');
+      const targetClinicId = searchParamsRef.current.get('clinic');
       let currentClinic: DoctorAffiliationClinic | undefined;
       if (targetClinicId && activeClinics.some((c) => c.clinicId === targetClinicId)) {
         setSelectedClinicId(targetClinicId);
@@ -189,7 +199,7 @@ export const ManageSchedule: React.FC = () => {
     } finally {
       setLoadingClinics(false);
     }
-  }, [searchParams, setSearchParams, syncClinicData, user]);
+  }, [setSearchParams, syncClinicData, user]);
 
   useEffect(() => {
     let mounted = true;

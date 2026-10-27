@@ -201,7 +201,6 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
         activeInConsultation,
         waitingQueue,
         completedQueue,
-        allAppointments: resolvedAppointments,
         upcomingSummary: {
           tomorrowDate: tomorrowIso,
           tomorrowCount,

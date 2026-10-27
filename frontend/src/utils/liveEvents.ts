@@ -21,6 +21,9 @@ let controller: AbortController | null = null;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 let retryDelay = 2000;
 let hasConnectedOnce = false;
+// True after we closed the stream because the tab was hidden. On return the screens'
+// own polling refreshes at once, so the reconnect refresh would only repeat it.
+let pausedWhileHidden = false;
 
 const listenerCount = () => {
   let n = 0;
@@ -47,10 +50,13 @@ const disconnect = () => {
 
 const scheduleReconnect = () => {
   if (retryTimer || listenerCount() === 0) return;
+  // Random spread: after a server restart every open screen would otherwise
+  // reconnect (and refresh) in the same second.
+  const delay = Math.round(retryDelay * (1 + Math.random() * 2));
   retryTimer = setTimeout(() => {
     retryTimer = null;
     connect();
-  }, retryDelay);
+  }, delay);
   retryDelay = Math.min(retryDelay * 2, 30000);
 };
 
@@ -64,8 +70,9 @@ const parseBlock = (block: string) => {
   if (event === 'ready') {
     retryDelay = 2000;
     // After a dropped connection, refresh once in case we missed events
-    if (hasConnectedOnce) emit('reconnect', {});
+    if (hasConnectedOnce && !pausedWhileHidden) emit('reconnect', {});
     hasConnectedOnce = true;
+    pausedWhileHidden = false;
     return;
   }
   if (event !== 'queue' && event !== 'notification') return;
@@ -119,8 +126,10 @@ const connect = async () => {
 
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) disconnect();
-    else connect();
+    if (document.hidden) {
+      if (controller || retryTimer) pausedWhileHidden = true;
+      disconnect();
+    } else connect();
   });
 }
 

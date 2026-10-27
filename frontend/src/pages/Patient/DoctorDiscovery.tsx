@@ -66,6 +66,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [allCatalogDoctors, setAllCatalogDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  // Grey placeholders only before the first results; after that a filter change keeps the
+  // current cards (slightly faded) until the new ones arrive.
+  const [hasLoadedDoctors, setHasLoadedDoctors] = useState(false);
+  const doctorsRequestRef = React.useRef(0);
   const [search, setSearch] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState(initialSpecialty);
@@ -327,6 +331,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     cityFilter = selectedCity,
     targetPage = doctorPage
   ) => {
+    const requestId = ++doctorsRequestRef.current;
     setLoading(true);
     try {
       const combinedSearch = [queryText.trim(), locationText.trim()].filter(Boolean).join(' ');
@@ -341,6 +346,8 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         page: targetPage,
         limit: 20,
       });
+      // A newer search already started: drop this older answer
+      if (requestId !== doctorsRequestRef.current) return;
       setDoctors(res.data);
       setDoctorPagination(res.pagination);
       if (specialtyFilter === 'All' && !combinedSearch && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All' && targetPage === 1) {
@@ -349,7 +356,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     } catch (err) {
       console.error('Failed to load doctors:', err);
     } finally {
-      setLoading(false);
+      if (requestId === doctorsRequestRef.current) {
+        setLoading(false);
+        setHasLoadedDoctors(true);
+      }
     }
   };
 
@@ -1339,7 +1349,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
           </div>
 
           {/* Doctor Cards Grid */}
-          {loading ? (
+          {loading && !hasLoadedDoctors ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <div key={i} className="h-72 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
@@ -1354,7 +1364,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
               onAction={resetFilters}
             />
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
+            <div
+              aria-busy={loading}
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full transition-opacity duration-150 ${loading ? 'opacity-60' : ''}`}
+            >
               {filteredDoctors.map((doctor) => {
                 const slots = parseDoctorSlots(doctor);
                 const cleanDegrees = formatDoctorDegrees(doctor.qualifications);

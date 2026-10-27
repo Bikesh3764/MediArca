@@ -53,9 +53,17 @@ export const publicResponseCache = (ttlMs = 15000) => {
   };
 };
 
+// Writes that can't change a public doctor or clinic page. Clearing on these (sign-ins,
+// reading notifications, saving notes) emptied the cache every few seconds on busy days.
+const WRITES_THAT_KEEP_PUBLIC_CACHE =
+  /^\/api\/(auth\/(login|google|resend-otp|forgot-password|reset-password|change-password)|notifications(\/.*)?|consultations\/notes|receptionists?\/change-password|admin\/contact-messages(\/.*)?)\/?$/i;
+
+export const keepsPublicCache = (path: string): boolean => WRITES_THAT_KEEP_PUBLIC_CACHE.test(path);
+
 /** Clears the public cache after any successful write so readers see changes immediately. */
 export const invalidatePublicCacheOnWrite = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+  const path = String(req.originalUrl || '').split('?')[0];
+  if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS' && !keepsPublicCache(path)) {
     res.on('finish', () => {
       if (res.statusCode < 400) clearPublicResponseCache();
     });

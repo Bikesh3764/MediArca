@@ -304,8 +304,8 @@ export const useReceptionistDashboardState = () => {
         `${rescheduleTarget.patientName} moved to ${formatDisplayDate(rescheduleDate)}${tokenDisplay}.`
       );
       setRescheduleTarget(null);
-      if (queueDoctorId) fetchQueue();
-      fetchPendingAppointments();
+      if (queueDoctorId) fetchQueue(undefined, undefined, true);
+      fetchPendingAppointments(true);
       fetchDeskData();
     } catch (err: any) {
       setRescheduleError(err.message || 'Couldn’t reschedule appointment. Try again.');
@@ -319,10 +319,12 @@ export const useReceptionistDashboardState = () => {
       setError(null);
       const res = await api.approveAppointment(apptId);
       setSuccessMsg(res.message || 'Booking confirmed and queue token assigned.');
-      await fetchPendingAppointments();
+      // Take it off the list now; the quiet refresh confirms
+      setPendingAppointments((prev) => prev.filter((a) => a.id !== apptId));
+      fetchPendingAppointments(true);
       fetchDeskData();
       if (queueDoctorId) {
-        fetchQueue();
+        fetchQueue(undefined, undefined, true);
       }
     } catch (err: any) {
       setError(err.message || 'Couldn’t approve appointment. Try again.');
@@ -345,7 +347,8 @@ export const useReceptionistDashboardState = () => {
       const res = await api.rejectAppointment(apptId, 'Booking request declined by reception desk.');
       toast.success(res.message || 'Booking request declined');
       setSuccessMsg(res.message || 'Booking request declined.');
-      await fetchPendingAppointments();
+      setPendingAppointments((prev) => prev.filter((a) => a.id !== apptId));
+      fetchPendingAppointments(true);
       fetchDeskData();
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t decline appointment. Try again.');
@@ -627,18 +630,29 @@ export const useReceptionistDashboardState = () => {
       }
     }
 
+    // Show the new status at once; put the old one back if the server says no
+    const previousStatus = targetAppt?.status;
+    const setStatus = (value: string | undefined) =>
+      setQueueAppointments((prev) =>
+        prev.map((a) => (a.id === appointmentId && value ? ({ ...a, status: value } as typeof a) : a))
+      );
+    setStatus(status);
     try {
       await api.updateAppointmentStatus(appointmentId, status);
       toast.success('Updated');
-      fetchQueue();
+      fetchQueue(undefined, undefined, true);
       fetchDeskData();
     } catch (err: any) {
+      setStatus(previousStatus);
       toast.error(err.message || 'Couldn’t update status. Try again.');
     }
   };
   const [togglingCheckinId, setTogglingCheckinId] = useState<string | null>(null);
   const handleToggleCheckIn = async (appointmentId: string, currentStatus?: boolean) => {
     setTogglingCheckinId(appointmentId);
+    const setArrived = (value: boolean) =>
+      setQueueAppointments((prev) => prev.map((item) => (item.id === appointmentId ? { ...item, isCheckedIn: value } : item)));
+    setArrived(!currentStatus);
     try {
       const nextStatus = !currentStatus;
       const res = await api.checkInAppointmentDirect(appointmentId, nextStatus);
@@ -655,8 +669,11 @@ export const useReceptionistDashboardState = () => {
               : item
           )
         );
+      } else {
+        setArrived(Boolean(currentStatus));
       }
     } catch (err: any) {
+      setArrived(Boolean(currentStatus));
       toast.error(err.message || 'Couldn’t update arrival. Try again.');
     } finally {
       setTogglingCheckinId(null);

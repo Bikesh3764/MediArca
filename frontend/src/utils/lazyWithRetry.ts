@@ -1,40 +1,85 @@
 import React, { lazy } from 'react';
 
 /**
- * Resilient lazy loader for Vite code-split components.
- * Automatically catches stale-chunk dynamic import failures (caused when a new deployment
- * updates chunk hashes while the user has an older version open) and reloads the page once
- * to transparently fetch the latest application bundle without crashing into an error screen.
+ * Resilient lazy loader for Vite code-split pages.
+ *
+ * - Stale files: when a new deployment changed the file names while the user had an older
+ *   version open, the import fails; we reload the page once to fetch the latest bundle
+ *   instead of crashing into an error screen.
+ * - No spinner flash: once a page's code is downloaded (opened before, or `preload()`ed),
+ *   it renders straight away. React.lazy alone suspends on every first render and React then
+ *   holds the loading spinner for at least 300 ms, which blanked the screen on each page switch.
  */
+export type PreloadableComponent<T extends React.ComponentType<any>> = React.FC<React.ComponentProps<T>> & {
+  /** Downloads the page's code ahead of time so opening it shows no loading spinner. */
+  preload: () => void;
+};
+
+const STALE_FLAG = 'mediarca_stale_chunk_refreshed';
+
+const isChunkError = (error: any): boolean => {
+  const msg = (error?.message || String(error) || '').toLowerCase();
+  return (
+    msg.includes('dynamically imported module') ||
+    msg.includes('loading chunk') ||
+    msg.includes('failed to fetch dynamically imported') ||
+    msg.includes('failed to load module script') ||
+    msg.includes('importing a module script failed') ||
+    error?.name === 'ChunkLoadError'
+  );
+};
+
+const readFlag = (): boolean => {
+  try {
+    return window.sessionStorage.getItem(STALE_FLAG) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const writeFlag = (on: boolean): void => {
+  try {
+    if (on) window.sessionStorage.setItem(STALE_FLAG, 'true');
+    else window.sessionStorage.removeItem(STALE_FLAG);
+  } catch {
+    /* storage blocked */
+  }
+};
+
 export function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T } | { [key: string]: any }>
-): React.LazyExoticComponent<T> {
-  return lazy(async () => {
-    const pageHasBeenRefreshed = Boolean(
-      window.sessionStorage.getItem('mediarca_stale_chunk_refreshed') === 'true'
-    );
+): PreloadableComponent<T> {
+  let loaded: T | null = null;
+  let pending: Promise<{ default: T }> | null = null;
 
+  // One shared download; a failed one is forgotten so the next try starts fresh.
+  const load = (): Promise<{ default: T }> => {
+    if (!pending) {
+      pending = componentImport().then(
+        (module) => {
+          const mod = ('default' in module ? module : { default: module }) as { default: T };
+          loaded = mod.default;
+          return mod;
+        },
+        (error) => {
+          pending = null;
+          throw error;
+        }
+      );
+    }
+    return pending;
+  };
+
+  const LazyPage = lazy(async () => {
+    const pageHasBeenRefreshed = readFlag();
     try {
-      const module = await componentImport();
-      // Reset flag on successful load
-      window.sessionStorage.removeItem('mediarca_stale_chunk_refreshed');
-      if ('default' in module) {
-        return module as { default: T };
-      }
-      return { default: module as unknown as T };
+      const mod = await load();
+      writeFlag(false);
+      return mod;
     } catch (error: any) {
-      const msg = (error?.message || String(error) || '').toLowerCase();
-      const isChunkError =
-        msg.includes('dynamically imported module') ||
-        msg.includes('loading chunk') ||
-        msg.includes('failed to fetch dynamically imported') ||
-        msg.includes('failed to load module script') ||
-        msg.includes('importing a module script failed') ||
-        error?.name === 'ChunkLoadError';
-
-      if (isChunkError && !pageHasBeenRefreshed) {
-        // Mark that we are refreshing once to get the latest index.html bundle
-        window.sessionStorage.setItem('mediarca_stale_chunk_refreshed', 'true');
+      if (isChunkError(error) && !pageHasBeenRefreshed) {
+        // Reload once to get the latest index.html bundle
+        writeFlag(true);
         try {
           const url = new URL(window.location.href);
           url.searchParams.set('_v', Date.now().toString());
@@ -42,12 +87,23 @@ export function lazyWithRetry<T extends React.ComponentType<any>>(
         } catch {
           window.location.reload();
         }
-        // Return an unresolving promise while the page reloads
+        // Never resolves: the page is reloading
         return new Promise<{ default: T }>(() => {});
       }
-
-      // If already reloaded or not a chunk error, bubble up to ErrorBoundary
+      // Already reloaded, or not a file error: let the ErrorBoundary show it
       throw error;
     }
   });
+
+  const Page = ((props: React.ComponentProps<T>) =>
+    loaded
+      ? React.createElement(loaded, props)
+      : React.createElement(LazyPage as React.ComponentType<any>, props)) as PreloadableComponent<T>;
+
+  Page.preload = () => {
+    load().catch(() => {
+      // Opening the page later retries (and handles stale files) as usual
+    });
+  };
+  return Page;
 }

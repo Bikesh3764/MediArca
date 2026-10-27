@@ -17,10 +17,15 @@ const CameraQrScannerModal = React.lazy(() =>
   import('../../components/common/CameraQrScannerModal').then((m) => ({ default: m.CameraQrScannerModal }))
 );
 
+// Last tokens shown, so coming back to this page shows them at once (then refreshes quietly)
+const lastSeenTokens: { userId?: string; list?: Appointment[] } = {};
+
 export const MyAppointments: React.FC = () => {
-  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const { user, loading: loadingAuth } = useAuth();
+  const remembered = user?.id && lastSeenTokens.userId === user.id ? lastSeenTokens.list : undefined;
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>(() => remembered ?? []);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
-  const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(() => !remembered);
   const [loadingPast, setLoadingPast] = useState(false);
   const [hasLoadedPast, setHasLoadedPast] = useState(false);
   const [pastPage, setPastPage] = useState(1);
@@ -33,13 +38,18 @@ export const MyAppointments: React.FC = () => {
   const selectedApptRef = useRef<Appointment | null>(null);
   const [checkinMessage, setCheckinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const { user, loading: loadingAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId || loadingUpcoming) return;
+    lastSeenTokens.userId = userId;
+    lastSeenTokens.list = upcomingAppointments;
+  }, [userId, loadingUpcoming, upcomingAppointments]);
   const { confirm } = useConfirm();
 
   const fetchActiveAppointments = async (isSilent = false) => {
-    if (!isSilent) setLoadingUpcoming(true);
+    if (!isSilent && !lastSeenTokens.list) setLoadingUpcoming(true);
     try {
       const data = await api.getPatientAppointments({ status: 'active' });
       setUpcomingAppointments(Array.isArray(data) ? data : []);

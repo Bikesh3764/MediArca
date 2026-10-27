@@ -1,6 +1,7 @@
 import { formatDisplayDate } from '../../services/api';
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { markRememberedVisitDone } from './dashboard/state';
 import { api, Appointment, cleanSlotName, getLocalDateString } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
@@ -24,11 +25,15 @@ import {
 export const ConsultationView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: loadingAuth } = useAuth();
   const { toast } = useToast();
 
-  const [appointment, setAppointment] = useState<Appointment | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Opened from the queue's Call button: show the patient at once, then load the full record
+  const passedAppointment = (location.state as { appointment?: Appointment } | null)?.appointment;
+  const initialAppointment = passedAppointment && passedAppointment.id === id ? passedAppointment : null;
+  const [appointment, setAppointment] = useState<Appointment | null>(initialAppointment);
+  const [loading, setLoading] = useState(!initialAppointment);
   const [submitting, setSubmitting] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -84,15 +89,16 @@ export const ConsultationView: React.FC = () => {
         if (found) {
           setAppointment(found);
           if (found.clinicalNotes) {
-            setClinicalNotes(found.clinicalNotes);
+            // Keep anything the doctor already started typing
+            setClinicalNotes((prev) => prev || found.clinicalNotes || '');
           }
           if (found.vitals) {
             try {
               const v = typeof found.vitals === 'object' ? found.vitals : JSON.parse(found.vitals);
-              if (v.bp) setVitalsBP(v.bp);
-              if (v.pulse) setVitalsPulse(v.pulse);
-              if (v.temp) setVitalsTemp(v.temp);
-              if (v.weight) setVitalsWeight(v.weight);
+              if (v.bp) setVitalsBP((prev) => prev || v.bp);
+              if (v.pulse) setVitalsPulse((prev) => prev || v.pulse);
+              if (v.temp) setVitalsTemp((prev) => prev || v.temp);
+              if (v.weight) setVitalsWeight((prev) => prev || v.weight);
             } catch {
               // Ignore vitals parse error
             }
@@ -237,6 +243,7 @@ export const ConsultationView: React.FC = () => {
         vitals: currentVitals,
       });
       toast.success(`Token #${appointment.queueNumber} done`);
+      markRememberedVisitDone(appointment.id);
       navigate('/doctor/dashboard');
     } catch (err: any) {
       setError(err.message || 'Couldn’t complete consultation. Try again.');
