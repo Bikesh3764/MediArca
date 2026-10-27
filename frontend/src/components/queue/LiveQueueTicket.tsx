@@ -484,6 +484,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   <span className="text-xs font-normal text-[#86868b]">
                     Wait time
                   </span>
+                  {isToday && liveQueue.isShiftPassed ? (
+                    <div className="mt-1.5">
+                      <div className="text-xl sm:text-2xl font-semibold text-[#86868b] tracking-tight">
+                        Shift ended
+                      </div>
+                      <p className="text-[11px] text-[#86868b] mt-0.5 font-normal">Token still valid</p>
+                    </div>
+                  ) : (
                   <div className="mt-1.5">
                     <div className="text-xl sm:text-2xl font-semibold text-[#0066cc] tracking-tight">
                       {liveQueue.estimatedWaitMinutes >= 60 ? (
@@ -509,6 +517,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                         : 'Approx.'}
                     </p>
                   </div>
+                  )}
                 </div>
               </div>
             )}
