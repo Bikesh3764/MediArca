@@ -43,6 +43,8 @@ export const DocumentTitleSync: React.FC = () => {
       title = 'Profile — MediArca';
     } else if (path === '/clinic-checkin') {
       title = 'Check In — MediArca';
+    } else if (path === '/track') {
+      title = 'Track Walk-in — MediArca';
     } else if (path === '/admin') {
       title = 'Admin — MediArca';
     } else if (path === '/admin-login' || path === '/admin/login') {
