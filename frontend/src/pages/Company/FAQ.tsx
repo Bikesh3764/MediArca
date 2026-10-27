@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-
-interface FAQItem {
-  id: string;
-  question: string;
-  answer: string;
-}
+import { FAQS } from '../../seo/site';
 
 export const FAQ: React.FC = () => {
   const [openIds, setOpenIds] = useState<string[]>([]);
@@ -16,44 +11,7 @@ export const FAQ: React.FC = () => {
     );
   };
 
-  const faqs: FAQItem[] = [
-    {
-      id: '1',
-      question: 'How does the live queue work?',
-      answer:
-        'When you book, you get a token number. Your appointment page shows how many people are ahead of you and when to reach the clinic.',
-    },
-    {
-      id: '2',
-      question: 'Do I pay anything online?',
-      answer:
-        'No. There is no booking fee. You pay the doctor’s fee to the receptionist, by UPI over a call or at the desk. Your token is confirmed once you pay.',
-    },
-    {
-      id: '3',
-      question: 'Can I book for my family?',
-      answer:
-        'Yes. On the booking page, choose "Someone else" and enter their name and age. The token is made in their name.',
-    },
-    {
-      id: '4',
-      question: 'Can I cancel?',
-      answer:
-        'Yes, any time before your visit, from Appointments. There is no cancellation fee.',
-    },
-    {
-      id: '5',
-      question: 'What if the doctor is late?',
-      answer:
-        'The clinic updates the doctor’s status (In Cabin, Stepped Out or Not in Cabin). You see it on your appointment right away.',
-    },
-    {
-      id: '6',
-      question: 'How do I check in at the clinic?',
-      answer:
-        'Scan the QR code at the front desk with your phone. You can also tell the receptionist your token number.',
-    },
-  ];
+  const faqs = FAQS.map((faq, i) => ({ ...faq, id: String(i + 1) }));
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-16 pb-safe">

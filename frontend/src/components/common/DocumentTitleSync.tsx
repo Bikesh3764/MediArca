@@ -1,5 +1,59 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { SEO_PAGES, SITE_URL } from '../../seo/site';
+
+const DOCTOR_PRIVATE = ['login', 'signup', 'dashboard', 'schedule', 'profile', 'consultation', 'affiliations'];
+
+/** Public doctor page: /doctor/<id>, not one of the doctor's own screens. */
+const isDoctorPage = (path: string) => {
+  const match = /^\/doctor\/([^/]+)\/?$/.exec(path);
+  return Boolean(match && !DOCTOR_PRIVATE.includes(match[1]));
+};
+
+const setHeadTag = (selector: string, create: () => HTMLElement, attr: string, value: string | null) => {
+  let el = document.head.querySelector<HTMLElement>(selector);
+  if (value === null) {
+    el?.remove();
+    return;
+  }
+  if (!el) {
+    el = create();
+    document.head.appendChild(el);
+  }
+  el.setAttribute(attr, value);
+};
+
+const metaByName = (name: string) => () => {
+  const el = document.createElement('meta');
+  el.setAttribute('name', name);
+  return el;
+};
+
+const metaByProperty = (property: string) => () => {
+  const el = document.createElement('meta');
+  el.setAttribute('property', property);
+  return el;
+};
+
+/** Keeps description, canonical and robots tags right after in-app navigation. */
+const syncSearchTags = (path: string) => {
+  const page = SEO_PAGES.find((p) => p.path === path);
+  const publicPage = Boolean(page) || isDoctorPage(path);
+  const canonical = publicPage ? `${SITE_URL}${path}` : null;
+  setHeadTag('link[rel="canonical"]', () => {
+    const el = document.createElement('link');
+    el.setAttribute('rel', 'canonical');
+    return el;
+  }, 'href', canonical);
+  setHeadTag('meta[property="og:url"]', metaByProperty('og:url'), 'content', canonical);
+  if (page) {
+    setHeadTag('meta[name="description"]', metaByName('description'), 'content', page.description);
+    setHeadTag('meta[property="og:description"]', metaByProperty('og:description'), 'content', page.description);
+    setHeadTag('meta[property="og:title"]', metaByProperty('og:title'), 'content', page.title);
+  }
+  // Sign-in screens, dashboards and unknown pages stay out of Google.
+  setHeadTag('meta[name="robots"]', metaByName('robots'), 'content', publicPage ? null : 'noindex');
+};
 
 export const DocumentTitleSync: React.FC = () => {
   const location = useLocation();
@@ -8,8 +62,11 @@ export const DocumentTitleSync: React.FC = () => {
     const path = location.pathname;
 
     let title = 'MediArca';
+    const seoPage = SEO_PAGES.find((p) => p.path === path);
 
-    if (path === '/') {
+    if (seoPage) {
+      title = seoPage.title;
+    } else if (path === '/') {
       title = 'MediArca — Book a Doctor, Skip the Wait';
     } else if (path === '/doctors' || path === '/patient/doctors') {
       title = 'Doctors — MediArca';
@@ -80,6 +137,7 @@ export const DocumentTitleSync: React.FC = () => {
     }
 
     document.title = title;
+    syncSearchTags(path);
   }, [location.pathname]);
 
   return null;

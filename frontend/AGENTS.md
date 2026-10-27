@@ -73,6 +73,10 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
    - Profile photos: `<AvatarImage>` from `components/ui/AvatarImage.tsx` (falls back to the initial).
    - Shift names: `cleanSlotName` keeps the doctor's own name ("Morning Shift"); don't strip it to "Shift 1".
    - Words: say Doctor, Clinic, Join, Remove, Receptionist, Appointments — not Practitioner, Facility, Affiliate, Detach, Provision, Console, Passes.
+14. **Search Engines (FIX-059)**:
+   - `src/seo/site.ts` is the one list of public pages (title, description), app routes, redirects and robots rules. `seo-plugin.ts` builds per-page HTML, `sitemap.xml`, `robots.txt`, `_redirects` and `404.html` from it; don't add those files to `public/`.
+   - A new route in `App.tsx` must be added to `SEO_PAGES` (public) or `APP_ROUTES` (app screen), or Cloudflare answers it with 404.
+   - Never add a `/*` catch-all to `_redirects`: unknown addresses must return 404 so old pages leave Google.
 11. **Typography**:
    Do not load SF Pro from third-party CDNs (licence + render blocking). Apple devices get SF Pro via `-apple-system`; others use Inter.
 
