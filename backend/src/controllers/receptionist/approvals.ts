@@ -718,7 +718,6 @@ export const rejectAppointment = async (req: AuthRequest, res: Response): Promis
       data: {
         status: 'REJECTED',
         paymentStatus: 'FAILED',
-        clinicalNotes: reason ? `Declined by reception: ${reason}` : 'Declined by reception',
       },
     });
 

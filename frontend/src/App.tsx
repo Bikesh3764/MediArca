@@ -23,7 +23,6 @@ const BookAppointment = lazy(() => import('./pages/Patient/BookAppointment').the
 const MyAppointments = lazy(() => import('./pages/Patient/MyAppointments').then(m => ({ default: m.MyAppointments })));
 const PatientProfile = lazy(() => import('./pages/Patient/PatientProfile').then(m => ({ default: m.PatientProfile })));
 const DoctorDashboard = lazy(() => import('./pages/Doctor/DoctorDashboard').then(m => ({ default: m.DoctorDashboard })));
-const ConsultationView = lazy(() => import('./pages/Doctor/ConsultationView').then(m => ({ default: m.ConsultationView })));
 const ManageSchedule = lazy(() => import('./pages/Doctor/ManageSchedule').then(m => ({ default: m.ManageSchedule })));
 const DoctorProfile = lazy(() => import('./pages/Doctor/DoctorProfile').then(m => ({ default: m.DoctorProfile })));
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -107,7 +106,7 @@ const RouteLoadingFallback: React.FC = () => (
 // so switching pages doesn't blank the screen behind a spinner while it downloads.
 const PAGES_BY_ROLE: Record<string, Array<{ preload: () => void }>> = {
   PATIENT: [MyAppointments, DoctorDiscovery, DoctorDetail, BookAppointment, PatientProfile, ClinicCheckIn],
-  DOCTOR: [DoctorDashboard, ConsultationView, ManageSchedule, DoctorProfile],
+  DOCTOR: [DoctorDashboard, ManageSchedule, DoctorProfile],
   CLINIC: [ClinicDashboard, ClinicProfile],
   RECEPTIONIST: [ReceptionistDashboard],
   ADMIN: [AdminDashboard],
@@ -267,14 +266,8 @@ function AppShell() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/doctor/consultation/:id"
-              element={
-                <ProtectedRoute allowedRoles={['DOCTOR']}>
-                  <ConsultationView />
-                </ProtectedRoute>
-              }
-            />
+            {/* Old consultation links (page removed in FIX-055) open the queue */}
+            <Route path="/doctor/consultation/:id" element={<Navigate to="/doctor/dashboard" replace />} />
             <Route
               path="/doctor/schedule"
               element={

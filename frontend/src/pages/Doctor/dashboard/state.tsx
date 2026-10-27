@@ -40,18 +40,6 @@ const lastSeen: {
   publicClinics?: ClinicProfile[];
 } = {};
 
-/** Marks a visit done in the remembered queue, so the dashboard opened after a consultation
- *  doesn't show that patient still in the cabin for the moment before it refreshes. */
-export const markRememberedVisitDone = (appointmentId: string): void => {
-  const q = lastSeen.queue;
-  if (!q?.activeInConsultation || q.activeInConsultation.id !== appointmentId) return;
-  lastSeen.queue = {
-    ...q,
-    activeInConsultation: null,
-    completedQueue: [...q.completedQueue, { ...q.activeInConsultation, status: 'COMPLETED' } as Appointment],
-  };
-};
-
 /** All data, effects and actions for DoctorDashboard, shared with its parts through context. */
 export const useDoctorDashboardState = () => {
   const { user, loading: loadingAuth, updateUser } = useAuth();
@@ -411,7 +399,7 @@ export const useDoctorDashboardState = () => {
     setCallingId(appointmentId);
     try {
       await api.callPatient(appointmentId);
-      // Open the visit straight away with what we already know; the queue refreshes behind it
+      // Move the patient into the cabin card right away; the queue refreshes behind it
       const called = target ? ({ ...target, status: 'IN_CONSULTATION' } as Appointment) : undefined;
       if (called) {
         patchQueue((q) => ({
@@ -421,7 +409,6 @@ export const useDoctorDashboardState = () => {
         }));
       }
       refreshQueueQuietly();
-      navigate(`/doctor/consultation/${appointmentId}`, called ? { state: { appointment: called } } : undefined);
     } catch (err: any) {
       toast.error(err.message || 'Couldn’t call patient. Try again.');
     } finally {

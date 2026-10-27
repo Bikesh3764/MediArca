@@ -125,8 +125,6 @@ export const getAppointmentById = async (req: AuthRequest, res: Response): Promi
         receptionistName: recContact.name || null,
         estimatedQueueNumber,
         ...(isClinicOrRec && !isDoctor && !isPatient && !isAdmin ? {
-          clinicalNotes: null,
-          vitals: null,
         } : {}),
       },
     });

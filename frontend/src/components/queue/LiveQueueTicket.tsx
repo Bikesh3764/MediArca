@@ -515,20 +515,6 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
-        {/* Doctor Summary for Completed Consultations */}
-        {status === 'COMPLETED' && appointment.clinicalNotes && (
-          <div className="mt-4 p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3">
-            <div>
-              <span className="text-xs font-semibold text-[#0066cc] block mb-1 tracking-tight">
-                Doctor’s notes
-              </span>
-              <div className="text-xs text-[#1d1d1f] whitespace-pre-wrap break-words leading-relaxed font-normal bg-white p-3.5 rounded-xl border border-[#e5e5ea]">
-                {appointment.clinicalNotes}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Action Footer */}
         {(status === 'WAITING' || status === 'PENDING_APPROVAL') && onCancel && (
           <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-end">

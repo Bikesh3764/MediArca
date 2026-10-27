@@ -104,8 +104,6 @@ model Appointment {
   approvedAt      DateTime?
   reasonForVisit  String?
   symptoms        String?
-  vitals          String?        // JSON string: { bp, pulse, temp, weight }
-  clinicalNotes   String?
   slotId          String?        // ID of specific doctor checking slot
   isForOther      Boolean        @default(false)
   patientName     String?

@@ -54,9 +54,9 @@ export const publicResponseCache = (ttlMs = 15000) => {
 };
 
 // Writes that can't change a public doctor or clinic page. Clearing on these (sign-ins,
-// reading notifications, saving notes) emptied the cache every few seconds on busy days.
+// reading notifications) emptied the cache every few seconds on busy days.
 const WRITES_THAT_KEEP_PUBLIC_CACHE =
-  /^\/api\/(auth\/(login|google|resend-otp|forgot-password|reset-password|change-password)|notifications(\/.*)?|consultations\/notes|receptionists?\/change-password|admin\/contact-messages(\/.*)?)\/?$/i;
+  /^\/api\/(auth\/(login|google|resend-otp|forgot-password|reset-password|change-password)|notifications(\/.*)?|receptionists?\/change-password|admin\/contact-messages(\/.*)?)\/?$/i;
 
 export const keepsPublicCache = (path: string): boolean => WRITES_THAT_KEEP_PUBLIC_CACHE.test(path);
 

@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import prisma from '../config/database';
-import { findTooLong, LIMITS } from '../utils/inputLimits';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots, cleanSlotName } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
@@ -462,116 +461,10 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
-export const updateNotesAndVitals = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'DOCTOR') {
-      res.status(403).json({ success: false, message: 'Doctor only' });
-      return;
-    }
-
-    const { appointmentId, vitals, clinicalNotes, diagnosis, advice, followUpDate } = req.body;
-
-    if (!appointmentId) {
-      res.status(400).json({ success: false, message: 'appointmentId is required' });
-      return;
-    }
-
-    const textFields = { clinicalNotes, diagnosis, advice, followUpDate };
-    for (const [key, value] of Object.entries(textFields)) {
-      if (value !== undefined && value !== null && typeof value !== 'string') {
-        res.status(400).json({ success: false, message: `${key} must be text.` });
-        return;
-      }
-    }
-    const tooLong = findTooLong({
-      clinicalNotes: [clinicalNotes, LIMITS.notes],
-      diagnosis: [diagnosis, LIMITS.symptoms],
-      advice: [advice, LIMITS.message],
-      followUpDate: [followUpDate, 40],
-    });
-    if (tooLong) {
-      res.status(400).json({ success: false, message: tooLong });
-      return;
-    }
-
-    const doctor = await prisma.doctorProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!doctor) {
-      res.status(404).json({ success: false, message: 'Doctor profile not found' });
-      return;
-    }
-
-    const docCheck = isDoctorEligibleForClinicalPractice(doctor);
-    if (!docCheck.eligible) {
-      res.status(403).json({ success: false, message: docCheck.reason });
-      return;
-    }
-
-    // Verify appointment belongs to this doctor
-    const targetAppointment = await prisma.appointment.findUnique({
-      where: { id: appointmentId },
-    });
-
-    if (!targetAppointment || targetAppointment.doctorId !== doctor.id) {
-      res.status(403).json({ success: false, message: 'Appointment does not belong to this doctor' });
-      return;
-    }
-
-    if (['CANCELLED', 'REJECTED', 'PENDING_APPROVAL', 'COMPLETED', 'EXPIRED'].includes(targetAppointment.status)) {
-      res.status(400).json({
-        success: false,
-        message: `Cannot update clinical notes for an appointment with status '${targetAppointment.status}'. Clinical notes and vitals cannot be modified after consultation finalization.`,
-      });
-      return;
-    }
-
-    let finalNotes = clinicalNotes;
-    // Clinic notes only: MediArca does not build prescriptions (paper scripts are given at the clinic)
-    if (diagnosis || advice || followUpDate) {
-      const notesParts: string[] = [];
-      if (diagnosis && diagnosis.trim()) {
-        notesParts.push(`Diagnosis: ${diagnosis.trim()}`);
-      }
-      if (clinicalNotes && clinicalNotes.trim()) {
-        notesParts.push(clinicalNotes.trim());
-      }
-      if (advice && advice.trim()) {
-        notesParts.push(`Advice: ${advice.trim()}`);
-      }
-      if (followUpDate && followUpDate.trim()) {
-        notesParts.push(`Follow-up Date: ${followUpDate.trim()}`);
-      }
-      if (notesParts.length > 0) {
-        finalNotes = notesParts.join('\n\n');
-      }
-    }
-
-    const updated = await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-        ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
-      },
-    });
-
-    res.json({ success: true, message: 'Consultation notes saved', data: updated });
-  } catch (error: any) {
-    console.error('updateNotesAndVitals error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to save notes',
-      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
-    });
-  }
-};
-
 export const executeCompleteConsultationAtomic = async (
   prismaClient: any,
   doctorId: string,
-  appointmentId: string,
-  updateData: { clinicalNotes?: string; vitals?: string }
+  appointmentId: string
 ) => {
   const result = await prismaClient.appointment.updateMany({
     where: {
@@ -582,7 +475,6 @@ export const executeCompleteConsultationAtomic = async (
     data: {
       status: 'COMPLETED',
       completedAt: new Date(),
-      ...updateData,
     },
   });
 
@@ -607,34 +499,10 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    const {
-      appointmentId,
-      diagnosis,
-      advice,
-      followUpDate,
-      clinicalNotes,
-      vitals,
-    } = req.body;
+    const { appointmentId } = req.body;
 
     if (!appointmentId) {
       res.status(400).json({ success: false, message: 'appointmentId is required' });
-      return;
-    }
-
-    for (const [key, value] of Object.entries({ clinicalNotes, diagnosis, advice, followUpDate })) {
-      if (value !== undefined && value !== null && typeof value !== 'string') {
-        res.status(400).json({ success: false, message: `${key} must be text.` });
-        return;
-      }
-    }
-    const tooLongNote = findTooLong({
-      clinicalNotes: [clinicalNotes, LIMITS.notes],
-      diagnosis: [diagnosis, LIMITS.symptoms],
-      advice: [advice, LIMITS.message],
-      followUpDate: [followUpDate, 40],
-    });
-    if (tooLongNote) {
-      res.status(400).json({ success: false, message: tooLongNote });
       return;
     }
 
@@ -700,35 +568,9 @@ export const completeConsultation = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
-    let finalNotes = clinicalNotes;
-    const notesParts: string[] = [];
-    if (diagnosis && diagnosis.trim()) {
-      notesParts.push(`Diagnosis: ${diagnosis.trim()}`);
-    }
-    if (clinicalNotes && clinicalNotes.trim()) {
-      notesParts.push(clinicalNotes.trim());
-    }
-    if (advice && advice.trim()) {
-      notesParts.push(`Advice: ${advice.trim()}`);
-    }
-    if (followUpDate && followUpDate.trim()) {
-      notesParts.push(`Follow-up Date: ${followUpDate.trim()}`);
-    }
-    if (notesParts.length > 0) {
-      finalNotes = notesParts.join('\n\n');
-    }
-
     // Concurrency: Atomically ensure only appointments actively in IN_CONSULTATION are marked COMPLETED
     const appt = await prisma.$transaction(async (tx) => {
-      return await executeCompleteConsultationAtomic(
-        tx,
-        doctor.id,
-        appointmentId,
-        {
-          ...(finalNotes !== undefined && { clinicalNotes: finalNotes }),
-          ...(vitals && { vitals: typeof vitals === 'object' ? JSON.stringify(vitals) : vitals }),
-        }
-      );
+      return await executeCompleteConsultationAtomic(tx, doctor.id, appointmentId);
     });
 
     if (!appt) {

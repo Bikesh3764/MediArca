@@ -97,7 +97,7 @@ export const AppointmentDetailsModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Clinical Notes / Reason */}
+              {/* Reason */}
               {(selectedAppointment.reasonForVisit || selectedAppointment.symptoms) && (
                 <div className="p-3.5 bg-white border border-[#e5e5ea] rounded-xl space-y-1">
                   <span className="text-xs font-semibold text-[#1d1d1f] block">Reason</span>

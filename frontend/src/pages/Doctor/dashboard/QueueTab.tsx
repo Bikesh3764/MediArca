@@ -1,7 +1,7 @@
 import React from 'react';
 import { api, Appointment, getLocalDateString, getTomorrowDateString } from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
-import { Clock, CheckCircle2, AlertTriangle, Play, FileEdit, RefreshCw, Building2, AlertCircle, X, CalendarX, PauseCircle, SlidersHorizontal } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, Play, RefreshCw, Building2, AlertCircle, X, CalendarX, PauseCircle, SlidersHorizontal } from 'lucide-react';
 import { AppleFilterSelect } from '../../../components/ui/AppleFilterSelect';
 import { getCleanReason, getSlotShortLabel, getYesterdayDateString } from './helpers';
 import { useDoctorDashboard } from './state';
@@ -9,7 +9,6 @@ export const QueueTab: React.FC = () => {
   const {
     user,
     updateUser,
-    navigate,
     toast,
     affiliations,
     setScheduleLeaveModalClinic,
@@ -533,7 +532,7 @@ export const QueueTab: React.FC = () => {
                           className="w-full sm:flex-1 h-10 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                         >
                           <CheckCircle2 className="w-4 h-4 text-white" />
-                          <span>{completingId === displayedActiveInConsultation.id ? 'Completing...' : 'Complete Consultation'}</span>
+                          <span>{completingId === displayedActiveInConsultation.id ? 'Completing…' : 'Complete'}</span>
                         </button>
                         <button
                           type="button"
@@ -544,16 +543,6 @@ export const QueueTab: React.FC = () => {
                         >
                           <PauseCircle className="w-3.5 h-3.5" />
                           <span>{holdingId === displayedActiveInConsultation.id ? 'Holding...' : 'Hold'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            navigate(`/doctor/consultation/${displayedActiveInConsultation.id}`)
-                          }
-                          className="w-full sm:w-auto h-10 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                        >
-                          <FileEdit className="w-3.5 h-3.5" />
-                          <span>Notes</span>
                         </button>
                       </div>
                     </div>
@@ -843,15 +832,6 @@ export const QueueTab: React.FC = () => {
                             <span className="font-semibold text-[14px] text-[#1d1d1f]">
                               {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                             </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/doctor/consultation/${appt.id}`)}
-                              className="h-8 px-3 rounded-full bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal transition-all cursor-pointer"
-                            >
-                              Notes
-                            </button>
                           </div>
                         </div>
                       ))}

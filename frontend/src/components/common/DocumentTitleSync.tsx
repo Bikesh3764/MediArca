@@ -17,8 +17,6 @@ export const DocumentTitleSync: React.FC = () => {
       title = 'Book Appointment — MediArca';
     } else if (path.startsWith('/doctor/dashboard')) {
       title = 'Queue — MediArca';
-    } else if (path.startsWith('/doctor/consultation')) {
-      title = 'Consultation — MediArca';
     } else if (path.startsWith('/doctor/schedule')) {
       title = 'Schedule — MediArca';
     } else if (path.startsWith('/doctor/affiliations')) {

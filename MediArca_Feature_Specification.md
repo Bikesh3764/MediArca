@@ -60,7 +60,7 @@ Tailored for healthcare practitioners to manage their OPD flow efficiently witho
 1. **Queue Management & Patient Calling**:
    - Real-time queue view categorizing patients by shift and arrival status (`Waiting`, `Checked In`, `In Cabin`, `Completed`).
    - **Atomic Call to Cabin**: Calling a patient to the cabin runs an atomic database transaction (`prisma.$transaction`) that guarantees only one patient can hold status `IN_CONSULTATION` per practitioner. Any prior open consultation is cleanly closed or transitioned.
-   - **Hold Consultation**: Ability to place an active consultation on hold (returning the patient safely to `WAITING` status) if diagnostic tests, vitals, or dressing are needed.
+   - **Hold Consultation**: Ability to place an active consultation on hold (returning the patient safely to `WAITING` status) if diagnostic tests or dressing are needed.
    - **Complete Consultation**: Transition visit to `COMPLETED` with optional brief clinical summary notes.
 
 2. **Cabin Presence Toggling**:

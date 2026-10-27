@@ -25,15 +25,14 @@ export const MobileTabBar: React.FC = () => {
   const currentPath = location.pathname;
   const tabParam = searchParams.get('tab');
 
-  // Hide on exam room consultation view, kiosk check-in, and isolated staff login screens
-  const isConsultationView = currentPath.startsWith('/doctor/consultation');
+  // Hide on kiosk check-in and isolated staff login screens
   const isKioskRoute = currentPath.startsWith('/checkin');
   const isIsolatedLogin =
     currentPath === '/clinic/login' ||
     currentPath === '/receptionist/login' ||
     currentPath === '/admin-login';
 
-  if (isConsultationView || isKioskRoute || isIsolatedLogin) return null;
+  if (isKioskRoute || isIsolatedLogin) return null;
 
   const handleTabClick = (targetPath: string) => {
     const [targetBase, targetQuery] = targetPath.split('?');

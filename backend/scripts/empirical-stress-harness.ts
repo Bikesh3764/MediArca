@@ -233,15 +233,12 @@ async function runEmpiricalStressSuite() {
       doctorId: 'doc-alpha',
       appointmentDate: today,
       status: 'IN_CONSULTATION',
-      clinicalNotes: '',
     },
   ]);
 
   // 10 concurrent complete attempts (CAS simulation)
   const completePromises = Array.from({ length: 10 }, (_, i) =>
-    executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-1', {
-      clinicalNotes: `Notes from attempt ${i}`,
-    })
+    executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-1')
   );
   const casResults = await Promise.all(completePromises);
   const successes = casResults.filter((r) => r !== null);
@@ -255,7 +252,7 @@ async function runEmpiricalStressSuite() {
   recordTest(
     'Atomic CAS Complete',
     'Subsequent completion on already COMPLETED appointment returns null (prevents duplicate completion)',
-    (await executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-1', { clinicalNotes: 'Late note' })) === null
+    (await executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-1')) === null
   );
 
   // Cancellation race test
@@ -265,7 +262,7 @@ async function runEmpiricalStressSuite() {
     appointmentDate: today,
     status: 'CANCELLED',
   });
-  const cancelAttempt = await executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-2', { clinicalNotes: 'Late' });
+  const cancelAttempt = await executeCompleteConsultationAtomic(dbCAS, 'doc-alpha', 'cas-appt-2');
   recordTest(
     'Atomic CAS Complete',
     'executeCompleteConsultationAtomic rejects CANCELLED appointment without overwriting status',

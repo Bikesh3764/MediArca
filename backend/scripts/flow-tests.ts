@@ -445,7 +445,7 @@ async function loadFixChecks() {
     Object.keys(dq.json?.data || {})
   );
 
-  // Saving notes doesn't tell every screen the queue moved; a real queue change still does
+  // The removed notes endpoint (FIX-055) answers 404 and tells no screen the queue moved; a real queue change still does
   const live = await openLiveStream(DA.token);
   await wait(300);
   const notes = await call('PUT', '/api/consultations/notes', DA.token, { appointmentId: walk.json?.data?.id, clinicalNotes: 'FIX-054 note' });
@@ -456,18 +456,17 @@ async function loadFixChecks() {
   const queueEventsAfterCabin = live.events.filter((e) => e === 'queue').length;
   live.close();
   check(
-    notes.status === 200 && queueEventsAfterNotes === 0 && cabin.status === 200 && queueEventsAfterCabin >= 1,
-    'FIX-054: saving notes sends no queue event, a cabin change still does',
+    notes.status === 404 && queueEventsAfterNotes === 0 && cabin.status === 200 && queueEventsAfterCabin >= 1,
+    'FIX-055: notes endpoint is gone and sends no queue event; a cabin change still does',
     [notes.status, queueEventsAfterNotes, cabin.status, queueEventsAfterCabin]
   );
 
-  // Public doctor list stays cached through writes that can't change it (reading notifications,
-  // saving notes) and is cleared by ones that can (cabin status)
+  // Public doctor list stays cached through writes that can't change it (reading notifications)
+  // and is cleared by ones that can (cabin status)
   const listPath = '/api/doctors?limit=5&flow=' + RUN;
   await call('GET', listPath);
   const warm = await call('GET', listPath);
   await call('PATCH', '/api/notifications/read-all', DA.token);
-  await call('PUT', '/api/consultations/notes', DA.token, { appointmentId: walk.json?.data?.id, clinicalNotes: 'FIX-054 note 2' });
   const afterHarmless = await call('GET', listPath);
   await call('PUT', '/api/doctors/cabin-status', DA.token, { status: 'IN_CABIN' });
   const afterCabin = await call('GET', listPath);
@@ -546,7 +545,7 @@ async function main() {
     const mine = (patientView.json?.data || patientView.json || []).find?.((a: any) => a.id === appointmentId);
     check(mine?.status === 'IN_CONSULTATION', 'Patient sees "in cabin" right away (no stale queue cache)', mine?.status);
 
-    const completed = await call('POST', '/api/consultations/complete', doctorToken, { appointmentId, clinicalNotes: 'Rest and fluids' });
+    const completed = await call('POST', '/api/consultations/complete', doctorToken, { appointmentId });
     appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
     check(completed.status === 200 && appt?.status === 'COMPLETED', 'Doctor completes the visit', completed.json);
     check(
@@ -722,8 +721,8 @@ async function main() {
     const adminToken = sign({ id: `admin-${RUN}`, email: email('admin'), role: 'ADMIN', fullName: 'Flow Admin' });
     const badStatusType = await call('POST', '/api/admin/verify-doctor', adminToken, { doctorId: s.doctor.id, status: 123 });
     check(badStatusType.status === 400, 'Admin verify with a non-text status returns 400', badStatusType.status);
-    const badNotes = await call('PUT', '/api/consultations/notes', doctorToken, { appointmentId: qrId, diagnosis: 5 });
-    check(badNotes.status === 400, 'Doctor notes with a non-text diagnosis return 400', badNotes.status);
+    const goneNotes = await call('PUT', '/api/consultations/notes', doctorToken, { appointmentId: qrId, clinicalNotes: 'x' });
+    check(goneNotes.status === 404, 'FIX-055: doctor notes endpoint no longer exists', goneNotes.status);
 
     const pageOne = await call('GET', '/api/admin/appointments?page=1&limit=1', adminToken);
     check(

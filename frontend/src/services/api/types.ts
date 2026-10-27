@@ -473,8 +473,6 @@ export interface Appointment {
   fee?: number;
   reasonForVisit?: string;
   symptoms?: string;
-  vitals?: string;
-  clinicalNotes?: string;
   isForOther?: boolean;
   patientName?: string;
   patientPhone?: string;

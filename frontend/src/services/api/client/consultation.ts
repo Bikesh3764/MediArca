@@ -46,41 +46,7 @@ export const consultationApi = {
     return handleResponse(res);
   },
 
-  async updateNotes(body: {
-    appointmentId: string;
-    vitals?: any;
-    clinicalNotes?: string;
-    diagnosis?: string;
-    advice?: string;
-    followUpDate?: string;
-  }): Promise<Appointment> {
-    const res = await safeFetch(`${API_BASE_URL}/consultations/notes`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(body),
-    });
-    return handleResponse(res);
-  },
-
-  async saveConsultationNotes(body: {
-    appointmentId: string;
-    vitals?: any;
-    clinicalNotes?: string;
-    diagnosis?: string;
-    advice?: string;
-    followUpDate?: string;
-  }): Promise<Appointment> {
-    return this.updateNotes(body);
-  },
-
-  async completeConsultation(body: {
-    appointmentId: string;
-    diagnosis?: string;
-    advice?: string;
-    followUpDate?: string;
-    clinicalNotes?: string;
-    vitals?: any;
-  }): Promise<{ appointment: Appointment }> {
+  async completeConsultation(body: { appointmentId: string }): Promise<{ appointment: Appointment }> {
     const res = await safeFetch(`${API_BASE_URL}/consultations/complete`, {
       method: 'POST',
       headers: getHeaders(),

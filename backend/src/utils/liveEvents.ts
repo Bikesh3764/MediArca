@@ -105,8 +105,8 @@ export const publishNotification = (userId: string): void => {
 };
 
 const QUEUE_WRITE_PATHS = /^\/api\/(appointments|consultations|receptionists?|doctors|clinics?)(\/|$)/i;
-// Writes under those paths that never move a queue (saving notes, changing a password)
-const NON_QUEUE_WRITE_PATHS = /^\/api\/(consultations\/notes|receptionists?\/change-password)\/?$/i;
+// Writes under those paths that never move a queue (changing a password)
+const NON_QUEUE_WRITE_PATHS = /^\/api\/receptionists?\/change-password\/?$/i;
 
 const findDoctorId = (body: any): string | null => {
   const candidates = [

@@ -5269,7 +5269,6 @@ Follow-up Date: 2026-10-15`;
   // 1. Consultation complete payload safety (no invalid completedAt field)
   const completePayload: Record<string, any> = {
     status: 'COMPLETED',
-    clinicalNotes: 'Follow-up in 2 weeks',
   };
   assert(!('completedAt' in completePayload), 'Consultation complete payload must not contain completedAt field (avoids Prisma crash)');
 
@@ -5613,7 +5612,7 @@ Follow-up Date: 2026-10-15`;
   );
 
   // Atomic completeConsultation guard test
-  const completedAppt = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-3', { clinicalNotes: 'Recovered completely' });
+  const completedAppt = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-3');
   assert(completedAppt !== null, 'executeCompleteConsultationAtomic successfully completes active IN_CONSULTATION appointment');
   assert(completedAppt?.status === 'COMPLETED', 'Appointment marked COMPLETED');
 
@@ -5626,7 +5625,7 @@ Follow-up Date: 2026-10-15`;
     queueNumber: 99,
     patient: { user: { id: 'u4', fullName: 'Patient D', email: 'd@test.com', phone: '9876543213' } },
   });
-  const rejectedComplete = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-cancelled', { clinicalNotes: 'Notes' });
+  const rejectedComplete = await executeCompleteConsultationAtomic(mockClient1, 'doc-1', 'appt-cancelled');
   assert(rejectedComplete === null, 'executeCompleteConsultationAtomic rejects appointment that is not IN_CONSULTATION (atomic status guard)');
   const cancelledCheck = mockDbState.appointments.find((a) => a.id === 'appt-cancelled');
   assert(cancelledCheck?.status === 'CANCELLED', 'Cancelled appointment status is preserved and not overwritten to COMPLETED');
@@ -5898,7 +5897,6 @@ Follow-up Date: 2026-10-15`;
         status: 'WAITING',
         isCheckedIn: true,
         checkedInAt: new Date(),
-        clinicalNotes: null,
       },
       {
         id: 'appt-waiting-not-checked-in',
@@ -5906,7 +5904,6 @@ Follow-up Date: 2026-10-15`;
         status: 'WAITING',
         isCheckedIn: false,
         checkedInAt: null,
-        clinicalNotes: null,
       },
       {
         id: 'appt-in-consultation',
@@ -5914,7 +5911,6 @@ Follow-up Date: 2026-10-15`;
         status: 'IN_CONSULTATION',
         isCheckedIn: true,
         checkedInAt: new Date(),
-        clinicalNotes: null,
       },
       {
         id: 'appt-already-completed',
@@ -5922,7 +5918,6 @@ Follow-up Date: 2026-10-15`;
         status: 'COMPLETED',
         isCheckedIn: true,
         checkedInAt: new Date(),
-        clinicalNotes: 'Existing notes',
       },
       {
         id: 'appt-cancelled-2',
@@ -5930,7 +5925,6 @@ Follow-up Date: 2026-10-15`;
         status: 'CANCELLED',
         isCheckedIn: true,
         checkedInAt: new Date(),
-        clinicalNotes: null,
       },
     ],
   };
@@ -5965,8 +5959,7 @@ Follow-up Date: 2026-10-15`;
   const resWaitingComplete = await executeCompleteConsultationAtomic(
     mockCompletionPrisma,
     'doc-99',
-    'appt-waiting-checked-in',
-    { clinicalNotes: 'Diagnosed and treated directly' }
+    'appt-waiting-checked-in'
   );
   assert(resWaitingComplete === null, 'Case A: executeCompleteConsultationAtomic rejects WAITING appointment (must be IN_CONSULTATION)');
   const checkWaitingAppt = completionTestState.appointments.find((a) => a.id === 'appt-waiting-checked-in');
@@ -5976,8 +5969,7 @@ Follow-up Date: 2026-10-15`;
   const resInConsultationComplete = await executeCompleteConsultationAtomic(
     mockCompletionPrisma,
     'doc-99',
-    'appt-in-consultation',
-    { clinicalNotes: 'Regular consult finished' }
+    'appt-in-consultation'
   );
   assert(resInConsultationComplete !== null, 'IN_CONSULTATION appointment successfully completes');
   assert(resInConsultationComplete?.status === 'COMPLETED', 'IN_CONSULTATION appointment transitioned to COMPLETED');
@@ -5986,19 +5978,17 @@ Follow-up Date: 2026-10-15`;
   const resAlreadyCompleted = await executeCompleteConsultationAtomic(
     mockCompletionPrisma,
     'doc-99',
-    'appt-already-completed',
-    { clinicalNotes: 'New notes should not apply' }
+    'appt-already-completed'
   );
   assert(resAlreadyCompleted === null, 'Case B: Already COMPLETED appointment returns null from executeCompleteConsultationAtomic');
-  const checkPersistedNotes = completionTestState.appointments.find((a) => a.id === 'appt-already-completed');
-  assert(checkPersistedNotes?.clinicalNotes === 'Existing notes', 'Case B: Existing completed consultation notes are preserved');
+  const checkAlreadyCompleted = completionTestState.appointments.find((a) => a.id === 'appt-already-completed');
+  assert(checkAlreadyCompleted?.status === 'COMPLETED', 'Case B: Already completed visit stays COMPLETED and is not rewritten');
 
   // Case C: CANCELLED cannot be completed
   const resCancelledComplete = await executeCompleteConsultationAtomic(
     mockCompletionPrisma,
     'doc-99',
-    'appt-cancelled-2',
-    { clinicalNotes: 'Attempt on cancelled' }
+    'appt-cancelled-2'
   );
   assert(resCancelledComplete === null, 'CANCELLED appointment returns null and cannot be completed');
 
@@ -9462,7 +9452,7 @@ Follow-up Date: 2026-10-15`;
   const consultControllerContent = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf8');
   const consultRoutesContent = fs.readFileSync(path.join(__dirname, '../src/routes/consultationRoutes.ts'), 'utf8');
   const doctorDashboardContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/DoctorDashboard.tsx'), 'utf8');
-  const consultViewContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ConsultationView.tsx'), 'utf8');
+  const consultViewPath = path.join(__dirname, '../../frontend/src/pages/Doctor/ConsultationView.tsx');
   const manageScheduleContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ManageSchedule.tsx'), 'utf8');
 
   assert(
@@ -9491,11 +9481,10 @@ Follow-up Date: 2026-10-15`;
   );
 
   assert(
-    consultViewContent.includes('handleMarkArrived') &&
-    consultViewContent.includes('handleHoldConsultation') &&
-    consultViewContent.includes('vitalsBP') &&
-    consultViewContent.includes('Recorded Vitals'),
-    'Fix 18: ConsultationView integrates direct Arrival check-in, Hold consultation, and comprehensive clinical vitals tracking'
+    !fs.existsSync(consultViewPath) &&
+    !consultControllerContent.includes('updateNotesAndVitals') &&
+    !consultRoutesContent.includes("'/notes'"),
+    'FIX-055: notes/vitals page and endpoint are gone; doctors complete visits from the queue'
   );
 
   assert(
@@ -9794,7 +9783,6 @@ Follow-up Date: 2026-10-15`;
   const sp_qrStandeeContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicQrStandeeModal.tsx'), 'utf-8');
   const sp_qrScannerContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/CameraQrScannerModal.tsx'), 'utf-8');
   const sp_liveQueueTicketContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/queue/LiveQueueTicket.tsx'), 'utf-8');
-  const sp_consultationViewContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Doctor/ConsultationView.tsx'), 'utf-8');
   const sp_dashboardLayoutContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/layout/DashboardLayout.tsx'), 'utf-8');
   const sp_clinicalReportModalContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicalReportModal.tsx'), 'utf-8');
   const sp_authContextContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/context/AuthContext.tsx'), 'utf-8');
@@ -9929,11 +9917,10 @@ Follow-up Date: 2026-10-15`;
     'Sprint FUNC-014: DashboardLayout renders in-app notification bell with real-time polling'
   );
 
-  // FUNC-016: ConsultationView guards future dates
+  // FUNC-016: future visits can't be called into the cabin (server guard; the page that also checked it was removed in FIX-055)
   assert(
-    sp_consultationViewContent.includes('appointment.appointmentDate > todayStr') &&
-    sp_consultationViewContent.includes('Cannot start consultation: Appointment is scheduled for'),
-    'Sprint FUNC-016: ConsultationView blocks calling patients into cabin for future appointment dates'
+    fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf-8').includes('Only patients scheduled for today'),
+    'Sprint FUNC-016: server blocks calling patients into cabin for future appointment dates'
   );
 
   // ARCH-011: ReceptionistDashboard eliminates stale closure in fetchDeskData and memoizes linkedDoctors

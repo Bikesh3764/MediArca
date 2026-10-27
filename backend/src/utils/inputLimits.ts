@@ -13,7 +13,6 @@ export const LIMITS = {
   symptoms: 1000,
   message: 3000,
   bio: 2000,
-  notes: 10000,
 } as const;
 
 const LABELS: Record<string, string> = {
@@ -27,9 +26,6 @@ const LABELS: Record<string, string> = {
   message: 'Message',
   reasonForVisit: 'Reason for visit',
   symptoms: 'Symptoms',
-  clinicalNotes: 'Notes',
-  diagnosis: 'Diagnosis',
-  advice: 'Advice',
   bio: 'About',
   address: 'Address',
   clinicName: 'Clinic name',
