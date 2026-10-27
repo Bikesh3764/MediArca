@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDisplayPhone } from '../../../utils/phoneUtils';
-import { Trash2, UserCheck, Check } from 'lucide-react';
+import { Trash2, UserCheck } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { cleanDoctorName } from './helpers';
 import { useClinicDashboard } from './state';
@@ -10,10 +10,6 @@ export const StaffSection: React.FC = () => {
     setShowRecModal,
     handleOpenEditAssignments,
     handleRemoveReceptionist,
-    setApprovingRec,
-    setApprovalDoctorIds,
-    processingRecId,
-    handleRespondReceptionist,
   } = useClinicDashboard();
   return (
 <div id="receptionists-section" className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-8">
@@ -30,70 +26,6 @@ export const StaffSection: React.FC = () => {
               <span>Add Receptionist</span>
             </button>
           </div>
-
-          {/* Incoming Receptionist Applications */}
-          {data?.incomingReceptionists && data.incomingReceptionists.length > 0 && (
-            <div className="mb-6 p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#0066cc]" />
-                  <h3 className="text-[14px] font-semibold text-[#1d1d1f]">
-                    Incoming Receptionist Applications ({data.incomingReceptionists.length})
-                  </h3>
-                </div>
-                <span className="text-xs font-normal text-[#86868b]">
-                  Requests to join
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                {data.incomingReceptionists.map((rec) => (
-                  <div
-                    key={rec.id}
-                    className="p-4 rounded-2xl bg-white border border-[#e5e5ea] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                  >
-                    <div>
-                      <div className="font-semibold text-[14px] text-[#1d1d1f] flex items-center gap-2">
-                        <span>{rec.fullName}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-normal bg-[#0066cc]/10 text-[#0066cc]">
-                          Pending
-                        </span>
-                      </div>
-                      <div className="text-xs text-[#86868b] mt-0.5">
-                        <span className="font-normal text-[#1d1d1f]">{rec.email}</span>
-                        {rec.phone && <span> • {formatDisplayPhone(rec.phone)}</span>}
-                        <span> • Applied {new Date(rec.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={processingRecId === rec.id}
-                        onClick={() => handleRespondReceptionist(rec.id, 'REJECT')}
-                        className="h-9 px-3.5 rounded-full text-xs font-normal text-danger hover:bg-danger-soft border border-danger-line transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                      >
-                        Decline
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={processingRecId === rec.id}
-                        onClick={() => {
-                          setApprovingRec({ id: rec.id, fullName: rec.fullName, email: rec.email });
-                          setApprovalDoctorIds([]);
-                        }}
-                        className="h-9 px-4 rounded-full text-xs font-semibold text-white bg-[#0066cc] hover:bg-[#0071e3] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        Approve
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {(!data?.receptionists || data.receptionists.length === 0) ? (
             <EmptyState

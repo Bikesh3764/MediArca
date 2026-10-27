@@ -1,5 +1,5 @@
 /**
- * Cloudflare Turnstile bot check for public forms (sign-up, forgot password, contact, receptionist apply).
+ * Cloudflare Turnstile bot check for public forms (sign-up, forgot password, contact).
  * Invisible for most visitors: a small check box appears at the bottom of the screen only when
  * Cloudflare isn't sure. Each token works once, so a fresh one is fetched per submit.
  */

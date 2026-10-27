@@ -12,6 +12,8 @@ export const EditStaffModal: React.FC = () => {
     handleUpdateAssignedDoctors,
     doctors,
   } = useClinicDashboard();
+  // Only doctors who have joined the clinic can be given to a desk
+  const deskDoctors = doctors.filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE');
   if (!editingRec) return null;
   return (
 <div
@@ -44,13 +46,13 @@ export const EditStaffModal: React.FC = () => {
                 Pick doctors:
               </p>
 
-              {doctors.length === 0 ? (
+              {deskDoctors.length === 0 ? (
                 <div className="p-4 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl text-xs text-[#86868b] text-center">
                   No doctors yet.
                 </div>
               ) : (
                 <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {doctors.map((doc) => {
+                  {deskDoctors.map((doc) => {
                     const isSelected = editDoctorIds.includes(doc.doctorId);
                     return (
                       <div

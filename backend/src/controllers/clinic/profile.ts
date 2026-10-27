@@ -97,7 +97,6 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           incomingRequests: [],
           outgoingRequests: [],
           receptionists: [],
-          incomingReceptionists: [],
           totalDoctors: 0,
           totalBookings: 0,
           totalRevenue: 0,
@@ -259,17 +258,6 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
               };
             });
         })(),
-        incomingReceptionists: (clinic.receptionists || [])
-          .filter((r) => (r as any).status === 'PENDING')
-          .map((r) => ({
-            id: r.id,
-            userId: r.userId,
-            fullName: r.user.fullName,
-            email: r.user.email,
-            phone: r.phone || r.user.phone || '',
-            status: 'PENDING',
-            createdAt: r.createdAt,
-          })),
         totalDoctors,
         totalBookings,
         totalRevenue,

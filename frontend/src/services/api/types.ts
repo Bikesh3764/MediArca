@@ -218,15 +218,6 @@ export interface ClinicDashboardData {
   incomingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
   outgoingRequests?: Array<ClinicDoctorStat & { requestedAt?: string }>;
   receptionists?: ClinicReceptionistItem[];
-  incomingReceptionists?: Array<{
-    id: string;
-    userId: string;
-    fullName: string;
-    email: string;
-    phone?: string;
-    status: string;
-    createdAt: string;
-  }>;
   totalDoctors: number;
   totalBookings: number;
   totalRevenue: number;

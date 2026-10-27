@@ -373,7 +373,7 @@ export const authRateLimiter = (
       return;
     }
 
-    const isCriticalAuth = /^\/api\/(auth\/(login|register|google|verify-otp|resend-otp|forgot-password|reset-password)|receptionists?\/apply)/i.test(
+    const isCriticalAuth = /^\/api\/auth\/(login|register|google|verify-otp|resend-otp|forgot-password|reset-password)/i.test(
       req.originalUrl || req.baseUrl || req.path
     );
 
@@ -455,12 +455,12 @@ export const authRateLimiter = (
 
 // Mount Auth Rate Limiting on authentication & registration endpoints
 app.use(
-  ['/api/auth/login', '/api/auth/register', '/api/auth/google', '/api/receptionists/apply', '/api/receptionist/apply'],
+  ['/api/auth/login', '/api/auth/register', '/api/auth/google'],
   authRateLimiter(40, 60)
 );
-// New accounts: 10 an hour per visitor across sign-up and receptionist applications (FIX-044)
+// New accounts: 10 sign-ups an hour per visitor (FIX-044)
 app.use(
-  ['/api/auth/register', '/api/receptionists/apply', '/api/receptionist/apply'],
+  ['/api/auth/register'],
   authRateLimiter(10, 3600, 'signup')
 );
 
@@ -494,7 +494,7 @@ app.post('/api/client-errors', authRateLimiter(20, 60, 'client-errors'), receive
 app.get('/api/events', authenticate, streamLiveEvents);
 // Bot check on public forms that create accounts or send email (FIX-045)
 app.post(
-  ['/api/auth/register', '/api/auth/forgot-password', '/api/receptionists/apply', '/api/receptionist/apply'],
+  ['/api/auth/register', '/api/auth/forgot-password'],
   requireHuman
 );
 app.use('/api/auth', authRoutes);

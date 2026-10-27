@@ -114,7 +114,8 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
             fullName: fullName.trim(),
             passwordHash,
             phone: formattedPhone,
-            isEmailVerified: true,
+            // Receptionist confirms this email with a code on first sign-in
+            isEmailVerified: false,
             mustChangePassword: true,
             receptionistProfile: {
               upsert: {
@@ -167,7 +168,8 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
             passwordHash,
             phone: formattedPhone,
             role: 'RECEPTIONIST',
-            isEmailVerified: true,
+            // Receptionist confirms this email with a code on first sign-in
+            isEmailVerified: false,
             mustChangePassword: true,
             receptionistProfile: {
               create: {
@@ -415,123 +417,6 @@ export const removeClinicReceptionist = async (req: AuthRequest, res: Response):
     res.status(500).json({
       success: false,
       message: 'Failed to remove receptionist',
-      ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
-    });
-  }
-};
-
-/**
- * Clinic Admin responds to incoming receptionist application (ACCEPT or REJECT)
- */
-export const respondToReceptionistRequest = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    if (!req.user || req.user.role !== 'CLINIC') {
-      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
-      return;
-    }
-
-    const { receptionistId } = req.params;
-    const { action, doctorIds } = req.body;
-
-    const clinic = await prisma.clinicProfile.findUnique({
-      where: { userId: req.user.id },
-    });
-
-    if (!clinic) {
-      res.status(404).json({ success: false, message: 'Clinic profile not found' });
-      return;
-    }
-
-    const receptionist = await prisma.receptionistProfile.findFirst({
-      where: { id: String(receptionistId), clinicId: clinic.id },
-    });
-
-    if (!receptionist) {
-      res.status(404).json({ success: false, message: 'Receptionist request not found for your clinic' });
-      return;
-    }
-
-    if (receptionist.status && receptionist.status !== 'PENDING') {
-      res.status(400).json({
-        success: false,
-        message: `Receptionist application has already been processed (${receptionist.status.toLowerCase()}).`,
-      });
-      return;
-    }
-
-    const normalizedAction = String(action || '').trim().toUpperCase();
-
-    if (!['ACCEPT', 'REJECT'].includes(normalizedAction)) {
-      res.status(400).json({ success: false, message: 'Action must be either ACCEPT or REJECT' });
-      return;
-    }
-
-    if (normalizedAction === 'ACCEPT') {
-      let validDoctorIds: string[] = [];
-      if (Array.isArray(doctorIds) && doctorIds.length > 0) {
-        // Validate submitted doctor IDs belong to this clinic
-        const clinicDoctors = await prisma.clinicDoctor.findMany({
-          where: { clinicId: clinic.id, status: { in: ['ACTIVE', 'ACCEPTED'] } },
-          select: { doctorId: true },
-        });
-        const clinicDoctorIds = new Set(clinicDoctors.map((cd) => cd.doctorId));
-        validDoctorIds = doctorIds.filter((docId: string) => clinicDoctorIds.has(docId));
-      }
-
-      await prisma.$transaction([
-        prisma.receptionistProfile.update({
-          where: { id: receptionist.id },
-          data: { status: 'ACTIVE' },
-        }),
-        prisma.user.update({
-          where: { id: receptionist.userId },
-          data: {
-            isEmailVerified: true,
-            emailVerificationOtp: null,
-            emailVerificationOtpExpiresAt: null,
-          },
-        }),
-        ...(validDoctorIds.length > 0
-          ? [
-              prisma.doctorReceptionist.deleteMany({
-                where: { receptionistId: receptionist.id },
-              }),
-              prisma.doctorReceptionist.createMany({
-                data: validDoctorIds.map((docId: string) => ({
-                  doctorId: docId,
-                  receptionistId: receptionist.id,
-                  status: 'ACTIVE',
-                })),
-              }),
-            ]
-          : []),
-      ]);
-
-      res.json({
-        success: true,
-        message: 'Receptionist application approved and desk permissions granted.',
-      });
-    } else {
-      await prisma.$transaction([
-        prisma.receptionistProfile.update({
-          where: { id: receptionist.id },
-          data: { status: 'REJECTED' },
-        }),
-        prisma.doctorReceptionist.deleteMany({
-          where: { receptionistId: receptionist.id },
-        }),
-      ]);
-
-      res.json({
-        success: true,
-        message: 'Receptionist application declined and desk assignments revoked.',
-      });
-    }
-  } catch (error: any) {
-    console.error('respondToReceptionistRequest error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to respond to receptionist request',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

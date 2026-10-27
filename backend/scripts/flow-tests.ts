@@ -748,15 +748,24 @@ async function main() {
     else process.env.DEMO_ACCOUNT_EMAILS = savedDemoList;
     check(demoAdminLogin.status === 403 && demoAdminLogin.json?.code === 'DEMO_ADMIN_DISABLED', 'The public demo admin cannot open the admin panel', demoAdminLogin.json);
 
-    const recRejectedEmail = email('rejected');
-    const rejUser = await prisma.user.create({
-      data: { email: recRejectedEmail, passwordHash: await bcrypt.hash('Their-Own-Pass-1', 4), fullName: `Rejected ${RUN}`, role: 'RECEPTIONIST' },
-    });
-    await prisma.receptionistProfile.create({ data: { userId: rejUser.id, clinicId: s.clinic.id, status: 'REJECTED' } });
-    const hijack = await call('POST', '/api/receptionists/apply', undefined, { fullName: 'Someone Else', email: recRejectedEmail, password: 'Stranger-Pass-9', clinicId: s.clinic.id });
-    check(hijack.status === 409, "A stranger cannot re-apply with a rejected receptionist's email and replace the password", hijack.json);
-    const stillOwn = await prisma.user.findUnique({ where: { id: rejUser.id } });
-    check(Boolean(stillOwn && (await bcrypt.compare('Their-Own-Pass-1', stillOwn.passwordHash))), 'The rejected receptionist keeps their password', null);
+    // Receptionists can't sign themselves up; only their clinic creates the account (owner decision 2026-10-27)
+    const selfJoin = await call('POST', '/api/receptionists/apply', undefined, { fullName: 'Someone Else', email: email('selfjoin'), password: 'Stranger-Pass-9', clinicId: s.clinic.id });
+    // The old address now falls behind the desk sign-in check, so it answers 401 (or 404), never 200
+    check(selfJoin.status === 401 || selfJoin.status === 404, 'There is no public "Join a Clinic" sign-up for receptionists', selfJoin.json);
+    const selfJoinUser = await prisma.user.findFirst({ where: { email: email('selfjoin') } });
+    check(!selfJoinUser, 'No receptionist account is created by a self sign-up attempt', selfJoinUser);
+
+    // A clinic-made receptionist confirms their email with a code before the first sign-in
+    const newDeskEmail = email('newdesk');
+    const madeDesk = await call('POST', '/api/clinic/receptionists', clinicToken, { fullName: `New Desk ${RUN}`, email: newDeskEmail, password: 'Temp-Pass-123', phone: '9800000077' });
+    check(madeDesk.status === 201, 'Clinic creates a receptionist login', madeDesk.json);
+    const firstLogin = await call('POST', '/api/auth/login', undefined, { email: newDeskEmail, password: 'Temp-Pass-123', role: 'RECEPTIONIST' });
+    check(firstLogin.status === 403 && firstLogin.json?.requiresVerification === true, 'First receptionist sign-in asks for the email code', firstLogin.json);
+    const deskCode: string = firstLogin.json?.data?.devOtp || '';
+    const verified = await call('POST', '/api/auth/verify-otp', undefined, { email: newDeskEmail, otp: deskCode, role: 'RECEPTIONIST' });
+    check(verified.status === 200 && verified.json?.data?.user?.mustChangePassword === true, 'After the code, the receptionist still has to set their own password', verified.json);
+    const secondLogin = await call('POST', '/api/auth/login', undefined, { email: newDeskEmail, password: 'Temp-Pass-123', role: 'RECEPTIONIST' });
+    check(secondLogin.status === 200, 'Once the email is confirmed, sign-in works without another code', secondLogin.json);
 
     // ---- Forgot and change password -----------------------------------------
     const unknownReset = await call('POST', '/api/auth/forgot-password', undefined, { email: email('nobody'), role: 'PATIENT' });

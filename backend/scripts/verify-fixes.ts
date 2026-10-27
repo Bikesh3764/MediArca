@@ -9322,8 +9322,8 @@ Follow-up Date: 2026-10-15`;
   );
   assert(
     clinicControllerContentCat3.includes('findExistingAccountByPhone') &&
-    receptionistControllerContent.includes('findExistingAccountByPhone'),
-    'Fix 1: clinicController (addClinicReceptionist) and receptionistController (applyReceptionist) enforce mobile number uniqueness (HTTP 409)'
+    !receptionistControllerContent.includes('applyReceptionist'),
+    'Fix 1: clinicController (addClinicReceptionist) keeps the phone lookup; receptionist self sign-up (applyReceptionist) no longer exists'
   );
   assert(
     signupTsxContent.includes('if (!isValidIndianPhone(phone)) {'),
@@ -9549,8 +9549,11 @@ Follow-up Date: 2026-10-15`;
     'Fix 20: ClinicDashboard differentiates affiliated, invited, incoming, and new doctors in quick-onboarding modal'
   );
 
+  // The assignment lists now live in the Add / Edit receptionist popups (the approval popup was removed 2026-10-27)
+  const staffModalsPart5Content = ['AddStaffModal', 'EditStaffModal']
+    .map((f) => fs.readFileSync(path.join(__dirname, `../../frontend/src/pages/Clinic/dashboard/${f}.tsx`), 'utf8'));
   assert(
-    clinicDashboardPart5Content.includes("d.status === 'ACCEPTED' || d.status === 'ACTIVE'"),
+    staffModalsPart5Content.every((c) => c.includes("d.status === 'ACCEPTED' || d.status === 'ACTIVE'")),
     'Fix 20: ClinicDashboard supports both ACCEPTED and ACTIVE doctor affiliations in receptionist assignment modal'
   );
 
@@ -9809,13 +9812,13 @@ Follow-up Date: 2026-10-15`;
     'Sprint ARCH-003 / FUNC-002: QR check-in enforces submitted checkinCode and standee URL contract matches scanner'
   );
 
-  // ARCH-004 / FUNC-006: REJECTED receptionist account reuse & email verification on clinic approval
+  // ARCH-004 / FUNC-006: REJECTED receptionist account reuse; clinic-made logins confirm their email by code (2026-10-27)
   assert(
-    sp_clinicControllerContent.includes('isEmailVerified: true') &&
+    sp_clinicControllerContent.includes('isEmailVerified: false') &&
     sp_clinicControllerContent.includes("status: 'ACTIVE'") &&
     sp_clinicControllerContent.includes("existingRecProfile?.status !== 'REJECTED'") &&
     sp_authControllerContent.includes("recStatus === 'REJECTED'"),
-    'Sprint ARCH-004 / FUNC-006: Rejected receptionist accounts can re-apply/re-provision and clinic approval activates verified account'
+    'Sprint ARCH-004 / FUNC-006: Rejected receptionist accounts can be re-provisioned by the clinic and must confirm their email'
   );
 
   // ARCH-005 / FUNC-011: AuthContext refreshUser clears credentials on 401
@@ -9952,8 +9955,8 @@ Follow-up Date: 2026-10-15`;
   assert(
     sp_clinicControllerContent.includes('prisma.$transaction') &&
     sp_clinicControllerContent.includes("status: 'ACTIVE'") &&
-    sp_receptionistControllerContent.includes('await prisma.$transaction(async (tx) => runApply(tx))'),
-    'Sprint ARCH-004: Receptionist application and approval are atomic transactions preserving email verification rules'
+    !sp_receptionistControllerContent.includes('runApply'),
+    'Sprint ARCH-004: Clinic changes stay in transactions; the receptionist self-application path is removed'
   );
 
   // Fix 24 / ARCH-017: Clinic Profile Settings, Photo/Logo Management & Dashboard Navigation
@@ -10545,9 +10548,28 @@ Follow-up Date: 2026-10-15`;
       if (savedSuite !== undefined) process.env.MEDIARCA_TEST_SUITE = savedSuite;
     }
     assert(
-      /app\.post\(\s*\['\/api\/auth\/register', '\/api\/auth\/forgot-password', '\/api\/receptionists\/apply', '\/api\/receptionist\/apply'\],\s*requireHuman/.test(srv) &&
+      /app\.post\(\s*\['\/api\/auth\/register', '\/api\/auth\/forgot-password'\],\s*requireHuman/.test(srv) &&
       srv.includes("app.post(['/api/contact', '/api/contact-us'], contactHoneypot, requireHuman);"),
-      'FIX-045: bot check guards sign-up, forgot password, receptionist apply and the contact form'
+      'FIX-045: bot check guards sign-up, forgot password and the contact form'
+    );
+    // Receptionist "Join a Clinic" sign-up was removed (owner decision 2026-10-27): no public route left behind
+    const recRoutesSrc = fs.readFileSync(path.join(__dirname, '../src/routes/receptionistRoutes.ts'), 'utf-8');
+    const clinicRoutesSrc = fs.readFileSync(path.join(__dirname, '../src/routes/clinicRoutes.ts'), 'utf-8');
+    const recAuthPage = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Receptionist/ReceptionistAuth.tsx'), 'utf-8');
+    assert(
+      !recRoutesSrc.includes("'/apply'") && !clinicRoutesSrc.includes('receptionists/:receptionistId/respond') &&
+      !srv.includes('receptionists/apply') && !recAuthPage.includes('Join a Clinic'),
+      'Receptionist self sign-up (Join a Clinic) is gone from the site, API and rate limits'
+    );
+    const staffSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/clinic/staff.ts'), 'utf-8');
+    assert(
+      (staffSrc.match(/isEmailVerified: false,\s*mustChangePassword: true,/g) || []).length === 2 &&
+      !staffSrc.includes('isEmailVerified: true'),
+      'Clinic-made receptionist logins must confirm their email with a code before first sign-in'
+    );
+    assert(
+      recAuthPage.includes('if (verifiedUser.mustChangePassword) {'),
+      'After the email code, a new receptionist goes on to set their own password'
     );
   }
 

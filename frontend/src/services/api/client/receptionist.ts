@@ -1,4 +1,3 @@
-import { withBotCheck } from '../../botCheck';
 import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { DoctorSlot } from '../schedule';
@@ -163,34 +162,6 @@ export const receptionistApi = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ reason }),
-    });
-    return handleResponse(res);
-  },
-
-  async applyReceptionist(data: {
-    fullName: string;
-    email: string;
-    password: string;
-    phone?: string;
-    clinicId: string;
-  }): Promise<any> {
-    const res = await safeFetch(`${API_BASE_URL}/receptionists/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(await withBotCheck(data)),
-    });
-    return handleResponse(res);
-  },
-
-  async respondToReceptionistRequest(
-    receptionistId: string,
-    action: 'ACCEPT' | 'REJECT',
-    doctorIds?: string[]
-  ): Promise<any> {
-    const res = await safeFetch(`${API_BASE_URL}/clinic/receptionists/${receptionistId}/respond`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ action, doctorIds }),
     });
     return handleResponse(res);
   },

@@ -14,7 +14,6 @@ import { InviteDoctorModal } from './dashboard/InviteDoctorModal';
 import { AddStaffModal } from './dashboard/AddStaffModal';
 import { EditStaffModal } from './dashboard/EditStaffModal';
 import { CredentialsModal } from './dashboard/CredentialsModal';
-import { ApproveStaffModal } from './dashboard/ApproveStaffModal';
 import { ProfileModal } from './dashboard/ProfileModal';
 export const ClinicDashboard: React.FC = () => {
   const state = useClinicDashboardState();
@@ -40,7 +39,6 @@ export const ClinicDashboard: React.FC = () => {
     setProfileCity,
     setProfilePhone,
     setProfileError,
-    approvingRec,
     clinic,
     doctors,
     navItems,
@@ -218,9 +216,6 @@ export const ClinicDashboard: React.FC = () => {
       )}
 
       {/* Review & Approve Incoming Receptionist Modal */}
-      {approvingRec && (
-        <ApproveStaffModal />
-      )}
 
       {/* Complete Clinic Profile / Address Modal */}
       {showProfileModal && (

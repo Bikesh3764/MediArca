@@ -10,7 +10,6 @@ import {
   getPendingAppointments,
   approveAppointment,
   rejectAppointment,
-  applyReceptionist,
   rescheduleAppointment,
   getReceptionistReport,
 } from '../controllers/receptionistController';
@@ -21,8 +20,7 @@ import { blockDemoAccountChanges } from '../utils/demoAccounts';
 
 const router = Router();
 
-// Public route: Receptionist application to join a verified clinic
-router.post('/apply', applyReceptionist);
+// Receptionist accounts are created only by their clinic (no public sign-up)
 
 // Authenticated receptionist account management (FIX-008)
 // Must NOT be blocked by requireActiveReceptionist: receptionists must be able to change

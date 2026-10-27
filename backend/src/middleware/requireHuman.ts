@@ -3,7 +3,7 @@ import { getClientIp } from '../utils/clientIp';
 
 /**
  * Cloudflare Turnstile bot check for public forms that create rows or send email:
- * sign-up, forgot password, contact form and receptionist applications (FIX-045).
+ * sign-up, forgot password and the contact form (FIX-045).
  *
  * The browser gets a token from the Turnstile widget and sends it as `turnstileToken`
  * (or the `cf-turnstile-response` header). Off until TURNSTILE_SECRET_KEY is set, and

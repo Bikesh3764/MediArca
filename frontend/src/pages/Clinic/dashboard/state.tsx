@@ -307,16 +307,11 @@ export const useClinicDashboardState = () => {
       setSavingProfile(false);
     }
   };
-  // Receptionist Application Approval State
-  const [approvingRec, setApprovingRec] = useState<{ id: string; fullName: string; email: string } | null>(null);
-  const [approvalDoctorIds, setApprovalDoctorIds] = useState<string[]>([]);
-  const [processingRecId, setProcessingRecId] = useState<string | null>(null);
   const isAnyModalOpen =
     showAddModal ||
     showRecModal ||
     Boolean(editingRec) ||
     Boolean(createdCredentials) ||
-    Boolean(approvingRec) ||
     showProfileModal ||
     showPosterModal ||
     showReportModal;
@@ -330,30 +325,9 @@ export const useClinicDashboardState = () => {
       document.body.style.overflow = '';
     };
   }, [isAnyModalOpen]);
-  const handleRespondReceptionist = async (
-    receptionistId: string,
-    action: 'ACCEPT' | 'REJECT',
-    doctorIds?: string[]
-  ) => {
-    setProcessingRecId(receptionistId);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      const res = await api.respondToReceptionistRequest(receptionistId, action, doctorIds);
-      setSuccessMsg(res.message || (action === 'ACCEPT' ? 'Receptionist approved.' : 'Request declined.'));
-      setApprovingRec(null);
-      setApprovalDoctorIds([]);
-      fetchClinicData();
-    } catch (err: any) {
-      setError(err.message || 'Couldn’t respond. Try again.');
-    } finally {
-      setProcessingRecId(null);
-    }
-  };
   const clinic = data?.clinic;
   const doctors = data?.doctors || [];
   const totalPendingRequests = data?.incomingRequests?.length || 0;
-  const incomingRecCount = data?.incomingReceptionists?.length || 0;
   const navItems: DashboardNavItem[] = [
     {
       id: 'doctors',
@@ -368,7 +342,7 @@ export const useClinicDashboardState = () => {
       label: 'Staff',
       icon: UserCheck,
       active: activeSection === 'receptionists',
-      badge: incomingRecCount > 0 ? `${incomingRecCount} new` : (data?.receptionists?.length || undefined),
+      badge: data?.receptionists?.length || undefined,
       onClick: () => setActiveSection('receptionists'),
     },
     {
@@ -502,18 +476,10 @@ export const useClinicDashboardState = () => {
     handleUpdateAssignedDoctors,
     handleRemoveReceptionist,
     handleSaveProfile,
-    approvingRec,
-    setApprovingRec,
-    approvalDoctorIds,
-    setApprovalDoctorIds,
-    processingRecId,
-    setProcessingRecId,
     isAnyModalOpen,
-    handleRespondReceptionist,
     clinic,
     doctors,
     totalPendingRequests,
-    incomingRecCount,
     navItems,
     getApptStatusBadge,
   };

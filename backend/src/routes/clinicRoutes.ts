@@ -10,7 +10,6 @@ import {
   getClinicReceptionists,
   updateClinicReceptionistDoctors,
   removeClinicReceptionist,
-  respondToReceptionistRequest,
   updateClinicProfile,
   getClinicReport,
 } from '../controllers/clinicController';
@@ -40,7 +39,6 @@ router.delete('/doctors/:doctorId', requireActiveClinic, blockDemoAccountChanges
 router.get('/receptionists', requireActiveClinic, getClinicReceptionists);
 router.post('/receptionists', requireActiveClinic, addClinicReceptionist);
 router.put('/receptionists/:receptionistId/doctors', requireActiveClinic, updateClinicReceptionistDoctors);
-router.put('/receptionists/:receptionistId/respond', requireActiveClinic, respondToReceptionistRequest);
 router.delete('/receptionists/:receptionistId', requireActiveClinic, blockDemoAccountChanges, removeClinicReceptionist);
 
 export default router;

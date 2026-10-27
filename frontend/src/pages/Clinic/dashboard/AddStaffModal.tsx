@@ -21,6 +21,8 @@ export const AddStaffModal: React.FC = () => {
     handleProvisionReceptionist,
     doctors,
   } = useClinicDashboard();
+  // Only doctors who have joined the clinic can be given to a desk
+  const deskDoctors = doctors.filter((d) => d.status === 'ACCEPTED' || d.status === 'ACTIVE');
   if (!showRecModal) return null;
   return (
 <div
@@ -120,13 +122,13 @@ export const AddStaffModal: React.FC = () => {
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-2 tracking-tight">
                   Assign Doctors
                 </label>
-                {doctors.length === 0 ? (
+                {deskDoctors.length === 0 ? (
                   <div className="p-3.5 bg-[#f5f5f7] border border-[#e5e5ea] rounded-xl text-xs text-[#86868b] text-center">
                     No doctors yet.
                   </div>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                    {doctors.map((doc) => {
+                    {deskDoctors.map((doc) => {
                       const isSelected = recDoctorIds.includes(doc.doctorId);
                       return (
                         <div

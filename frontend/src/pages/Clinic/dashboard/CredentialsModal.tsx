@@ -37,7 +37,7 @@ export const CredentialsModal: React.FC = () => {
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[#1d1d1f] text-xs space-y-1 leading-relaxed">
               <p className="font-semibold">Note</p>
               <p className="text-xs text-[#86868b]">
-                They sign in from the Receptionist link and set their own password.
+                On first sign-in they enter a code sent to this email, then set their own password.
               </p>
             </div>
 
