@@ -10597,6 +10597,43 @@ Follow-up Date: 2026-10-15`;
     assert(ccSrc.includes('calledAt: new Date()') && ccSrc.includes('completedAt: new Date()'), 'FIX-048: call-in and finish times are recorded for the real pace');
   }
 
+  // FIX-049: password work off the main thread, cheap walk-in hashes, booking survives a rush
+  {
+    const { verifyPassword, hashPassword, createUnusablePasswordHash } = await import('../src/utils/passwords');
+    const h4 = await hashPassword('Right-Pass-1', 4);
+    assert((await verifyPassword('Right-Pass-1', h4)) === true, 'FIX-049: right password matches (background thread)');
+    assert((await verifyPassword('Wrong-Pass-1', h4)) === false, 'FIX-049: wrong password does not match (background thread)');
+    const h10 = await hashPassword('Busy-Pass-1', 10);
+    const t0 = Date.now();
+    let lag = -1;
+    const timerFired = new Promise<void>((resolve) => setTimeout(() => { lag = Date.now() - t0; resolve(); }, 0));
+    const checks = Promise.all(Array.from({ length: 6 }, () => verifyPassword('Busy-Pass-1', h10)));
+    await timerFired;
+    const checkResults = await checks;
+    assert(checkResults.every(Boolean), 'FIX-049: six checks at once all succeed');
+    assert(lag >= 0 && lag < 150, `FIX-049: server keeps answering while passwords are checked (waited ${lag} ms)`);
+    process.env.PASSWORD_WORKER = 'off';
+    assert((await verifyPassword('Right-Pass-1', h4)) === true, 'FIX-049: in-process fallback still checks passwords');
+    delete process.env.PASSWORD_WORKER;
+    const tu = Date.now();
+    const u1 = createUnusablePasswordHash();
+    const u2 = createUnusablePasswordHash();
+    assert(u1.startsWith('$2') && u1.length === 60 && u1 !== u2, 'FIX-049: walk-in accounts get a unique random password hash');
+    assert(Date.now() - tu < 200, 'FIX-049: making a walk-in password hash is fast');
+    const { BOOKING_TX_OPTIONS, isBookingBusyError } = await import('../src/utils/bookingTx');
+    assert(BOOKING_TX_OPTIONS.maxWait > 2000 && BOOKING_TX_OPTIONS.maxWait + BOOKING_TX_OPTIONS.timeout < 15000, 'FIX-049: booking waits longer than the 2 s default but less than the website timeout');
+    assert(isBookingBusyError({ code: 'P2028' }) && !isBookingBusyError({ code: 'P2002' }), 'FIX-049: only "database busy" errors become a retry message');
+    for (const rel of ['../src/controllers/appointment/booking.ts', '../src/controllers/receptionist/walkin.ts']) {
+      const src = fs.readFileSync(path.join(__dirname, rel), 'utf8');
+      assert(!src.includes('genSalt(12)') && src.includes('createUnusablePasswordHash()'), `FIX-049: ${path.basename(rel)} no longer spends 12 bcrypt rounds on walk-ins`);
+      assert(src.includes('}, BOOKING_TX_OPTIONS);') && src.includes('isBookingBusyError(error)'), `FIX-049: ${path.basename(rel)} gives bookings time to queue and answers 503 when busy`);
+    }
+    for (const rel of ['auth/login.ts', 'auth/password.ts', 'auth/register.ts', 'clinic/staff.ts', 'receptionist/account.ts']) {
+      const src = fs.readFileSync(path.join(__dirname, '../src/controllers', rel), 'utf8');
+      assert(!/bcrypt\.(compare|hash|genSalt)\(/.test(src), `FIX-049: ${rel} checks passwords off the main thread`);
+    }
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

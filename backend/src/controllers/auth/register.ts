@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../../utils/passwords';
 import prisma from '../../config/database';
 import { findTooLong, findTooLongInBody, LIMITS } from '../../utils/inputLimits';
 import { hashOtp } from '../../utils/otpHash';
@@ -146,8 +146,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       if (!allowOtpEmail(req, res, cleanEmail)) return;
 
       // Existing unverified account: update credentials, ensure role profile exists, and allow completing verification!
-      const salt = await bcrypt.genSalt(10);
-      const passwordHash = await bcrypt.hash(password, salt);
+      const passwordHash = await hashPassword(password, 10);
 
       const otp = crypto.randomInt(100000, 1000000).toString();
       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -326,8 +325,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     if (!allowOtpEmail(req, res, cleanEmail)) return;
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await hashPassword(password, 10);
 
     const otp = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);

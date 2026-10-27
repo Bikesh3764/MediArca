@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { verifyPassword, hashPassword } from '../../utils/passwords';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
 import { hashOtp } from '../../utils/otpHash';
@@ -124,7 +124,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         for (const candidate of matchingUsers) {
           const candLockout = await checkPasswordLoginLockout(cleanLoginEmail, candidate.role, clientIp);
           if (candLockout.isLocked) continue;
-          if (await bcrypt.compare(password, candidate.passwordHash)) {
+          if (await verifyPassword(password, candidate.passwordHash)) {
             user = candidate;
             passwordAlreadyVerified = true;
             break;
@@ -172,7 +172,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isMatch = passwordAlreadyVerified ? true : await bcrypt.compare(password, user.passwordHash);
+    const isMatch = passwordAlreadyVerified ? true : await verifyPassword(password, user.passwordHash);
     if (!isMatch) {
       const attempt = await recordFailedPasswordLogin(cleanLoginEmail, user.role, clientIp);
       if (attempt.isLocked) {
@@ -500,7 +500,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
     }
 
     if (!user) {
-      const defaultPassword = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+      const defaultPassword = await hashPassword(crypto.randomBytes(24).toString('hex'), 10);
       if (normalizedRole === 'PATIENT') {
         user = await prisma.user.create({
           data: {

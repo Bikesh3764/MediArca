@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { verifyPassword, hashPassword } from '../../utils/passwords';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
 import { findTooLong, LIMITS } from '../../utils/inputLimits';
@@ -287,14 +287,13 @@ export const changeReceptionistPassword = async (req: AuthRequest, res: Response
       return;
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+    const isMatch = await verifyPassword(currentPassword, user.passwordHash);
     if (!isMatch) {
       res.status(400).json({ success: false, message: 'Current temporary password does not match' });
       return;
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const newHash = await bcrypt.hash(newPassword, salt);
+    const newHash = await hashPassword(newPassword, 10);
 
     const passwordChangedAt = new Date();
     const updatedUser = await prisma.user.update({
@@ -403,7 +402,7 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
     }
 
     // Re-applying after a rejection must not let a stranger replace that person's password
-    if (existingUser && !(await bcrypt.compare(String(password), existingUser.passwordHash))) {
+    if (existingUser && !(await verifyPassword(String(password), existingUser.passwordHash))) {
       res.status(409).json({
         success: false,
         message: 'This email applied before. Use the same password to apply again, or reset it from the sign-in page.',
@@ -436,8 +435,7 @@ export const applyReceptionist = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await hashPassword(password, 10);
 
     const runApply = async (db: any) => {
       if (existingUser) {

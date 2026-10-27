@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { verifyPassword, hashPassword } from '../../utils/passwords';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
 import { AuthRequest, getJwtSecret } from '../../middleware/authMiddleware';
@@ -161,7 +161,7 @@ export const resetPasswordWithCode = async (req: Request, res: Response): Promis
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash: await bcrypt.hash(String(newPassword), 10),
+        passwordHash: await hashPassword(String(newPassword), 10),
         passwordChangedAt,
         mustChangePassword: false,
         // The code reached their inbox, so the email is proven
@@ -209,7 +209,7 @@ export const changeOwnPassword = async (req: AuthRequest, res: Response): Promis
       res.status(404).json({ success: false, message: 'Account not found.' });
       return;
     }
-    if (!(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    if (!(await verifyPassword(currentPassword, user.passwordHash))) {
       res.status(400).json({ success: false, message: 'Current password is wrong.' });
       return;
     }
@@ -218,7 +218,7 @@ export const changeOwnPassword = async (req: AuthRequest, res: Response): Promis
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
-        passwordHash: await bcrypt.hash(String(newPassword), 10),
+        passwordHash: await hashPassword(String(newPassword), 10),
         passwordChangedAt,
         mustChangePassword: false,
       },

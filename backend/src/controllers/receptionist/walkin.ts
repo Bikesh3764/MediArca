@@ -1,5 +1,6 @@
 import { Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { createUnusablePasswordHash } from '../../utils/passwords';
+import { BOOKING_TX_OPTIONS, isBookingBusyError, BOOKING_BUSY_MESSAGE } from '../../utils/bookingTx';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import crypto from 'crypto';
@@ -207,9 +208,8 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
 
     if (!patientUser) {
-      const unguessablePassword = crypto.randomBytes(32).toString('hex');
-      const dummySalt = await bcrypt.genSalt(12);
-      const dummyHash = await bcrypt.hash(unguessablePassword, dummySalt);
+      // Walk-ins never sign in with a password (FIX-049: 12 rounds froze the live server ~1.5 s)
+      const dummyHash = createUnusablePasswordHash();
       const walkinEmail = `walkin.${crypto.randomUUID()}@mediarca.local`;
 
       patientUser = await prisma.user.create({
@@ -500,7 +500,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           }
 
           return created;
-        });
+        }, BOOKING_TX_OPTIONS);
 
         break; // Success!
       } catch (err: any) {
@@ -556,6 +556,10 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
     }
     if (msg.includes('already ended for today')) {
       res.status(400).json({ success: false, message: msg });
+      return;
+    }
+    if (isBookingBusyError(error)) {
+      res.status(503).json({ success: false, message: BOOKING_BUSY_MESSAGE });
       return;
     }
     if (msg.startsWith('CONCURRENCY_LOCK_FAILURE:')) {

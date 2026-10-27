@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../../utils/passwords';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
@@ -70,8 +70,7 @@ export const addClinicReceptionist = async (req: AuthRequest, res: Response): Pr
       return;
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
+    const passwordHash = await hashPassword(password, 10);
 
     let formattedPhone: string | null = null;
     if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
