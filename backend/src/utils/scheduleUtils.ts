@@ -216,9 +216,15 @@ export const isDoctorWorkingOnDate = (
   return { isWorking, dayCode, dayName };
 };
 
+// Built once: creating an Intl.DateTimeFormat costs ~70x more than using one, and queue
+// screens call these helpers once per patient on every refresh (FIX-053).
+let istDateFormatter: Intl.DateTimeFormat | null = null;
+let istTimeFormatter: Intl.DateTimeFormat | null = null;
+
 export const getLocalDateString = (d: Date = new Date()): string => {
   try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+    istDateFormatter ??= new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' });
+    return istDateFormatter.format(d);
   } catch {
     const istMs = d.getTime() + 330 * 60 * 1000;
     const istDate = new Date(istMs);
@@ -231,12 +237,13 @@ export const getLocalDateString = (d: Date = new Date()): string => {
 
 export const getIndianTimeMinutes = (d: Date = new Date()): number => {
   try {
-    const parts = new Intl.DateTimeFormat('en-US', {
+    istTimeFormatter ??= new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Kolkata',
       hour: 'numeric',
       minute: 'numeric',
       hour12: false,
-    }).formatToParts(d);
+    });
+    const parts = istTimeFormatter.formatToParts(d);
     let hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
     if (hour === 24) hour = 0;
     const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);

@@ -193,6 +193,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     res.json({
       success: true,
       data: {
+        // Lets the doctor's screen ignore live events about other doctors' queues
+        doctorId: doctor.id,
         date: dateStr,
         scope,
         totalQueue: resolvedAppointments.length,

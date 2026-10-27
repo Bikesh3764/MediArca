@@ -18,16 +18,19 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
       return;
     }
 
-    const userRec = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { mustChangePassword: true },
-    });
-    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
-      res.status(403).json({
-        success: false,
-        message: 'Temporary password must be changed before accessing clinical desk operations.',
+    // requireActiveReceptionist already checked the password flag on desk routes
+    if (!req.deskAccessVerified) {
+      const userRec = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
       });
-      return;
+      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
     }
 
     const receptionist = await prisma.receptionistProfile.findUnique({

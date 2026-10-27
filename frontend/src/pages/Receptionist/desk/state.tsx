@@ -5,6 +5,7 @@ import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils
 import { formatClinicAddress } from '../../../utils/address';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../../utils/liveEvents';
+import { isEventForDoctors } from '../../../utils/liveRefresh';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 import { DashboardNavItem } from '../../../components/layout/DashboardLayout';
@@ -251,6 +252,8 @@ export const useReceptionistDashboardState = () => {
   useLiveEvent(
     'queue',
     (evt) => {
+      // Only this desk's doctors matter; events from other clinics are ignored (15s poll stays as backup)
+      if (!isEventForDoctors(evt.doctorId, data?.doctors?.map((d) => d.doctorId))) return;
       fetchPendingAppointments(true);
       if (activeTab === 'queue' && queueDoctorId && (!evt.doctorId || evt.doctorId === queueDoctorId)) {
         fetchQueue(undefined, undefined, true);

@@ -28,35 +28,45 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    const userRec = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { mustChangePassword: true },
-    });
-    if (userRec?.mustChangePassword || req.user.mustChangePassword) {
-      res.status(403).json({
-        success: false,
-        message: 'Temporary password must be changed before accessing clinical desk operations.',
+    // requireActiveReceptionist (on every desk route) already checked the password flag
+    // and loaded the profile; only look them up here if it didn't run.
+    if (!req.deskAccessVerified) {
+      const userRec = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mustChangePassword: true },
       });
-      return;
+      if (userRec?.mustChangePassword || req.user.mustChangePassword) {
+        res.status(403).json({
+          success: false,
+          message: 'Temporary password must be changed before accessing clinical desk operations.',
+        });
+        return;
+      }
     }
 
-    const recProfile = await prisma.receptionistProfile.findUnique({
-      where: { userId: req.user.id },
-      select: { clinicId: true },
+    const recProfile =
+      req.receptionistProfile ||
+      (await prisma.receptionistProfile.findUnique({
+        where: { userId: req.user.id },
+        include: { clinic: true },
+      }));
+
+    // Loaded once here and shared with the access check
+    const doctor = await prisma.doctorProfile.findUnique({
+      where: { id: doctorId },
+      include: { user: { select: { fullName: true, email: true } } },
     });
 
-    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, recProfile?.clinicId || null);
+    const access = await verifyReceptionistDoctorAccess(req.user.id, doctorId, recProfile?.clinicId || null, {
+      receptionist: recProfile,
+      doctor,
+    });
     if (!access.authorized) {
       res.status(403).json({ success: false, message: access.reason });
       return;
     }
 
     const receptionist = access.receptionist;
-
-    const doctor = await prisma.doctorProfile.findUnique({
-      where: { id: doctorId },
-      include: { user: { select: { fullName: true, email: true } } },
-    });
 
     if (!doctor) {
       res.status(404).json({ success: false, message: 'Doctor not found' });
@@ -83,14 +93,18 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     let targetAffiliation: any = null;
     let slots = parseDoctorSlots(doctor);
     if (receptionist?.clinicId) {
-      targetAffiliation = await prisma.clinicDoctor.findUnique({
-        where: {
-          clinicId_doctorId: {
-            clinicId: receptionist.clinicId,
-            doctorId,
-          },
-        },
-      });
+      // The access check already loaded this clinic-doctor link
+      targetAffiliation =
+        access.affiliation && access.affiliation.clinicId === receptionist.clinicId && access.affiliation.doctorId === doctorId
+          ? access.affiliation
+          : await prisma.clinicDoctor.findUnique({
+              where: {
+                clinicId_doctorId: {
+                  clinicId: receptionist.clinicId,
+                  doctorId,
+                },
+              },
+            });
       if (targetAffiliation?.slots) {
         try {
           const parsed = typeof targetAffiliation.slots === 'string' ? JSON.parse(targetAffiliation.slots) : targetAffiliation.slots;

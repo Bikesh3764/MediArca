@@ -54,6 +54,7 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
 
 10. **Live Refresh, Not Faster Polling**:
    To react to queue changes use `useLiveEvent('queue', handler)` from `utils/liveEvents.ts` alongside the existing `useVisibilityPolling` backup. Never shorten polling intervals to get "real-time" behaviour.
+   Events go to every open screen on the site, so filter them (`utils/liveRefresh.ts`, FIX-053): doctor and desk screens use `isEventForDoctors` for their own doctors, and patient pages use `needsInstantQueueRefresh` (only near-turn, unconfirmed or in-cabin visits refresh at once). Refreshing on every event made one "next patient" send every phone to the server.
 12. **Design Tokens & Consistency (FIX-040)**:
    - Status colors use Tailwind tokens, never raw hex: `text-success`/`bg-success-soft`/`border-success-line`/`bg-success-dot` (same for `danger`, `warning`; `primary` for blue).
    - No `shadow-*` on cards, buttons or inputs. Floating layers (dropdowns, popovers, toasts, sticky bars) may use `shadow-[0_12px_32px_rgba(0,0,0,0.12)]`.

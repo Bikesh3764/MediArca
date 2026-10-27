@@ -16,6 +16,18 @@ export interface ReceptionistAccessResult {
   receptionist?: any;
   assignment?: any;
   clinic?: any;
+  /** The clinic-doctor link that was checked (when the receptionist belongs to a clinic). */
+  affiliation?: any;
+}
+
+/**
+ * Rows the caller already loaded in this request, so the guard doesn't fetch them again.
+ * `receptionist` may carry its `clinic` (as loaded by requireActiveReceptionist).
+ * `doctor` may be null (not found); omit the key to let the guard look it up.
+ */
+export interface ReceptionistAccessPreloaded {
+  receptionist?: any;
+  doctor?: any;
 }
 
 /**
@@ -96,12 +108,23 @@ export const isClinicActive = (
 export const verifyReceptionistDoctorAccess = async (
   receptionistUserId: string,
   doctorId: string,
-  clinicId?: string | null
+  clinicId?: string | null,
+  preloaded?: ReceptionistAccessPreloaded
 ): Promise<ReceptionistAccessResult> => {
-  // 1. Receptionist profile check
-  const receptionist = await prisma.receptionistProfile.findUnique({
-    where: { userId: receptionistUserId },
-  });
+  // 1. Receptionist profile check (reuse the row the desk middleware loaded for this request)
+  const preReceptionist =
+    preloaded?.receptionist && preloaded.receptionist.userId === receptionistUserId ? preloaded.receptionist : null;
+  const receptionist =
+    preReceptionist ||
+    (await prisma.receptionistProfile.findUnique({
+      where: { userId: receptionistUserId },
+    }));
+  // Clinic row for the receptionist's own clinic, when it came with the preloaded profile
+  const loadOwnClinic = async (ownClinicId: string) => {
+    const pre = preReceptionist?.clinic;
+    if (pre && pre.id === ownClinicId) return pre;
+    return prisma.clinicProfile.findUnique({ where: { id: ownClinicId } });
+  };
 
   if (!receptionist) {
     return { authorized: false, reason: 'Receptionist profile not found' };
@@ -118,9 +141,12 @@ export const verifyReceptionistDoctorAccess = async (
   }
 
   // 2. Doctor eligibility check
-  const doctor = await prisma.doctorProfile.findUnique({
-    where: { id: doctorId },
-  });
+  const doctor =
+    preloaded && 'doctor' in preloaded && (!preloaded.doctor || preloaded.doctor.id === doctorId)
+      ? preloaded.doctor
+      : await prisma.doctorProfile.findUnique({
+          where: { id: doctorId },
+        });
 
   const docCheck = isDoctorEligibleForClinicalPractice(doctor);
   if (!docCheck.eligible) {
@@ -168,9 +194,7 @@ export const verifyReceptionistDoctorAccess = async (
           },
         });
         if (clinicAffiliation && (clinicAffiliation.status === 'ACTIVE' || clinicAffiliation.status === 'ACCEPTED')) {
-          const clinic = await prisma.clinicProfile.findUnique({
-            where: { id: receptionist.clinicId },
-          });
+          const clinic = await loadOwnClinic(receptionist.clinicId);
           const clinicCheck = isClinicActive(clinic);
           if (!clinicCheck.active) {
             return { authorized: false, reason: clinicCheck.reason };
@@ -185,6 +209,7 @@ export const verifyReceptionistDoctorAccess = async (
               status: 'ACTIVE',
             } as any,
             clinic,
+            affiliation: clinicAffiliation,
           };
         }
       }
@@ -211,17 +236,16 @@ export const verifyReceptionistDoctorAccess = async (
     };
   }
 
+  let affiliation: any = null;
   if (receptionist.clinicId) {
-    clinic = await prisma.clinicProfile.findUnique({
-      where: { id: receptionist.clinicId },
-    });
+    clinic = await loadOwnClinic(receptionist.clinicId);
 
     const clinicCheck = isClinicActive(clinic);
     if (!clinicCheck.active) {
       return { authorized: false, reason: clinicCheck.reason };
     }
 
-    const affiliation = await prisma.clinicDoctor.findUnique({
+    affiliation = await prisma.clinicDoctor.findUnique({
       where: {
         clinicId_doctorId: {
           clinicId: receptionist.clinicId,
@@ -243,5 +267,6 @@ export const verifyReceptionistDoctorAccess = async (
     receptionist,
     assignment,
     clinic,
+    affiliation,
   };
 };

@@ -11,6 +11,7 @@ export const consultationApi = {
     clinicId?: string,
     slotId?: string
   ): Promise<{
+    doctorId?: string;
     date: string;
     scope?: string;
     totalQueue: number;

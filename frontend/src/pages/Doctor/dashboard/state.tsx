@@ -4,6 +4,7 @@ import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, D
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../../utils/liveEvents';
+import { isEventForDoctors } from '../../../utils/liveRefresh';
 import { useAuth } from '../../../context/AuthContext';
 import { DashboardNavItem } from '../../../components/layout/DashboardLayout';
 import { Building2, Settings, LayoutDashboard, Calendar } from 'lucide-react';
@@ -59,6 +60,7 @@ export const useDoctorDashboardState = () => {
   const [queueFiltersDrawerOpen, setQueueFiltersDrawerOpen] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
   const [queueData, setQueueData] = useState<{
+    doctorId?: string;
     date: string;
     scope?: string;
     totalQueue: number;
@@ -136,8 +138,15 @@ export const useDoctorDashboardState = () => {
     10000,
     Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth
   );
-  // Instant refresh when any queue changes (e.g. receptionist approves or checks in a patient)
-  useLiveEvent('queue', () => fetchQueue(false), Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth);
+  // Instant refresh when this doctor's queue changes (e.g. receptionist approves or checks in a patient).
+  // Events about other doctors are ignored; the 10s poll above stays as backup.
+  useLiveEvent(
+    'queue',
+    (evt) => {
+      if (isEventForDoctors(evt.doctorId, [queueData?.doctorId])) fetchQueue(false);
+    },
+    Boolean(user) && user?.role?.toUpperCase() === 'DOCTOR' && !loadingAuth
+  );
   useEffect(() => {
     let mounted = true;
     if (activeTab === 'affiliations') {

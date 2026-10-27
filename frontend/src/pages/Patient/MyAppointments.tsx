@@ -7,6 +7,7 @@ import { LiveQueueTicket } from '../../components/queue/LiveQueueTicket';
 import { CheckCircle2, AlertCircle, X, ChevronDown, Calendar, Clock } from 'lucide-react';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../utils/liveEvents';
+import { needsInstantQueueRefresh } from '../../utils/liveRefresh';
 import { requestTurnAlertPermission, useTurnAlerts } from '../../utils/turnAlerts';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -127,16 +128,22 @@ export const MyAppointments: React.FC = () => {
     Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
   );
 
-  // Instant refresh when this patient's doctor's queue moves (polling above stays as backup)
+  // Instant refresh when this patient's doctor's queue moves, but only when the visit
+  // can change soon (near the turn, unconfirmed, in the cabin). Patients far back use
+  // the 60s poll above, so one "next patient" doesn't send every phone to the server.
   useLiveEvent(
     'queue',
     (evt) => {
-      if (!evt.doctorId || upcomingAppointments.some((a) => a.doctorId === evt.doctorId)) {
+      if (needsInstantQueueRefresh(upcomingAppointments, evt.doctorId, getLocalDateString())) {
         fetchActiveAppointments(true);
       }
     },
     Boolean(user) && !loadingAuth && upcomingAppointments.length > 0
   );
+
+  // Changes to this patient's own visit (confirmed, declined, cancelled, moved) come with a
+  // notification, so refresh on those right away wherever the patient is in line.
+  useLiveEvent('notification', () => fetchActiveAppointments(true), Boolean(user) && !loadingAuth);
 
   // "You're next" / "Go in now" alert (toast, vibration, and a system notification if allowed)
   useTurnAlerts(upcomingAppointments, (title, message) => toast.info(message, title, 8000));

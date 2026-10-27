@@ -345,6 +345,99 @@ async function bugHuntChecks() {
   );
 }
 
+/**
+ * FIX-053: lighter desk and doctor screens (load test, docs/audits/2026-10-27-load-test.md).
+ * The desk queue now reuses rows the desk middleware already loaded; these checks make sure
+ * every access rule still holds after that change.
+ */
+async function loadFixChecks() {
+  const hash = await bcrypt.hash('Temp-Pass-123', 4);
+  const days = JSON.stringify(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
+  const now = getIndianTimeMinutes(new Date());
+  const shift = { id: 'lf_shift', name: 'Load Shift', startTime: hhmm(Math.max(0, now - 60)), endTime: hhmm(Math.min(24 * 60 - 1, now + 120)), maxPatients: 50, avgConsultationMinutes: 5 };
+  const today = getLocalDateString();
+  let n = 0;
+  const user = (who: string, role: string, extra: Record<string, unknown> = {}) =>
+    prisma.user.create({ data: { email: email(`lf${++n}${who}`), passwordHash: hash, fullName: `${who} ${RUN} ${n}`, role, phone: '+91 9800000001', ...extra } });
+  const clinicOf = async (tag: string) => {
+    const cu = await user(`clinic${tag}`, 'CLINIC');
+    return prisma.clinicProfile.create({ data: { userId: cu.id, clinicName: `LF ${tag} ${RUN}`, address: 'x', city: 'Pune', state: 'Maharashtra', isVerified: true, verificationStatus: 'VERIFIED', checkinCode: `lf-${tag}-${RUN}` } });
+  };
+  const deskAt = async (clinicId: string, tag: string, extra: Record<string, unknown> = {}) => {
+    const ru = await user(`desk${tag}`, 'RECEPTIONIST', extra);
+    const rec = await prisma.receptionistProfile.create({ data: { userId: ru.id, clinicId, status: 'ACTIVE', phone: '+91 9800000003' } });
+    return { ru, rec, token: sign(ru) };
+  };
+  const doctorAt = async (clinicId: string, tag: string, fee: number) => {
+    const du = await user(`doc${tag}`, 'DOCTOR');
+    const doctor = await prisma.doctorProfile.create({ data: { userId: du.id, specialty: 'General Physician', qualifications: 'MBBS', consultationFee: 300, isVerified: true, verificationStatus: 'VERIFIED', slots: JSON.stringify([shift]), workingDays: days, cabinStatus: 'IN_CABIN' } });
+    await prisma.clinicDoctor.create({ data: { clinicId, doctorId: doctor.id, status: 'ACTIVE', consultationFee: fee, slots: JSON.stringify([shift]), workingDays: days } });
+    return { du, doctor, token: sign(du) };
+  };
+  const queueOf = (deskToken: string, doctorId: string) => call('GET', `/api/receptionist/doctors/${doctorId}/queue?date=${today}`, deskToken);
+
+  const clinicA = await clinicOf('A');
+  const clinicB = await clinicOf('B');
+  const DA = await doctorAt(clinicA.id, 'A', 450);
+  const DA2 = await doctorAt(clinicA.id, 'A2', 500);
+  const DB = await doctorAt(clinicB.id, 'B', 350);
+
+  // Desk assigned to doctor A: sees the queue with the clinic's own fee
+  const assigned = await deskAt(clinicA.id, 'assigned');
+  await prisma.doctorReceptionist.create({ data: { doctorId: DA.doctor.id, receptionistId: assigned.rec.id, status: 'ACTIVE' } });
+  const walk = await call('POST', '/api/receptionist/book-walkin', assigned.token, { doctorId: DA.doctor.id, patientName: `LF Walk ${RUN}`, patientPhone: '9811100009', slotId: shift.id });
+  const q = await queueOf(assigned.token, DA.doctor.id);
+  check(
+    walk.status === 201 && q.status === 200 && q.json?.data?.doctor?.id === DA.doctor.id && q.json?.data?.doctor?.consultationFee === 450 &&
+      (q.json?.data?.appointments || []).some((a: any) => a.id === walk.json?.data?.id),
+    'FIX-053: desk queue still shows the assigned doctor\'s patients and the clinic fee',
+    [walk.status, q.status, q.json?.data?.doctor?.consultationFee]
+  );
+
+  // Same desk, same clinic, but a doctor it isn't assigned to: refused
+  const notAssigned = await queueOf(assigned.token, DA2.doctor.id);
+  check(notAssigned.status === 403, 'FIX-053: desk queue refuses a doctor the desk isn\'t assigned to', notAssigned.status);
+
+  // Another clinic's doctor: refused
+  const otherClinic = await queueOf(assigned.token, DB.doctor.id);
+  check(otherClinic.status === 403, 'FIX-053: desk queue refuses another clinic\'s doctor', otherClinic.status);
+
+  // Unknown doctor: refused, same as before
+  const unknown = await queueOf(assigned.token, '00000000-0000-0000-0000-000000000000');
+  check(unknown.status === 403, 'FIX-053: desk queue refuses an unknown doctor', unknown.status);
+
+  // General desk (no assignments) covers every active doctor of its own clinic
+  const general = await deskAt(clinicA.id, 'general');
+  const gq = await queueOf(general.token, DA2.doctor.id);
+  check(gq.status === 200 && gq.json?.data?.doctor?.consultationFee === 500, 'FIX-053: general desk sees its clinic\'s doctors with the right fee', [gq.status, gq.json?.data?.doctor?.consultationFee]);
+
+  // Doctor removed from the clinic: refused
+  await prisma.clinicDoctor.update({ where: { clinicId_doctorId: { clinicId: clinicA.id, doctorId: DA2.doctor.id } }, data: { status: 'REMOVED' } });
+  const removed = await queueOf(general.token, DA2.doctor.id);
+  check(removed.status === 403, 'FIX-053: desk queue refuses a doctor who left the clinic', removed.status);
+
+  // Clinic suspended: desk locked out
+  await prisma.clinicProfile.update({ where: { id: clinicB.id }, data: { verificationStatus: 'SUSPENDED', isVerified: false } });
+  const deskB = await deskAt(clinicB.id, 'B');
+  const suspended = await queueOf(deskB.token, DB.doctor.id);
+  check(suspended.status === 403, 'FIX-053: desk of a suspended clinic can\'t open the queue', suspended.status);
+
+  // Temporary password not changed: queue and pending list both refused
+  const temp = await deskAt(clinicA.id, 'temp', { mustChangePassword: true });
+  const tempQueue = await queueOf(temp.token, DA.doctor.id);
+  const tempPending = await call('GET', '/api/receptionists/pending-appointments', temp.token);
+  check(tempQueue.status === 403 && tempPending.status === 403, 'FIX-053: desk with a temporary password can\'t open queue or pending list', [tempQueue.status, tempPending.status]);
+
+  // Password flag set after the token was issued (token still says false): still refused
+  await prisma.user.update({ where: { id: assigned.ru.id }, data: { mustChangePassword: true } });
+  const flagged = await queueOf(assigned.token, DA.doctor.id);
+  check(flagged.status === 403, 'FIX-053: desk queue re-checks the password flag in the database', flagged.status);
+
+  // Doctor queue says whose queue it is, so the screen can ignore other doctors' events
+  const dq = await call('GET', `/api/consultations/queue?date=${today}`, DA.token);
+  check(dq.status === 200 && dq.json?.data?.doctorId === DA.doctor.id, 'FIX-053: doctor queue response carries the doctor id', dq.json?.data?.doctorId);
+}
+
 async function main() {
   const server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -670,6 +763,9 @@ async function main() {
 
     // ---- Bug hunt fixes (FIX-052) ---------------------------------------------
     await bugHuntChecks();
+
+    // ---- Lighter desk and doctor screens (FIX-053) ------------------------------
+    await loadFixChecks();
 
     // ---- Long reports are complete (FIX-051: used to stop at 2000 without saying so) ----
     {

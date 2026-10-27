@@ -14,6 +14,10 @@ export interface AuthenticatedUser {
 
 export interface AuthRequest extends Request {
   user?: AuthenticatedUser;
+  /** Receptionist profile (with clinic) that requireActiveReceptionist loaded for this request. */
+  receptionistProfile?: any;
+  /** True once requireActiveReceptionist confirmed an active desk with no pending password change. */
+  deskAccessVerified?: boolean;
 }
 
 /**
@@ -186,6 +190,9 @@ export const requireActiveReceptionist = async (
       }
     }
 
+    // Hand the checked rows to the controller so it doesn't load them again
+    req.receptionistProfile = receptionist;
+    req.deskAccessVerified = !isBootstrapRoute;
     next();
   } catch (error: any) {
     console.error('requireActiveReceptionist error:', error);
