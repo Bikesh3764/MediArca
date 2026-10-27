@@ -227,6 +227,7 @@ async function main() {
     const called = await call('POST', '/api/consultations/call-patient', doctorToken, { appointmentId });
     appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
     check(called.status === 200 && appt?.status === 'IN_CONSULTATION', 'Doctor calls the patient into the cabin', called.json);
+    check(appt?.calledAt instanceof Date, 'Call-in time is saved for the live wait estimate (FIX-048)', appt?.calledAt);
 
     const inCabin = await prisma.appointment.count({ where: { doctorId: s.doctor.id, status: 'IN_CONSULTATION' } });
     check(inCabin === 1, 'Only one patient is in the cabin for this doctor', inCabin);
@@ -238,6 +239,11 @@ async function main() {
     const completed = await call('POST', '/api/consultations/complete', doctorToken, { appointmentId, clinicalNotes: 'Rest and fluids' });
     appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
     check(completed.status === 200 && appt?.status === 'COMPLETED', 'Doctor completes the visit', completed.json);
+    check(
+      appt?.completedAt instanceof Date && appt?.calledAt instanceof Date && appt.completedAt >= appt.calledAt,
+      'Finish time is saved after the call-in time (FIX-048)',
+      { calledAt: appt?.calledAt, completedAt: appt?.completedAt }
+    );
 
     const reCall = await call('POST', '/api/consultations/call-patient', doctorToken, { appointmentId });
     check(reCall.status >= 400, 'A completed visit cannot be called again', reCall.status);

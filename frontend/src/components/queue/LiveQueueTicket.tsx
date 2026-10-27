@@ -208,9 +208,8 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 <span className="text-[#0066cc] font-semibold sm:truncate">Called</span>
               ) : liveQueue?.isShiftPassed ? (
                 <span className="text-[#86868b] sm:truncate">Shift ended</span>
-              ) : isToday && liveQueue?.patientsAway === 0 && status === 'WAITING' ? (
-                <span className="text-[#0066cc] font-semibold sm:truncate">You’re next</span>
-              ) : isToday && liveQueue?.isShiftActive && liveQueue?.liveEstimatedTime ? (
+              ) : isToday && liveQueue?.liveEstimatedTime && /\d/.test(liveQueue.liveEstimatedTime) ? (
+                // Live time from the server (shift start, doctor away, real pace); "Ahead of you" says who's next
                 <span className="text-[#0066cc] sm:truncate">~{liveQueue.liveEstimatedTime}</span>
               ) : (
                 <span className="text-[#0066cc] sm:truncate">{estimatedTime || 'By queue'}</span>
@@ -487,14 +486,27 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                   </span>
                   <div className="mt-1.5">
                     <div className="text-xl sm:text-2xl font-semibold text-[#0066cc] tracking-tight">
-                      {liveQueue.estimatedWaitMinutes > 0 ? (
+                      {liveQueue.estimatedWaitMinutes >= 60 ? (
+                        <>
+                          ~{Math.floor(liveQueue.estimatedWaitMinutes / 60)} <span className="text-xs sm:text-sm font-semibold text-[#86868b]">hr</span>
+                          {liveQueue.estimatedWaitMinutes % 60 > 0 && (
+                            <> {liveQueue.estimatedWaitMinutes % 60} <span className="text-xs sm:text-sm font-semibold text-[#86868b]">min</span></>
+                          )}
+                        </>
+                      ) : liveQueue.estimatedWaitMinutes > 0 ? (
                         <>~{liveQueue.estimatedWaitMinutes} <span className="text-xs sm:text-sm font-semibold text-[#86868b]">min</span></>
                       ) : (
                         'Now'
                       )}
                     </div>
                     <p className="text-[11px] text-[#86868b] mt-0.5 font-normal">
-                      Approx.
+                      {liveQueue.delayReason === 'BEFORE_SHIFT'
+                        ? 'Shift not started'
+                        : liveQueue.delayReason === 'STEPPED_OUT'
+                        ? 'Doctor away'
+                        : liveQueue.delayReason === 'DOCTOR_NOT_IN'
+                        ? 'Doctor not in yet'
+                        : 'Approx.'}
                     </p>
                   </div>
                 </div>

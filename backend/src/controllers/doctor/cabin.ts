@@ -1,9 +1,10 @@
 import { Response } from 'express';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
-import { getIndianTimeMinutes, minutesTo12Hour, getLocalDateString } from '../../utils/scheduleUtils';
+import { getIndianTimeMinutes, minutesTo12Hour, getLocalDateString, parseDoctorSlots, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice, verifyReceptionistDoctorAccess } from '../../utils/authGuards';
 import { createNotification } from '../../services/notificationService';
+import { isShiftCurrent } from '../../utils/queueEta';
 
 /**
  * Update Doctor Presence / Cabin Status
@@ -147,9 +148,29 @@ export const updateCabinStatus = async (req: AuthRequest, res: Response): Promis
           },
         });
 
+        // Only patients whose own shift is on now (or starts within the hour).
+        // A morning patient still marked waiting must not hear about the evening shift.
+        const nowMinutes = getIndianTimeMinutes(new Date());
+        const affiliations =
+          typeof (prisma.clinicDoctor as any)?.findMany === 'function'
+            ? await prisma.clinicDoctor.findMany({
+                where: { doctorId: doctor.id },
+                select: { clinicId: true, slots: true },
+              })
+            : [];
+        const ownSlots = parseDoctorSlots(doctor);
+        const currentVisits = activeVisits.filter((v) => {
+          const aff = affiliations.find((a) => a.clinicId === v.clinicId);
+          const slots = (aff ? parseAffiliationSlots(aff.slots) : null) ?? ownSlots;
+          const slot =
+            slots.find((s) => v.slotId && s.id === v.slotId) ||
+            slots.find((s) => s.name === v.checkingWindow);
+          return isShiftCurrent(slot?.startTime, slot?.endTime, nowMinutes);
+        });
+
         const uniquePatientUserIds = Array.from(
           new Set(
-            activeVisits
+            currentVisits
               .map((v) => v.patient?.userId)
               .filter((uid): uid is string => Boolean(uid))
           )

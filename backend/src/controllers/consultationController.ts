@@ -298,7 +298,7 @@ export const executeCallPatientTransaction = async (
         status: { in: ['WAITING', 'IN_CONSULTATION'] },
         isCheckedIn: true,
       },
-      data: { status: 'IN_CONSULTATION' },
+      data: { status: 'IN_CONSULTATION', calledAt: new Date() },
     });
 
     if (updateResult.count === 0) {
@@ -580,6 +580,7 @@ export const executeCompleteConsultationAtomic = async (
     },
     data: {
       status: 'COMPLETED',
+      completedAt: new Date(),
       ...updateData,
     },
   });

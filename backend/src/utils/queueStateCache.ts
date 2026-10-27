@@ -18,6 +18,9 @@ export interface ActiveBatchAppointment {
   checkingWindow: string | null;
   queueNumber: number;
   status: string;
+  isCheckedIn?: boolean;
+  calledAt?: Date | null;
+  completedAt?: Date | null;
 }
 
 interface CacheEntry {

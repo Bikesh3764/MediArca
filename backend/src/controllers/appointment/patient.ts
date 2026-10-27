@@ -7,6 +7,7 @@ import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, is
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 import { resolveReceptionistContact } from './helpers';
+import { estimateQueueWait, minutesBetween } from '../../utils/queueEta';
 
 export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -270,7 +271,8 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
               where: {
                 doctorId: { in: doctorIds },
                 appointmentDate: { in: dates },
-                status: { in: ['WAITING', 'IN_CONSULTATION'] },
+                // COMPLETED rows give the doctor's real pace today for the wait estimate
+                status: { in: ['WAITING', 'IN_CONSULTATION', 'COMPLETED'] },
                 queueNumber: { gt: 0 },
               },
               select: {
@@ -281,6 +283,9 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
                 checkingWindow: true,
                 queueNumber: true,
                 status: true,
+                isCheckedIn: true,
+                calledAt: true,
+                completedAt: true,
               },
             })
           )
@@ -335,18 +340,20 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         );
         const currentServingQueueNumber = currentServingAppt?.queueNumber || 0;
 
-        // Count patients ahead waiting in this slot in memory from batch
-        const patientsAhead =
+        // Everyone in this shift (same doctor, day, clinic and shift) from the batch
+        const sameShift = activeBatchAppointments.filter((a) =>
+          a.doctorId === appt.doctorId &&
+          a.appointmentDate === appt.appointmentDate &&
+          (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
+          (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true)
+        );
+
+        // Patients still waiting ahead of this token (the one in the cabin is counted separately)
+        const waitingAhead =
           appt.status === 'IN_CONSULTATION'
-            ? 0
-            : activeBatchAppointments.filter((a) =>
-                a.doctorId === appt.doctorId &&
-                a.appointmentDate === appt.appointmentDate &&
-                (appt.clinicId ? a.clinicId === appt.clinicId : true) &&
-                (appt.slotId ? a.slotId === appt.slotId : appt.checkingWindow ? a.checkingWindow === appt.checkingWindow : true) &&
-                a.queueNumber > 0 &&
-                a.queueNumber < appt.queueNumber
-              ).length;
+            ? []
+            : sameShift.filter((a) => a.status === 'WAITING' && a.queueNumber > 0 && a.queueNumber < appt.queueNumber);
+        const patientsAhead = waitingAhead.length;
 
         // Check shift timing for today strictly using IST timezone (BUG-23)
         const slotStartMins = timeToMinutes(slot.startTime);
@@ -361,7 +368,30 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const isShiftPassed = isToday && currentMinutes >= slotEndMins;
         const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
 
-        const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : Math.round(patientsAhead * pace);
+        // Live estimate: shift start, doctor away or late, visit in progress and today's real pace
+        const servingElapsed =
+          currentServingAppt && currentServingAppt.queueNumber !== appt.queueNumber
+            ? minutesBetween(currentServingAppt.calledAt, now) ?? 0
+            : null;
+        const finishedDurations = sameShift
+          .filter((a) => a.status === 'COMPLETED')
+          .map((a) => minutesBetween(a.calledAt, a.completedAt))
+          .filter((d): d is number => d !== null);
+        const doctorCabin = (appt.doctor as any)?.cabinStatus as string | undefined;
+        const returnAt = (appt.doctor as any)?.expectedReturnTime as string | null | undefined;
+        const eta = estimateQueueWait({
+          nowMins: currentMinutes,
+          slotStartMins,
+          slotEndMins,
+          plannedPace: pace,
+          aheadArrived: waitingAhead.filter((a) => a.isCheckedIn).length,
+          aheadNotArrived: waitingAhead.filter((a) => !a.isCheckedIn).length,
+          inConsultationElapsedMins: servingElapsed,
+          recentDurations: finishedDurations,
+          cabinStatus: doctorCabin,
+          returnAtMins: returnAt && /\d{1,2}:\d{2}/.test(returnAt) ? timeToMinutes(returnAt) : null,
+        });
+        const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : eta.waitMinutes;
         const isYourTurn =
           appt.status === 'IN_CONSULTATION' ||
           (isToday && isShiftActive && currentServingQueueNumber > 0 && currentServingQueueNumber === appt.queueNumber);
@@ -372,7 +402,8 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         } else if (isToday) {
           if (isShiftPassed) {
             liveEstimatedTime = 'Shift Ended';
-          } else if (isShiftActive) {
+          } else {
+            // Before the shift too: token 1 shows the shift start, later tokens their live time
             liveEstimatedTime = minutesTo12Hour(currentMinutes + estWaitMinutes);
           }
         }
@@ -389,6 +420,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
             isShiftActive,
             isShiftPassed,
             liveEstimatedTime,
+            delayReason: isToday && appt.status === 'WAITING' ? eta.delayReason : null,
             estimatedQueueNumber: appt.queueNumber,
           },
         };
@@ -406,6 +438,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
 
         // Calculate estimated token / queue number for this shift based on confirmed queue numbers
         const confirmedForShift = activeBatchAppointments.filter((a) =>
+          a.status !== 'COMPLETED' &&
           a.doctorId === appt.doctorId &&
           a.appointmentDate === appt.appointmentDate &&
           (appt.clinicId ? a.clinicId === appt.clinicId : true) &&

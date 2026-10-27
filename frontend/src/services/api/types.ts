@@ -503,6 +503,8 @@ export interface Appointment {
     isShiftActive?: boolean;
     isShiftPassed?: boolean;
     liveEstimatedTime?: string;
+    /** Why the queue isn't moving yet (server: utils/queueEta.ts). */
+    delayReason?: 'BEFORE_SHIFT' | 'STEPPED_OUT' | 'DOCTOR_NOT_IN' | null;
     estimatedQueueNumber?: number;
   };
 }

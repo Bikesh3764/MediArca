@@ -207,6 +207,9 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
     }
 
     const updatePayload: any = { status };
+    // Visit times feed the live wait estimate (utils/queueEta.ts)
+    if (status === 'IN_CONSULTATION') updatePayload.calledAt = new Date();
+    if (status === 'COMPLETED') updatePayload.completedAt = new Date();
     let updated: any;
 
     if (status === 'IN_CONSULTATION') {

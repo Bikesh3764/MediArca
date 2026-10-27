@@ -10562,6 +10562,41 @@ Follow-up Date: 2026-10-15`;
     );
   }
 
+  // FIX-048: live wait estimate (shift start, doctor away/late, real pace) and cabin alerts only for the current shift
+  {
+    const { estimateQueueWait, learnPace, isShiftCurrent, DOCTOR_LATE_GRACE_MINS } = await import('../src/utils/queueEta');
+    const base = {
+      slotStartMins: 9 * 60, slotEndMins: 13 * 60, plannedPace: 10,
+      aheadArrived: 0, aheadNotArrived: 0, inConsultationElapsedMins: null as number | null,
+      recentDurations: [] as number[], cabinStatus: 'IN_CABIN', returnAtMins: null as number | null,
+    };
+    const early = estimateQueueWait({ ...base, nowMins: 8 * 60 });
+    assert(early.waitMinutes === 60 && early.delayReason === 'BEFORE_SHIFT', 'FIX-048: token 1 before the shift waits until the shift starts, not "now"');
+    const early3 = estimateQueueWait({ ...base, nowMins: 8 * 60, aheadNotArrived: 2 });
+    assert(early3.waitMinutes === 80, 'FIX-048: before the shift every token ahead counts fully');
+    const out = estimateQueueWait({ ...base, nowMins: 10 * 60, cabinStatus: 'STEPPED_OUT', returnAtMins: 10 * 60 + 25, aheadArrived: 1 });
+    assert(out.waitMinutes === 35 && out.delayReason === 'STEPPED_OUT', 'FIX-048: stepped-out doctor adds the time until the expected return');
+    const late = estimateQueueWait({ ...base, nowMins: 9 * 60 + 30, cabinStatus: 'NOT_IN_CABIN' });
+    assert(late.waitMinutes === DOCTOR_LATE_GRACE_MINS && late.delayReason === 'DOCTOR_NOT_IN', 'FIX-048: doctor not in during the shift adds a grace wait');
+    const lateButSeeing = estimateQueueWait({ ...base, nowMins: 9 * 60 + 30, cabinStatus: 'NOT_IN_CABIN', inConsultationElapsedMins: 4 });
+    assert(lateButSeeing.delayReason === null && lateButSeeing.waitMinutes === 6, 'FIX-048: a patient in the cabin means the doctor is in, whatever the switch says');
+    const overrun = estimateQueueWait({ ...base, nowMins: 10 * 60, inConsultationElapsedMins: 30 });
+    assert(overrun.waitMinutes === 3, 'FIX-048: a long visit still leaves a little time, never negative');
+    const halfSkip = estimateQueueWait({ ...base, nowMins: 10 * 60, aheadArrived: 1, aheadNotArrived: 2 });
+    assert(halfSkip.waitMinutes === 20, 'FIX-048: during the shift, patients ahead who have not arrived count half');
+    assert(learnPace(10, []) === 10, 'FIX-048: no finished visits keeps the planned pace');
+    assert(Math.abs(learnPace(10, [20, 20, 20]) - 15) < 0.01, 'FIX-048: three slow visits move the pace halfway to the real pace');
+    assert(learnPace(10, [500, -3]) === 10, 'FIX-048: impossible visit lengths are ignored');
+    assert(isShiftCurrent('09:00', '13:00', 14 * 60) === false, "FIX-048: no cabin alert after the patient's shift has ended");
+    assert(isShiftCurrent('09:00', '13:00', 8 * 60 + 15) === true, 'FIX-048: cabin alert within the hour before the shift');
+    assert(isShiftCurrent('05:00 PM', '08:00 PM', 13 * 60) === false, 'FIX-048: no evening-shift alert at 1 PM');
+    assert(isShiftCurrent(undefined, '13:00', 23 * 60) === true, 'FIX-048: unknown shift times still get alerts');
+    const cabinSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/doctor/cabin.ts'), 'utf8');
+    assert(cabinSrc.includes('isShiftCurrent(slot?.startTime, slot?.endTime, nowMinutes)'), "FIX-048: cabin alerts are filtered to the patient's current shift");
+    const ccSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/consultationController.ts'), 'utf8');
+    assert(ccSrc.includes('calledAt: new Date()') && ccSrc.includes('completedAt: new Date()'), 'FIX-048: call-in and finish times are recorded for the real pace');
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

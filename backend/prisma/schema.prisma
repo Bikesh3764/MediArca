@@ -113,6 +113,8 @@ model Appointment {
   patientGender   String?
   isCheckedIn     Boolean        @default(false)
   checkedInAt     DateTime?
+  calledAt        DateTime?      // When the patient was last called into the cabin (live wait estimate)
+  completedAt     DateTime?      // When the visit finished (doctor's real pace for the wait estimate)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
