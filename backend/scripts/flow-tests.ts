@@ -477,6 +477,137 @@ async function loadFixChecks() {
   );
 }
 
+/**
+ * FIX-056: self-service account deletion. Password needed, live bookings block it,
+ * the clinic takes its desk logins along, old sessions stop working, demo accounts are locked.
+ */
+async function deleteAccountChecks() {
+  const pass = 'Delete-Me-Pass-1';
+  const hash = await bcrypt.hash(pass, 4);
+  const today = getLocalDateString();
+  const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
+  let n = 0;
+  const user = (who: string, role: string) =>
+    prisma.user.create({ data: { email: email(`del${++n}${who}`), passwordHash: hash, fullName: `Del ${who} ${RUN} ${n}`, role, phone: '+91 9800000009' } });
+  const gone = async (id: string) => (await prisma.user.findUnique({ where: { id } })) === null;
+  const appt = (patientId: string, doctorId: string, clinicId: string | null, date: string, q: number, status: string) =>
+    prisma.appointment.create({
+      data: { patientId, doctorId, clinicId, appointmentDate: date, queueNumber: q, slotId: `del-${RUN}`, checkingWindow: 'Shift 1', estimatedTime: '10:00 AM', status, paymentStatus: 'PAID' },
+    });
+
+  const cu = await user('clinic', 'CLINIC');
+  const clinic = await prisma.clinicProfile.create({ data: { userId: cu.id, clinicName: `Del Clinic ${RUN}`, address: 'x', city: 'Pune', state: 'Maharashtra', isVerified: true, verificationStatus: 'VERIFIED', checkinCode: `del-${RUN}` } });
+  const du = await user('doctor', 'DOCTOR');
+  const doctor = await prisma.doctorProfile.create({ data: { userId: du.id, specialty: 'General Physician', qualifications: 'MBBS', isVerified: true, verificationStatus: 'VERIFIED' } });
+  await prisma.clinicDoctor.create({ data: { clinicId: clinic.id, doctorId: doctor.id, status: 'ACTIVE' } });
+  const ru = await user('desk', 'RECEPTIONIST');
+  const rec = await prisma.receptionistProfile.create({ data: { userId: ru.id, clinicId: clinic.id, status: 'ACTIVE' } });
+  await prisma.doctorReceptionist.create({ data: { doctorId: doctor.id, receptionistId: rec.id } });
+  const pu = await user('patient', 'PATIENT');
+  const patient = await prisma.patientProfile.create({ data: { userId: pu.id } });
+  const pToken = sign(pu);
+
+  // Who can call it, and with what
+  const noAuth = await call('DELETE', '/api/auth/account', undefined, { password: pass });
+  check(noAuth.status === 401, 'Delete account needs a signed-in user', noAuth.status);
+  const noPass = await call('DELETE', '/api/auth/account', pToken, {});
+  check(noPass.status === 400, 'Delete account needs the password', noPass.json);
+  const wrong = await call('DELETE', '/api/auth/account', pToken, { password: 'not-my-password' });
+  check(wrong.status === 400 && wrong.json?.code === 'WRONG_PASSWORD' && !(await gone(pu.id)), 'A wrong password deletes nothing', wrong.json);
+
+  // A live booking blocks it; a cancelled one or a stale one from yesterday doesn't
+  const live = await appt(patient.id, doctor.id, clinic.id, today, 1, 'WAITING');
+  const blocked = await call('DELETE', '/api/auth/account', pToken, { password: pass });
+  check(blocked.status === 409 && blocked.json?.code === 'ACTIVE_BOOKINGS' && !(await gone(pu.id)), 'A patient with an upcoming token cannot delete the account', blocked.json);
+  const docBlocked = await call('DELETE', '/api/auth/account', sign(du), { password: pass });
+  check(docBlocked.status === 409 && !(await gone(du.id)), 'A doctor with booked patients cannot delete the account', docBlocked.json);
+  const clinicBlocked = await call('DELETE', '/api/auth/account', sign(cu), { password: pass });
+  check(clinicBlocked.status === 409 && !(await gone(cu.id)), 'A clinic with booked patients cannot delete the account', clinicBlocked.json);
+  await prisma.appointment.update({ where: { id: live.id }, data: { status: 'CANCELLED' } });
+  await appt(patient.id, doctor.id, clinic.id, yesterday, 1, 'WAITING');
+
+  await wait(1100); // tokens count whole seconds
+  const freshPatientToken = sign(pu);
+  const okPatient = await call('DELETE', '/api/auth/account', pToken, { password: pass });
+  check(okPatient.status === 200 && (await gone(pu.id)), 'Patient deletes the account with the right password', okPatient.json);
+  check(
+    (await prisma.patientProfile.findUnique({ where: { id: patient.id } })) === null && (await prisma.appointment.count({ where: { patientId: patient.id } })) === 0,
+    "The patient's profile and visits are removed",
+    null
+  );
+  const afterOld = await call('GET', '/api/auth/me', pToken);
+  const afterFresh = await call('GET', '/api/auth/me', freshPatientToken);
+  check(afterOld.status === 401 && afterFresh.status === 401, 'Every session of a deleted account stops working', [afterOld.status, afterFresh.status]);
+  const relogin = await call('POST', '/api/auth/login', undefined, { email: pu.email, password: pass, role: 'PATIENT' });
+  check(relogin.status >= 400 && !relogin.json?.data?.token, 'A deleted account cannot sign in', relogin.status);
+
+  // Too many wrong passwords lock deletion, even with the right one afterwards
+  const pu2 = await user('patient2', 'PATIENT');
+  await prisma.patientProfile.create({ data: { userId: pu2.id } });
+  const p2Token = sign(pu2);
+  for (let i = 0; i < 5; i++) await call('DELETE', '/api/auth/account', p2Token, { password: `wrong-${i}` });
+  const locked = await call('DELETE', '/api/auth/account', p2Token, { password: pass });
+  check(locked.status === 429 && !(await gone(pu2.id)), 'Five wrong passwords lock account deletion', locked.json);
+  const stillSignsIn = await call('POST', '/api/auth/login', undefined, { email: pu2.email, password: pass, role: 'PATIENT' });
+  check(stillSignsIn.status === 200, 'The deletion lock does not lock the owner out of signing in', stillSignsIn.json?.message);
+
+  // Doctor: links go, the clinic stays
+  const okDoctor = await call('DELETE', '/api/auth/account', sign(du), { password: pass });
+  check(okDoctor.status === 200 && (await gone(du.id)), 'Doctor deletes the account once no patients are booked', okDoctor.json);
+  check(
+    (await prisma.clinicDoctor.count({ where: { doctorId: doctor.id } })) === 0 &&
+      (await prisma.doctorReceptionist.count({ where: { doctorId: doctor.id } })) === 0 &&
+      !(await gone(cu.id)),
+    "The doctor's clinic and desk links are removed; the clinic stays",
+    null
+  );
+
+  // Clinic: its desk logins go too; doctors stay and keep past visits
+  const du2 = await user('doctor2', 'DOCTOR');
+  const doctor2 = await prisma.doctorProfile.create({ data: { userId: du2.id, specialty: 'General Physician', qualifications: 'MBBS', isVerified: true, verificationStatus: 'VERIFIED' } });
+  await prisma.clinicDoctor.create({ data: { clinicId: clinic.id, doctorId: doctor2.id, status: 'ACTIVE' } });
+  const pu3 = await user('patient3', 'PATIENT');
+  const patient3 = await prisma.patientProfile.create({ data: { userId: pu3.id } });
+  const pastVisit = await appt(patient3.id, doctor2.id, clinic.id, yesterday, 2, 'COMPLETED');
+  const deskToken = sign(ru);
+  const okClinic = await call('DELETE', '/api/auth/account', sign(cu), { password: pass });
+  check(okClinic.status === 200 && (await gone(cu.id)), 'Clinic deletes the account', okClinic.json);
+  check((await gone(ru.id)) && (await prisma.receptionistProfile.findUnique({ where: { id: rec.id } })) === null, "The clinic's front desk login is removed with it", null);
+  const deskAfter = await call('GET', '/api/auth/me', deskToken);
+  check(deskAfter.status === 401, "The removed desk's session stops working", deskAfter.status);
+  const keptVisit = await prisma.appointment.findUnique({ where: { id: pastVisit.id } });
+  check(Boolean(keptVisit) && keptVisit?.clinicId === null && !(await gone(du2.id)), 'Doctors stay and keep past visits when a clinic is deleted', keptVisit);
+
+  // Receptionist and admin
+  const cu2 = await user('clinic2', 'CLINIC');
+  const clinic2 = await prisma.clinicProfile.create({ data: { userId: cu2.id, clinicName: `Del Clinic2 ${RUN}`, address: 'x', isVerified: true, verificationStatus: 'VERIFIED', checkinCode: `del2-${RUN}` } });
+  const ru2 = await user('desk2', 'RECEPTIONIST');
+  await prisma.receptionistProfile.create({ data: { userId: ru2.id, clinicId: clinic2.id, status: 'ACTIVE' } });
+  const okDesk = await call('DELETE', '/api/auth/account', sign(ru2), { password: pass });
+  check(okDesk.status === 200 && (await gone(ru2.id)) && !(await gone(cu2.id)), 'Receptionist deletes their own login; the clinic stays', okDesk.json);
+
+  const au = await user('admin', 'ADMIN');
+  const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+  const okAdmin = await call('DELETE', '/api/auth/account', sign(au), { password: pass });
+  if (adminCount > 1) check(okAdmin.status === 200 && (await gone(au.id)), 'An admin can delete their login when another admin exists', okAdmin.json);
+  else check(okAdmin.status === 409 && okAdmin.json?.code === 'LAST_ADMIN', 'The only admin cannot delete their login', okAdmin.json);
+
+  // Demo accounts are locked
+  const demoUser = await user('demo', 'PATIENT');
+  await prisma.patientProfile.create({ data: { userId: demoUser.id } });
+  const savedDemoList = process.env.DEMO_ACCOUNT_EMAILS;
+  process.env.DEMO_ACCOUNT_EMAILS = demoUser.email;
+  const demoDelete = await call('DELETE', '/api/auth/account', sign(demoUser), { password: pass });
+  if (savedDemoList === undefined) delete process.env.DEMO_ACCOUNT_EMAILS;
+  else process.env.DEMO_ACCOUNT_EMAILS = savedDemoList;
+  check(demoDelete.status === 403 && !(await gone(demoUser.id)), 'Demo accounts cannot be deleted', demoDelete.json);
+
+  // Same email, other role: untouched
+  const twin = await prisma.user.create({ data: { email: pu3.email, passwordHash: hash, fullName: `Twin ${RUN}`, role: 'DOCTOR' } });
+  const okP3 = await call('DELETE', '/api/auth/account', sign(pu3), { password: pass });
+  check(okP3.status === 200 && (await gone(pu3.id)) && !(await gone(twin.id)), "Deleting one role keeps the same email's other accounts", okP3.json);
+}
+
 async function main() {
   const server = http.createServer(app);
   await new Promise<void>((resolve) => server.listen(0, resolve));
@@ -814,6 +945,9 @@ async function main() {
 
     // ---- Lighter desk and doctor screens (FIX-053) ------------------------------
     await loadFixChecks();
+
+    // ---- Delete account (FIX-056) ----------------------------------------------
+    await deleteAccountChecks();
 
     // ---- Long reports are complete (FIX-051: used to stop at 2000 without saying so) ----
     {

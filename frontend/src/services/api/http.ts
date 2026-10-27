@@ -36,6 +36,7 @@ export async function handleResponse<T>(res: Response): Promise<T> {
         `Request failed with status ${res.status}${res.statusText ? `: ${res.statusText}` : ''}`
     );
     error.status = res.status;
+    if (typeof data?.code === 'string') error.code = data.code;
     if (data?.requiresVerification) {
       error.requiresVerification = true;
       error.email = data.email;

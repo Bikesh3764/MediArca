@@ -35,10 +35,10 @@ export const useAdminDashboardState = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<any | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get('tab') as 'doctors' | 'clinics' | 'appointments' | 'messages' | null;
-  const activeTab: 'doctors' | 'clinics' | 'appointments' | 'messages' =
-    urlTab && ['doctors', 'clinics', 'appointments', 'messages'].includes(urlTab) ? urlTab : 'doctors';
-  const setActiveTab = (tab: 'doctors' | 'clinics' | 'appointments' | 'messages') => {
+  const urlTab = searchParams.get('tab') as 'doctors' | 'clinics' | 'appointments' | 'messages' | 'account' | null;
+  const activeTab: 'doctors' | 'clinics' | 'appointments' | 'messages' | 'account' =
+    urlTab && ['doctors', 'clinics', 'appointments', 'messages', 'account'].includes(urlTab) ? urlTab : 'doctors';
+  const setActiveTab = (tab: 'doctors' | 'clinics' | 'appointments' | 'messages' | 'account') => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('tab', tab);

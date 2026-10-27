@@ -1,5 +1,6 @@
 import { AvatarImage } from '../../components/ui/AvatarImage';
 import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
+import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -502,6 +503,7 @@ export const ClinicProfile: React.FC = () => {
         </form>
 
         <ChangePasswordCard />
+        <DeleteAccountCard />
       </div>
 
       {/* Avatar Crop & Frame Modal */}

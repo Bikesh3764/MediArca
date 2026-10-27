@@ -1,5 +1,7 @@
 import React from 'react';
-import { Stethoscope, Building2, CalendarDays, Mail } from 'lucide-react';
+import { Stethoscope, Building2, CalendarDays, Mail, UserCircle } from 'lucide-react';
+import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
+import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import { DashboardLayout, DashboardNavItem } from '../../components/layout/DashboardLayout';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import { useAdminDashboardState, AdminDashboardContext } from './dashboard/state';
@@ -16,6 +18,7 @@ const TAB_TITLES: Record<string, string> = {
   clinics: 'Clinics',
   appointments: 'Bookings',
   messages: 'Messages',
+  account: 'Account',
 };
 
 export const AdminDashboard: React.FC = () => {
@@ -44,6 +47,7 @@ export const AdminDashboard: React.FC = () => {
     { id: 'clinics', label: 'Clinics', icon: Building2, active: activeTab === 'clinics', onClick: () => setActiveTab('clinics'), badge: pendingClinics || undefined },
     { id: 'appointments', label: 'Bookings', icon: CalendarDays, active: activeTab === 'appointments', onClick: () => setActiveTab('appointments') },
     { id: 'messages', label: 'Messages', icon: Mail, active: activeTab === 'messages', onClick: () => setActiveTab('messages'), badge: newMessages || undefined },
+    { id: 'account', label: 'Account', icon: UserCircle, active: activeTab === 'account', onClick: () => setActiveTab('account') },
   ];
 
   const kpis = [
@@ -63,6 +67,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            {activeTab !== 'account' && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {kpis.map((k) => (
                 <UtilityCard key={k.label}>
@@ -72,11 +77,18 @@ export const AdminDashboard: React.FC = () => {
                 </UtilityCard>
               ))}
             </div>
+            )}
 
             {activeTab === 'doctors' && <DoctorsTab />}
             {activeTab === 'clinics' && <ClinicsTab />}
             {activeTab === 'appointments' && <AppointmentsTab />}
             {activeTab === 'messages' && <MessagesTab />}
+            {activeTab === 'account' && (
+              <div className="max-w-2xl space-y-6">
+                <ChangePasswordCard />
+                <DeleteAccountCard />
+              </div>
+            )}
           </div>
         )}
 

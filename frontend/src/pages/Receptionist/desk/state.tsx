@@ -9,7 +9,7 @@ import { isEventForDoctors } from '../../../utils/liveRefresh';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 import { DashboardNavItem } from '../../../components/layout/DashboardLayout';
-import { Clock, UserPlus, Stethoscope, ShieldCheck, Bell } from 'lucide-react';
+import { Clock, UserPlus, Stethoscope, ShieldCheck, Bell, UserCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 import { TokenPassData, cleanDoctorName, cleanShiftDisplayName } from './helpers';
@@ -30,10 +30,10 @@ export const useReceptionistDashboardState = () => {
   const [data, setData] = useState<ReceptionistDashboardData | null>(null);
   const [, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get('tab') as 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' | null;
-  const activeTab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' =
-    urlTab && ['queue', 'walkin', 'pending', 'doctors', 'notifications'].includes(urlTab) ? urlTab : 'queue';
-  const setActiveTab = (tab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications') => {
+  const urlTab = searchParams.get('tab') as 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' | 'account' | null;
+  const activeTab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' | 'account' =
+    urlTab && ['queue', 'walkin', 'pending', 'doctors', 'notifications', 'account'].includes(urlTab) ? urlTab : 'queue';
+  const setActiveTab = (tab: 'queue' | 'walkin' | 'pending' | 'doctors' | 'notifications' | 'account') => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.set('tab', tab);
@@ -719,6 +719,13 @@ export const useReceptionistDashboardState = () => {
       active: activeTab === 'notifications',
       onClick: () => setActiveTab('notifications'),
       badge: unreadNotifCount > 0 ? unreadNotifCount : undefined,
+    },
+    {
+      id: 'account',
+      label: 'Account',
+      icon: UserCircle,
+      active: activeTab === 'account',
+      onClick: () => setActiveTab('account'),
     },
   ];
   const displayLocation = formatClinicAddress(data?.clinic, { withState: false });

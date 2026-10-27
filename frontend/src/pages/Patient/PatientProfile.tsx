@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
+import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import { SubNav } from '../../components/layout/SubNav';
 import { useAuth } from '../../context/AuthContext';
 import { api, getLocalDateString } from '../../services/api';
@@ -257,6 +258,7 @@ export const PatientProfile: React.FC = () => {
         </form>
 
         <ChangePasswordCard />
+        <DeleteAccountCard />
       </div>
     </div>
   );

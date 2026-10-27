@@ -10684,6 +10684,39 @@ Follow-up Date: 2026-10-15`;
     assert(modalSrc.includes('reportData?.truncated') && modalSrc.includes('Export CSV has all.'), 'FIX-051: report window warns when cut and keeps the full list for CSV');
   }
 
+  // FIX-056: self-service account deletion needs the password and is safe for live queues
+  {
+    const delSrc = fs.readFileSync(path.join(__dirname, '../src/controllers/auth/deleteAccount.ts'), 'utf8');
+    const routesSrc = fs.readFileSync(path.join(__dirname, '../src/routes/authRoutes.ts'), 'utf8');
+    const serverSrc = fs.readFileSync(path.join(__dirname, '../src/server.ts'), 'utf8');
+    assert(
+      routesSrc.includes("router.delete('/account', authenticate, blockDemoAccountChanges, deleteOwnAccount)"),
+      'FIX-056: delete account route needs sign-in and is blocked for demo accounts'
+    );
+    assert(serverSrc.includes("'/api/auth/account'], authRateLimiter(10, 60)"), 'FIX-056: delete account is rate limited');
+    assert(
+      delSrc.includes('verifyPassword(password, user.passwordHash)') &&
+        delSrc.includes("recordFailedAttempt(DELETE_NAMESPACE, userId, null, MAX_DELETE_ATTEMPTS, DELETE_LOCKOUT_SECONDS)") &&
+        delSrc.includes('const MAX_DELETE_ATTEMPTS = 5;'),
+      'FIX-056: deletion checks the current password and locks after 5 wrong tries'
+    );
+    assert(
+      delSrc.includes('prisma.$transaction') &&
+        delSrc.includes('FOR UPDATE') &&
+        delSrc.includes("const ACTIVE_STATUSES = ['PENDING_APPROVAL', 'WAITING', 'IN_CONSULTATION'];") &&
+        delSrc.includes("appointmentDate: { gte: today }"),
+      'FIX-056: live bookings block deletion inside one locked transaction'
+    );
+    assert(delSrc.includes("new Blocked('LAST_ADMIN'"), 'FIX-056: the only admin cannot delete themselves');
+    assert(delSrc.includes('markPasswordChanged(userId, now)') && delSrc.includes('ownAvatarKey(owner.avatarUrl, owner.id)'), 'FIX-056: deletion ends old sessions and removes only own photos');
+    const cardSrc = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/auth/DeleteAccountCard.tsx'), 'utf8');
+    assert(cardSrc.includes('api.deleteAccount(password)') && cardSrc.includes('autoComplete="current-password"'), 'FIX-056: Delete account card asks for the password');
+    for (const page of ['Patient/PatientProfile.tsx', 'Doctor/DoctorProfile.tsx', 'Clinic/ClinicProfile.tsx', 'Receptionist/ReceptionistDashboard.tsx', 'Admin/AdminDashboard.tsx']) {
+      const src = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages', page), 'utf8');
+      assert(src.includes('<DeleteAccountCard />'), `FIX-056: ${page} offers Delete account`);
+    }
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

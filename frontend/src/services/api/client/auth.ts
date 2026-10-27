@@ -60,6 +60,15 @@ export const authApi = {
     return handleResponse(res);
   },
 
+  async deleteAccount(password: string): Promise<unknown> {
+    const res = await safeFetch(`${API_BASE_URL}/auth/account`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse(res);
+  },
+
   async login(body: any): Promise<{ user: User; token: string }> {
     const res = await safeFetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',

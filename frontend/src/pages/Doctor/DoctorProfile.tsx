@@ -1,5 +1,6 @@
 import { AvatarImage } from '../../components/ui/AvatarImage';
 import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
+import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { api, getFileUrl, ALL_SPECIALTIES } from '../../services/api';
@@ -385,6 +386,7 @@ export const DoctorProfile: React.FC = () => {
         </form>
 
         <ChangePasswordCard />
+        <DeleteAccountCard />
       </div>
 
       <AvatarCropModal

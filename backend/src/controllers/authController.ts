@@ -5,3 +5,4 @@ export * from './auth/login';
 export * from './auth/otp';
 export * from './auth/profile';
 export * from './auth/password';
+export * from './auth/deleteAccount';

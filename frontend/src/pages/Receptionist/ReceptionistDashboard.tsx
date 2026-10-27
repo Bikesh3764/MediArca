@@ -17,6 +17,8 @@ import { NotificationsTab } from './desk/NotificationsTab';
 import { BookedPassModal } from './desk/BookedPassModal';
 import { PasswordChangeModal } from './desk/PasswordChangeModal';
 import { RescheduleModal } from './desk/RescheduleModal';
+import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
+import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 export const ReceptionistDashboard: React.FC = () => {
   const state = useReceptionistDashboardState();
   const {
@@ -111,7 +113,15 @@ export const ReceptionistDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === 'account' && (
+          <div className="max-w-2xl space-y-6">
+            <ChangePasswordCard />
+            <DeleteAccountCard />
+          </div>
+        )}
+
         {/* Primary Workspace Container */}
+        {activeTab !== 'account' && (
         <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 sm:p-7">
           {/* TAB 1: LIVE QUEUE (Primary Front Desk View) */}
           {activeTab === 'queue' && (
@@ -138,6 +148,7 @@ export const ReceptionistDashboard: React.FC = () => {
             <NotificationsTab />
           )}
         </div>
+        )}
       </div>
 
       {/* 3. Guaranteed Queue Token Pass Modal */}

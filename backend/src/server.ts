@@ -469,7 +469,7 @@ app.use(['/api/auth/verify-otp'], authRateLimiter(10, 60));
 app.use(['/api/auth/resend-otp', '/api/auth/forgot-password'], authRateLimiter(5, 60));
 // Code emails across resend and reset: 15 an hour per visitor (FIX-044)
 app.use(['/api/auth/resend-otp', '/api/auth/forgot-password'], authRateLimiter(15, 3600, 'otp-email'));
-app.use(['/api/auth/reset-password', '/api/auth/change-password'], authRateLimiter(10, 60));
+app.use(['/api/auth/reset-password', '/api/auth/change-password', '/api/auth/account'], authRateLimiter(10, 60));
 
 // Rate Limiting for public directory & queue preview endpoints (Finding #33)
 // Public catalog paths use the in-process counter (no Redis round trip): see PUBLIC_CATALOG_LIMIT_KEYS
