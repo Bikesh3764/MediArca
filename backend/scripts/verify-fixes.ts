@@ -10021,11 +10021,11 @@ Follow-up Date: 2026-10-15`;
 
   assert(
     updatedClinicControllerContent.includes('MAX_REPORT_DAYS = 90') &&
-    updatedClinicControllerContent.includes('take: 2000') &&
+    updatedClinicControllerContent.includes('take: REPORT_MAX_ROWS + 1') &&
     updatedDoctorControllerContent.includes('MAX_REPORT_DAYS = 90') &&
-    updatedDoctorControllerContent.includes('take: 2000') &&
+    updatedDoctorControllerContent.includes('take: REPORT_MAX_ROWS + 1') &&
     updatedReceptionistControllerContent.includes('MAX_REPORT_DAYS = 90') &&
-    updatedReceptionistControllerContent.includes('take: 2000'),
+    updatedReceptionistControllerContent.includes('take: REPORT_MAX_ROWS + 1'),
     'Fix 25: Clinical report endpoints enforce 90-day (3-month) maximum date range clamp and safe query limits'
   );
 
@@ -10655,6 +10655,22 @@ Follow-up Date: 2026-10-15`;
     assert(serverSrc.includes('startDbBackupSchedule();'), 'FIX-050: live server starts the nightly backup');
     const dockerSrc = fs.readFileSync(path.join(__dirname, '../Dockerfile'), 'utf8');
     assert(dockerSrc.includes('postgresql17-client'), 'FIX-050: server image includes pg_dump 17 (matches Supabase Postgres 17)');
+  }
+
+  // FIX-051: visit reports no longer stop at 2000 without saying so
+  {
+    const { REPORT_MAX_ROWS, capReportRows } = await import('../src/utils/reportLimits');
+    assert(REPORT_MAX_ROWS >= 20000 && REPORT_MAX_ROWS <= 50000, 'FIX-051: reports hold 20,000 visits (was 2000) and stay bounded for the server');
+    const under = capReportRows(Array.from({ length: 2500 }, (_, i) => i));
+    assert(under.rows.length === 2500 && under.truncated === false, 'FIX-051: 2500 visits all come back, nothing cut');
+    const over = capReportRows(Array.from({ length: REPORT_MAX_ROWS + 1 }, (_, i) => i));
+    assert(over.rows.length === REPORT_MAX_ROWS && over.truncated === true, 'FIX-051: past the limit the report says it was cut');
+    for (const rel of ['doctor/report.ts', 'clinic/profile.ts', 'receptionist/report.ts']) {
+      const src = fs.readFileSync(path.join(__dirname, '../src/controllers', rel), 'utf8');
+      assert(!src.includes('take: 2000') && src.includes('take: REPORT_MAX_ROWS + 1') && src.includes('truncated: reportTruncated'), `FIX-051: ${rel} returns every visit and flags a cut-off`);
+    }
+    const modalSrc = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/common/ClinicalReportModal.tsx'), 'utf8');
+    assert(modalSrc.includes('reportData?.truncated') && modalSrc.includes('Export CSV has all.'), 'FIX-051: report window warns when cut and keeps the full list for CSV');
   }
 
   console.log(`\n========================================`);

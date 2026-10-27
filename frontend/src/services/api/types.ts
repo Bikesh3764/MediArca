@@ -207,6 +207,9 @@ export interface ClinicalReportData {
   byClinic?: ClinicalReportClinicBreakdown[];
   byShift?: ClinicalReportShiftBreakdown[];
   appointments: ClinicalReportAppointment[];
+  /** More visits than maxRows in this period; only the newest maxRows were sent (FIX-051) */
+  truncated?: boolean;
+  maxRows?: number;
 }
 
 export interface ClinicDashboardData {

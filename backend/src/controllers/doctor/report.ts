@@ -3,6 +3,7 @@ import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { parseDoctorSlots, getLocalDateString, cleanSlotName, parseAffiliationSlots } from '../../utils/scheduleUtils';
 import { isDoctorEligibleForClinicalPractice } from '../../utils/authGuards';
+import { REPORT_MAX_ROWS, capReportRows } from '../../utils/reportLimits';
 
 /**
  * Generate comprehensive categorized 1-month / custom range report for Doctor
@@ -90,10 +91,10 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       whereClause.clinicId = clinicId;
     }
 
-    const appointments = await prisma.appointment.findMany({
+    const foundAppointments = await prisma.appointment.findMany({
       where: whereClause,
       include: {
-        clinic: true,
+        clinic: { select: { clinicName: true, city: true } },
         patient: {
           include: {
             user: { select: { fullName: true, phone: true } },
@@ -104,8 +105,9 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
         { appointmentDate: 'desc' },
         { queueNumber: 'asc' },
       ],
-      take: 2000,
+      take: REPORT_MAX_ROWS + 1,
     });
+    const { rows: appointments, truncated: reportTruncated } = capReportRows(foundAppointments);
 
     // Clinic fee and slot mapping
     const clinicFeeMap = new Map<string, number>();
@@ -233,6 +235,8 @@ export const getDoctorReport = async (req: AuthRequest, res: Response): Promise<
       },
       byClinic: Array.from(clinicBreakdownMap.values()).filter((c) => (clinicId && clinicId !== 'all' ? c.clinicId === clinicId : true)),
       byShift: Array.from(shiftBreakdownMap.values()).sort((a, b) => a.shiftName.localeCompare(b.shiftName)),
+      truncated: reportTruncated,
+      maxRows: REPORT_MAX_ROWS,
       appointments: items,
     });
   } catch (error: any) {

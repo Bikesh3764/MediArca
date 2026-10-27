@@ -490,6 +490,41 @@ async function main() {
     );
     const demoChange = await call('PUT', '/api/auth/change-password', demoToken, { currentPassword: 'x', newPassword: 'Whatever-123' });
     check(demoChange.status === 403, 'Demo accounts cannot change their password', demoChange.status);
+
+    // ---- Long reports are complete (FIX-051: used to stop at 2000 without saying so) ----
+    {
+      const profile = await prisma.patientProfile.findUnique({ where: { userId: s.patientUser.id } });
+      const dayStr = (back: number) => {
+        const d = new Date(`${s.today}T00:00:00Z`);
+        d.setUTCDate(d.getUTCDate() - back);
+        return d.toISOString().slice(0, 10);
+      };
+      const rows: any[] = [];
+      for (let day = 10; day < 51; day++) {
+        for (let q = 1; q <= 50; q++) {
+          rows.push({
+            patientId: profile!.id, doctorId: s.doctor.id, clinicId: s.clinic.id, appointmentDate: dayStr(day),
+            queueNumber: q, slotId: 'flow-report', checkingWindow: 'Shift 1', estimatedTime: '10:00 AM',
+            status: 'COMPLETED', paymentStatus: 'PAID', patientName: `Report ${RUN} ${q}`,
+          });
+        }
+      }
+      await prisma.appointment.createMany({ data: rows });
+      const range = `startDate=${dayStr(60)}&endDate=${s.today}`;
+      const expected = await prisma.appointment.count({ where: { doctorId: s.doctor.id, appointmentDate: { gte: dayStr(60), lte: s.today } } });
+      check(expected > 2000, 'Report test has more than 2000 visits', expected);
+      for (const [who, path, token] of [
+        ['Doctor', `/api/doctors/me/report?${range}`, doctorToken],
+        ['Clinic', `/api/clinics/report?${range}`, clinicToken],
+        ['Desk', `/api/receptionist/report?${range}`, deskToken],
+      ] as const) {
+        const r = await call('GET', path, token);
+        const ok = r.status === 200 && r.json?.appointments?.length === expected && r.json?.summary?.totalBookings === expected && r.json?.truncated === false;
+        check(ok, `${who} report includes all ${expected} visits, not just 2000`, [r.status, r.json?.appointments?.length, r.json?.summary?.totalBookings, r.json?.truncated, r.json?.message]);
+      }
+      const doctorReport = await call('GET', `/api/doctors/me/report?${range}`, doctorToken);
+      check(doctorReport.json?.summary?.totalRevenue >= 2050 * 300, 'Report earnings count every paid visit', doctorReport.json?.summary?.totalRevenue);
+    }
   } finally {
     await cleanup().catch((e) => console.error('cleanup failed', e));
     server.close();

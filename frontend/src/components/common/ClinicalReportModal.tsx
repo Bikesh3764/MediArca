@@ -22,6 +22,9 @@ import { api, ClinicalReportData } from '../../services/api';
 
 export type ReportRole = 'CLINIC' | 'DOCTOR' | 'RECEPTIONIST';
 
+// Long reports: the table shows the newest rows only; Export CSV has every visit (FIX-051)
+const TABLE_ROWS = 300;
+
 interface ClinicalReportModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -574,6 +577,12 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
             </div>
           ) : (
             <>
+              {reportData?.truncated && (
+                <div className="p-3 rounded-2xl bg-danger-soft border border-danger-line text-xs text-danger">
+                  Too many visits. Showing the newest {(reportData.maxRows ?? 0).toLocaleString('en-IN')}. Choose fewer days for the full list.
+                </div>
+              )}
+
               {/* 1. Summary Cards Strip */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 print:grid-cols-4 print:gap-3">
                 <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] print:bg-white print:border print:border-[#d2d2d7]">
@@ -772,7 +781,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#f0f0f2]">
-                        {filteredAppointments.map((appt) => (
+                        {filteredAppointments.slice(0, TABLE_ROWS).map((appt) => (
                           <tr key={appt.id} className="hover:bg-[#f5f5f7]/60">
                             <td className="py-3 pl-2 font-semibold text-[#0066cc]">
                               #{appt.queueNumber}
@@ -825,6 +834,11 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                         ))}
                       </tbody>
                     </table>
+                    {filteredAppointments.length > TABLE_ROWS && (
+                      <p className="pt-3 text-center text-[11px] text-[#86868b]">
+                        Showing {TABLE_ROWS} of {filteredAppointments.length.toLocaleString('en-IN')}. Export CSV has all.
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

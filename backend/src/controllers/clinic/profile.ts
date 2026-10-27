@@ -6,6 +6,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
 import { isClinicActive } from '../../utils/authGuards';
 import { getLocalDateString, cleanSlotName, parseDoctorSlots, parseAffiliationSlots } from '../../utils/scheduleUtils';
+import { REPORT_MAX_ROWS, capReportRows } from '../../utils/reportLimits';
 
 /**
  * Get profile and statistics for currently authenticated clinic
@@ -521,7 +522,7 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
       whereClause.doctorId = doctorId;
     }
 
-    const appointments = await prisma.appointment.findMany({
+    const foundAppointments = await prisma.appointment.findMany({
       where: whereClause,
       include: {
         doctor: {
@@ -539,8 +540,9 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
         { appointmentDate: 'desc' },
         { queueNumber: 'asc' },
       ],
-      take: 2000,
+      take: REPORT_MAX_ROWS + 1,
     });
+    const { rows: appointments, truncated: reportTruncated } = capReportRows(foundAppointments);
 
     // Create doctor fee and slot maps from affiliations
     const doctorFeeMap = new Map<string, number>();
@@ -668,6 +670,8 @@ export const getClinicReport = async (req: AuthRequest, res: Response): Promise<
       },
       byDoctor: Array.from(doctorBreakdownMap.values()).filter((d) => (doctorId && doctorId !== 'all' ? d.doctorId === doctorId : true)),
       byShift: Array.from(shiftBreakdownMap.values()).sort((a, b) => a.shiftName.localeCompare(b.shiftName)),
+      truncated: reportTruncated,
+      maxRows: REPORT_MAX_ROWS,
       appointments: items,
     });
   } catch (error: any) {
