@@ -311,6 +311,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     </div>
   );
 
+  const todayLabel = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Asia/Kolkata',
+  });
+
   const defaultGreeting = `${getGreeting()}, ${
     portalType === 'DOCTOR' ? `Dr. ${cleanDoctorName || getDisplayName()}` : getDisplayName()
   }`;
@@ -365,11 +372,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 md:pl-64 flex flex-col min-w-0">
         {/* Page Top Header with Greeting & Action Slot */}
-        <div className="bg-white border-b border-[#e5e5ea] px-4 py-4 sm:px-8 sm:py-5">
+        <div className="relative overflow-clip bg-gradient-to-r from-[#eaf3fd] via-[#f6f9fe] to-white border-b border-[#e5e5ea] px-4 py-4 sm:px-8 sm:py-6">
+          <div className="pointer-events-none absolute -top-32 left-1/3 w-[420px] h-[260px] rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.10),transparent)]" />
           {/* Phones: title and bell share the first row, header buttons get a row of their own */}
-          <div className="max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 sm:gap-2.5">
+          <div className="relative max-w-7xl mx-auto flex flex-wrap sm:flex-nowrap items-start sm:items-center gap-3 sm:gap-2.5">
             <div className="min-w-0 flex-1 sm:mr-1.5">
-              <h1 className="text-[20px] sm:text-[22px] font-semibold tracking-tight text-[#1d1d1f] leading-snug">
+              <p className="text-xs font-semibold text-primary mb-1">{todayLabel}</p>
+              <h1 className="text-[20px] sm:text-[26px] font-semibold tracking-tight text-[#1d1d1f] leading-snug">
                 {title || defaultGreeting}
               </h1>
               {subtitle && (

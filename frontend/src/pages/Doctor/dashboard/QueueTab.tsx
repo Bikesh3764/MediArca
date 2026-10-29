@@ -1,7 +1,7 @@
 import React from 'react';
 import { api, Appointment, getLocalDateString, getTomorrowDateString } from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
-import { Clock, CheckCircle2, AlertTriangle, Play, RefreshCw, Building2, AlertCircle, X, CalendarX, PauseCircle, SlidersHorizontal } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, Play, RefreshCw, Building2, AlertCircle, X, CalendarX, PauseCircle, SlidersHorizontal, Hourglass, Users } from 'lucide-react';
 import { AppleFilterSelect } from '../../../components/ui/AppleFilterSelect';
 import { getCleanReason, getSlotShortLabel, getYesterdayDateString } from './helpers';
 import { useDoctorDashboard } from './state';
@@ -434,28 +434,29 @@ export const QueueTab: React.FC = () => {
               )}
             </div>
 
-            {/* Clean 3-Column Metrics Strip */}
+            {/* 3-column metrics strip */}
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              <div className="bg-white rounded-2xl sm:rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 ">
-                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Waiting</p>
-                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
-                  {displayedWaitingQueue.length}
-                </h3>
-              </div>
-
-              <div className="bg-white rounded-2xl sm:rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 ">
-                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Completed</p>
-                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#0066cc] mt-1 tracking-tight leading-none">
-                  {displayedCompletedQueue.length}
-                </h3>
-              </div>
-
-              <div className="bg-white rounded-2xl sm:rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 ">
-                <p className="text-[11px] sm:text-xs text-[#86868b] font-normal leading-tight truncate">Total</p>
-                <h3 className="text-[20px] sm:text-[30px] font-semibold text-[#1d1d1f] mt-1 tracking-tight leading-none">
-                  {(displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length}
-                </h3>
-              </div>
+              {[
+                { label: 'Waiting', value: displayedWaitingQueue.length, icon: Hourglass, tone: 'bg-warning-soft text-warning', num: 'text-[#1d1d1f]' },
+                { label: 'Completed', value: displayedCompletedQueue.length, icon: CheckCircle2, tone: 'bg-success-soft text-success', num: 'text-success' },
+                {
+                  label: 'Total',
+                  value: (displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length,
+                  icon: Users,
+                  tone: 'bg-primary-soft text-primary',
+                  num: 'text-[#1d1d1f]',
+                },
+              ].map(({ label, value, icon: StatIcon, tone, num }) => (
+                <div key={label} className="bg-white rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <span className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl inline-flex items-center justify-center shrink-0 ${tone}`}>
+                    <StatIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] sm:text-xs text-[#86868b] leading-tight truncate">{label}</p>
+                    <h3 className={`text-[20px] sm:text-[30px] font-semibold mt-1 tracking-tight leading-none ${num}`}>{value}</h3>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Main Live Queue Workspace (2-Column Grid) */}
