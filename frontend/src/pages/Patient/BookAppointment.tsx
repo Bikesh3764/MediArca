@@ -410,7 +410,7 @@ export const BookAppointment: React.FC = () => {
                 </div>
               ) : (
                 <div className="pt-1 text-center text-xs text-[#86868b]">
-                  Pay at the front desk to confirm your token.
+                  Pay the receptionist to confirm your token.
                 </div>
               )}
             </div>

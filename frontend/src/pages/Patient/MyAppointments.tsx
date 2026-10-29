@@ -311,7 +311,7 @@ export const MyAppointments: React.FC = () => {
               icon={Calendar}
               title="No upcoming appointments"
               description="Your bookings will show up here."
-              actionText="Book Doctor"
+              actionText="Find a doctor"
               onAction={() => navigate('/doctors')}
             />
           ) : (

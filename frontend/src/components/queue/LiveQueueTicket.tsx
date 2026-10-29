@@ -282,7 +282,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                 </div>
               ) : (
                 <div className="shrink-0 text-right text-[11px] text-[#86868b]">
-                  <span>Pay at the desk</span>
+                  <span>Pay the receptionist</span>
                 </div>
               )}
             </div>

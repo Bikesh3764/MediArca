@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthShell } from '../../components/auth/AuthShell';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -169,9 +170,9 @@ export const ClinicAuth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
+    <AuthShell variant="clinic">
       <div className="max-w-[450px] w-full">
-        <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-9">
           {/* Brand & Header */}
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
@@ -530,7 +531,7 @@ export const ClinicAuth: React.FC = () => {
           onClose={() => setVerificationPendingEmail(null)}
         />
       </div>
-    </div>
+    </AuthShell>
   );
 };
 

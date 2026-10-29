@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
+  QrCode,
 } from 'lucide-react';
 
 export const ClinicCheckIn: React.FC = () => {
@@ -97,14 +98,19 @@ export const ClinicCheckIn: React.FC = () => {
   const hasQueryParams = Boolean(clinicId);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 pb-24 sm:pb-6 pb-safe">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-8">
+    <div className="relative overflow-clip min-h-screen bg-gradient-to-b from-[#e9f2fc] via-[#f1f6fc] to-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 pb-24 sm:pb-6 pb-safe">
+      <div className="pointer-events-none absolute -top-40 right-[-8%] w-[560px] h-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.12),transparent)]" />
+      <div className="relative max-w-md w-full">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-9">
           <div className="mb-6">
-            <h1 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-              Check In
+            <span className="relative w-14 h-14 rounded-2xl bg-primary-soft text-primary inline-flex items-center justify-center overflow-hidden mb-4">
+              <QrCode className="w-7 h-7" />
+              <span className="ma-scan absolute left-2 right-2 h-0.5 rounded-full bg-primary" />
+            </span>
+            <h1 className="text-[28px] font-semibold text-[#1d1d1f] tracking-tight leading-tight">
+              Check in
             </h1>
-            <p className="text-[13px] text-[#86868b] mt-1 leading-relaxed">
+            <p className="text-sm text-[#86868b] mt-1 leading-relaxed">
               Let the clinic know you’ve arrived.
             </p>
           </div>
@@ -113,9 +119,9 @@ export const ClinicCheckIn: React.FC = () => {
           {!hasQueryParams && !errorMessage && !successData && (
             <div className="space-y-5">
               {/* Steps Guide */}
-              <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-3.5">
+              <div className="p-5 rounded-2xl bg-[#f5f5f7] space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     1
                   </div>
                   <div>
@@ -125,7 +131,7 @@ export const ClinicCheckIn: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     2
                   </div>
                   <div>
@@ -135,7 +141,7 @@ export const ClinicCheckIn: React.FC = () => {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
                     3
                   </div>
                   <div>

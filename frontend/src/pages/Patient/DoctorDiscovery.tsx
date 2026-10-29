@@ -14,7 +14,7 @@ import {
 } from '../../services/api';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { AppleFilterSelect } from '../../components/ui/AppleFilterSelect';
-import { SubNav } from '../../components/layout/SubNav';
+import { PageHero } from '../../components/layout/PageHero';
 import clinicLobbyBg from '../../assets/clinic-lobby-bg.webp';
 import {
   Clock,
@@ -1573,15 +1573,19 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7] pb-16">
-      <SubNav title="Find care" width="wide">
-        <span className="text-xs text-[#86868b] font-normal">
-          {activeSection === 'clinics'
-            ? `${filteredClinics.length} Verified Clinic${filteredClinics.length === 1 ? '' : 's'}`
-            : `${doctorPagination.total || doctors.length} Verified Specialist${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}`}
-        </span>
-      </SubNav>
+      <PageHero
+        compact
+        align="left"
+        eyebrow="Find care"
+        title={activeSection === 'clinics' ? 'Clinics near you.' : 'Doctors near you.'}
+        subtitle={
+          activeSection === 'clinics'
+            ? `${filteredClinics.length} verified clinic${filteredClinics.length === 1 ? '' : 's'}. Book a token and track it live.`
+            : `${doctorPagination.total || doctors.length} verified doctor${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}. Book a token and track it live.`
+        }
+      />
 
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-5 sm:py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pb-5 sm:pb-8">
         {discoveryContent}
       </div>
     </div>

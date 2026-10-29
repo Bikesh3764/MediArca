@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, QrCode, Stethoscope } from 'lucide-react';
+import { Phone, Stethoscope } from 'lucide-react';
 
 // Sample queue shown on the home page. It counts up to the patient's token, then starts again.
 const YOUR_TOKEN = 17;
@@ -11,7 +11,7 @@ const prefersReducedMotion = () =>
 
 const FLOAT = 'shadow-[0_12px_32px_rgba(0,0,0,0.12)]';
 
-/** Sample live token card with two floating chips, shown over the hero photo. */
+/** Sample live token card shown over the hero photo. */
 export const HeroQueuePreview: React.FC = () => {
   const [step, setStep] = useState(prefersReducedMotion() ? 2 : 0);
 
@@ -29,17 +29,7 @@ export const HeroQueuePreview: React.FC = () => {
   const progress = Math.round(((step + 1) / SERVING_STEPS.length) * 100);
 
   return (
-    <div className="relative w-full max-w-[340px] mx-auto py-8 sm:py-10" aria-hidden="true">
-      {/* QR chip */}
-      <div
-        className={`ma-float absolute -top-1 -right-2 sm:-right-10 z-10 inline-flex items-center gap-2 h-10 pl-2 pr-4 rounded-full bg-white/95 backdrop-blur-md border border-black/[0.06] ${FLOAT}`}
-      >
-        <span className="w-7 h-7 rounded-full bg-primary-soft text-primary inline-flex items-center justify-center">
-          <QrCode className="w-4 h-4" />
-        </span>
-        <span className="text-xs font-semibold text-[#1d1d1f]">Checked in</span>
-      </div>
-
+    <div className="relative w-full max-w-[340px] mx-auto py-4 sm:py-6" aria-hidden="true">
       {/* Live token card */}
       <div className={`relative rounded-[22px] bg-white/95 backdrop-blur-xl border border-black/[0.06] ${FLOAT} p-5`}>
         <div className="flex items-center justify-between">
@@ -106,13 +96,6 @@ export const HeroQueuePreview: React.FC = () => {
         </div>
       </div>
 
-      {/* Doctor status chip */}
-      <div
-        className={`ma-float ma-float-late absolute -bottom-1 -left-2 sm:-left-12 z-10 inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/95 backdrop-blur-md border border-black/[0.06] ${FLOAT}`}
-      >
-        <span className="w-2 h-2 rounded-full bg-success-dot" />
-        <span className="text-xs font-semibold text-[#1d1d1f]">Doctor in cabin</span>
-      </div>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ChevronDown, Mail, Clock, Building2, Phone, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { PageHero } from '../../components/layout/PageHero';
 import { api } from '../../services/api';
 import { sanitizeIndianPhone, formatIndianPhone } from '../../utils/phoneUtils';
 import { useToast } from '../../context/ToastContext';
@@ -51,39 +53,57 @@ export const ContactUs: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] py-10 sm:py-16 px-4 sm:px-6 lg:px-8 pb-24 sm:pb-16 pb-safe">
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[#1d1d1f]">
-            Contact Us
-          </h1>
-          <p className="text-sm text-[#6e6e73]">
-            Questions or feedback? Write to us.
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f] pb-24 sm:pb-0 pb-safe">
+      <PageHero eyebrow="Contact" title="We&rsquo;re here" highlight="to help." subtitle="Questions or feedback? Write to us." />
 
-        {/* Email Direct Card */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-[#e5e5ea]  flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs text-[#86868b] font-normal">Email</p>
-            <a
-              href="mailto:contact@mediarca.in"
-              className="text-sm sm:text-base font-semibold text-[#1d1d1f] hover:text-[#0066cc] transition-colors mt-0.5 inline-block py-1"
-            >
-              contact@mediarca.in
-            </a>
-          </div>
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-8 pb-16 sm:pb-24">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 lg:gap-10 items-start">
+        {/* Ways to reach us */}
+        <aside className="space-y-4 lg:sticky lg:top-24">
           <a
             href="mailto:contact@mediarca.in"
-            className="inline-block py-2 text-xs font-semibold text-[#0066cc] hover:underline shrink-0"
+            className="group flex items-center gap-4 rounded-2xl bg-white border border-[#e5e5ea] p-5 hover:border-primary-line transition-colors"
           >
-            Send Email →
+            <span className="w-11 h-11 rounded-xl bg-primary-soft text-primary inline-flex items-center justify-center shrink-0">
+              <Mail className="w-5 h-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs text-[#86868b]">Email</span>
+              <span className="block text-sm sm:text-base font-semibold truncate">contact@mediarca.in</span>
+            </span>
+            <ArrowRight className="w-4 h-4 text-[#c7c7cc] group-hover:text-primary transition-colors shrink-0" />
           </a>
-        </div>
+          <div className="flex items-center gap-4 rounded-2xl bg-white border border-[#e5e5ea] p-5">
+            <span className="w-11 h-11 rounded-xl bg-primary-soft text-primary inline-flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </span>
+            <span>
+              <span className="block text-xs text-[#86868b]">Reply</span>
+              <span className="block text-sm sm:text-base font-semibold">By email</span>
+            </span>
+          </div>
+          <div className="rounded-2xl border border-primary-line/60 bg-gradient-to-br from-[#eaf3fd] via-[#f3f8fe] to-white p-5">
+            <span className="w-11 h-11 rounded-xl bg-primary text-white inline-flex items-center justify-center">
+              <Building2 className="w-5 h-5" />
+            </span>
+            <p className="mt-4 text-base font-semibold">Run a clinic?</p>
+            <p className="mt-1 text-sm text-[#6e6e73]">List your clinic and add your doctors.</p>
+            <Link to="/clinic/signup" className="mt-3 inline-flex items-center gap-1.5 py-1 text-sm text-primary hover:text-primary-hover">
+              List your clinic
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <p className="flex items-start gap-2.5 rounded-2xl bg-danger-soft px-4 py-3 text-xs text-danger leading-relaxed">
+            <Phone className="w-4 h-4 shrink-0 mt-px" />
+            <span>
+              <strong className="font-semibold">Medical emergency?</strong> Don&rsquo;t write to us. Call{' '}
+              <a href="tel:112" className="underline">112</a> or <a href="tel:108" className="underline">108</a>.
+            </span>
+          </p>
+        </aside>
 
         {/* Contact Message Form */}
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#e5e5ea]  space-y-6">
+        <div className="bg-white rounded-[28px] p-6 sm:p-10 border border-[#e5e5ea] space-y-6">
           <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight leading-snug">Send a message</h2>
 
           {submitted && (
@@ -207,6 +227,7 @@ export const ContactUs: React.FC = () => {
           </form>
         </div>
       </div>
+      </section>
     </div>
   );
 };

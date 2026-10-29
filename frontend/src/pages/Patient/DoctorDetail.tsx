@@ -148,9 +148,12 @@ export const DoctorDetail: React.FC = () => {
       {/* Doctor Bio & Credentials (2 Columns) */}
       <div className="lg:col-span-2 space-y-6">
         <UtilityCard>
-          {/* 1. Doctor Identity */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-[#f0f0f2]">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border border-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center ">
+          {/* 1. Doctor Identity, over a soft blue cover */}
+          <div className="relative -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 h-24 sm:h-32 rounded-t-2xl overflow-hidden bg-gradient-to-br from-[#d6e8fb] via-[#e9f2fc] to-[#f5f9ff]">
+            <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.18),transparent)]" />
+          </div>
+          <div className="relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-start sm:items-end gap-4 sm:gap-5 pb-6 border-b border-[#f0f0f2]">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white border-4 border-white ring-1 ring-[#e5e5ea] overflow-hidden shrink-0 flex items-center justify-center">
               {doctor.user?.avatarUrl ? (
                 <img
                   src={getFileUrl(doctor.user.avatarUrl)}
@@ -168,9 +171,9 @@ export const DoctorDetail: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 sm:pb-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-[22px] font-semibold text-[#1d1d1f] tracking-tight truncate leading-snug">
+                <h2 className="text-[22px] sm:text-[26px] font-semibold text-[#1d1d1f] tracking-tight truncate leading-snug">
                   {doctor.user?.fullName || 'Doctor'}
                 </h2>
                 <span title="Verified Doctor">
@@ -190,6 +193,20 @@ export const DoctorDetail: React.FC = () => {
                 {doctor.experienceYears ? ` · ${doctor.experienceYears} yrs experience` : ''}
               </p>
             </div>
+          </div>
+
+          {/* Quick facts */}
+          <div className="grid grid-cols-3 gap-2.5 py-5 border-b border-[#f0f0f2]">
+            {[
+              { label: 'Experience', value: doctor.experienceYears ? `${doctor.experienceYears} yrs` : '—' },
+              { label: 'Fee', value: activeFee ? `₹${activeFee}` : '—' },
+              { label: 'Clinics', value: String(doctor.clinics?.length || 0) },
+            ].map((f) => (
+              <div key={f.label} className="rounded-2xl bg-[#f5f5f7] px-3 py-3 text-center">
+                <p className="text-lg sm:text-xl font-semibold tracking-tight text-[#1d1d1f]">{f.value}</p>
+                <p className="mt-0.5 text-[11px] text-[#86868b]">{f.label}</p>
+              </div>
+            ))}
           </div>
 
           {/* 2. Schedule */}

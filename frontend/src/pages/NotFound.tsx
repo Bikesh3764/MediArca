@@ -1,83 +1,71 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Home, Search, ArrowLeft, HelpCircle } from 'lucide-react';
-import { AppleButton } from '../components/ui/AppleButton';
+import { Home, Search, ArrowLeft, CalendarDays, Ticket, HelpCircle, ChevronRight } from 'lucide-react';
+
+const SHORTCUTS = [
+  { to: '/patient/appointments', label: 'Appointments', icon: CalendarDays },
+  { to: '/track', label: 'Track walk-in', icon: Ticket },
+  { to: '/contact', label: 'Support', icon: HelpCircle },
+];
 
 export const NotFound: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[82vh] bg-[#f5f5f7] flex items-center justify-center p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 pb-safe select-none">
-      <div className="max-w-[520px] w-full bg-white rounded-2xl border border-[#e5e5ea]  p-7 sm:p-10 text-center space-y-6">
-        
-        {/* Subtle Apple 404 Badge */}
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0066cc]/10 text-[#0066cc] mx-auto ">
-          <span className="text-xl font-semibold tracking-tight">404</span>
-        </div>
+    <div className="relative overflow-clip min-h-[82vh] bg-gradient-to-b from-[#e9f2fc] via-[#f1f6fc] to-[#f5f5f7] flex items-center justify-center px-4 py-16 sm:py-24 pb-24 sm:pb-24 pb-safe">
+      <div className="pointer-events-none absolute -top-40 right-[-8%] w-[560px] h-[560px] rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.12),transparent)]" />
 
-        {/* Headline & Description */}
-        <div className="space-y-2">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[#1d1d1f] tracking-tight leading-snug">
-            Page Not Found
-          </h1>
-          <p className="text-[14px] text-[#86868b] leading-relaxed max-w-md mx-auto">
-            This page doesn’t exist or has moved.
-          </p>
-        </div>
+      <div className="relative w-full max-w-xl text-center">
+        <p
+          aria-hidden="true"
+          className="font-display font-semibold tracking-tighter leading-none text-[120px] sm:text-[180px] bg-gradient-to-b from-[#0066cc] to-[#2997ff]/40 bg-clip-text text-transparent select-none"
+        >
+          404
+        </p>
+        <h1 className="mt-2 text-3xl sm:text-[40px] font-semibold tracking-tight text-[#1d1d1f]">Page Not Found</h1>
+        <p className="mt-3 text-base sm:text-lg text-[#6e6e73]">This page doesn&rsquo;t exist or has moved.</p>
 
-        {/* Primary Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          <AppleButton
-            variant="primary"
-            size="md"
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
             onClick={() => navigate('/')}
-            className="w-full sm:w-auto px-6 h-11 text-sm font-normal flex items-center justify-center gap-2"
+            className="w-full sm:w-auto h-11 px-6 rounded-full bg-primary hover:bg-primary-hover text-white text-sm inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
           >
             <Home className="w-4 h-4" />
             Return Home
-          </AppleButton>
-
-          <AppleButton
-            variant="secondary"
-            size="md"
+          </button>
+          <button
+            type="button"
             onClick={() => navigate('/doctors')}
-            className="w-full sm:w-auto px-6 h-11 text-sm font-normal flex items-center justify-center gap-2"
+            className="w-full sm:w-auto h-11 px-6 rounded-full bg-white border border-[#d2d2d7] hover:bg-[#fafafc] text-[#1d1d1f] text-sm inline-flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-4 h-4 text-primary" />
             Find Doctors
-          </AppleButton>
+          </button>
         </div>
 
-        {/* Helpful Shortcut Links */}
-        <div className="pt-6 border-t border-[#f0f0f2] space-y-3">
-          <p className="text-xs font-normal text-[#86868b] uppercase tracking-wider">
-            Other pages
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-[#0066cc]">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1 hover:underline cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Go Back
-            </button>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link to="/patient/appointments" className="hover:underline">
-              Appointments
-            </Link>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link to="/how-it-works" className="hover:underline">
-              How It Works
-            </Link>
-            <span className="text-[#d2d2d7]">•</span>
-            <Link to="/contact" className="hover:underline inline-flex items-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5" />
-              Support
-            </Link>
-          </div>
-        </div>
+        <ul className="mt-10 rounded-2xl bg-white/90 backdrop-blur-xl border border-[#e5e5ea] divide-y divide-[#f0f0f2] text-left overflow-hidden">
+          {SHORTCUTS.map(({ to, label, icon: Icon }) => (
+            <li key={to}>
+              <Link to={to} className="group flex items-center gap-3 px-4 py-3.5 hover:bg-[#fafafc] transition-colors">
+                <span className="w-9 h-9 rounded-full bg-primary-soft text-primary inline-flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4" />
+                </span>
+                <span className="flex-1 text-sm text-[#1d1d1f]">{label}</span>
+                <ChevronRight className="w-4 h-4 text-[#c7c7cc] group-hover:text-primary transition-colors" />
+              </Link>
+            </li>
+          ))}
+        </ul>
 
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="mt-6 inline-flex items-center gap-1.5 py-2 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Go back
+        </button>
       </div>
     </div>
   );

@@ -10,9 +10,20 @@ export default defineConfig({
     port: 5173,
     host: true,
     // Optional: preview locally against a remote API (e.g. DEV_API_PROXY=https://mediarca-api-sg.onrender.com
-    // with VITE_API_URL=/api). The proxy sends no browser Origin, so CORS is not involved.
+    // with VITE_API_URL=/api). The proxy drops the browser's Origin header so the API's CORS check
+    // treats it like a server-to-server call.
     ...(process.env.DEV_API_PROXY
-      ? { proxy: { '/api': { target: process.env.DEV_API_PROXY, changeOrigin: true } } }
+      ? {
+          proxy: {
+            '/api': {
+              target: process.env.DEV_API_PROXY,
+              changeOrigin: true,
+              configure: (proxy) => {
+                proxy.on('proxyReq', (proxyReq) => proxyReq.removeHeader('origin'));
+              },
+            },
+          },
+        }
       : {}),
   },
 });

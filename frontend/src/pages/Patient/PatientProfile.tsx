@@ -3,7 +3,8 @@ import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
 import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import { SubNav } from '../../components/layout/SubNav';
 import { useAuth } from '../../context/AuthContext';
-import { api, getLocalDateString } from '../../services/api';
+import { api, getLocalDateString, getFileUrl } from '../../services/api';
+import { AvatarImage } from '../../components/ui/AvatarImage';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   AlertCircle,
@@ -97,6 +98,25 @@ export const PatientProfile: React.FC = () => {
       <SubNav title="Profile" width="4xl" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Profile header */}
+        <div className="relative overflow-clip rounded-[28px] border border-primary-line/60 bg-gradient-to-br from-[#e3effc] via-[#eef5fd] to-white p-6 sm:p-8 flex items-center gap-4 sm:gap-5">
+          <div className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.14),transparent)]" />
+          <span className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-gradient-to-br from-[#0066cc] to-[#2997ff] text-white text-2xl sm:text-3xl font-semibold inline-flex items-center justify-center shrink-0 ring-4 ring-white">
+            {user?.avatarUrl ? (
+              <AvatarImage src={getFileUrl(user.avatarUrl)} name={user.fullName} className="w-full h-full object-cover" />
+            ) : (
+              (user?.fullName || '?').trim().charAt(0).toUpperCase()
+            )}
+          </span>
+          <div className="relative min-w-0">
+            <p className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1d1d1f] truncate">{user?.fullName || 'Patient'}</p>
+            <p className="text-sm text-[#6e6e73] truncate">{user?.email}</p>
+            <span className="mt-2 inline-flex items-center h-6 px-2.5 rounded-full bg-white border border-primary-line/60 text-[11px] font-semibold text-primary">
+              Patient
+            </span>
+          </div>
+        </div>
+
         {successMsg && (
           <div className="p-3.5 rounded-2xl bg-white border border-[#e5e5ea] text-[#1d1d1f] text-xs font-normal flex items-center gap-2.5 ">
             <CheckCircle2 className="w-4 h-4 text-[#0066cc] shrink-0" />

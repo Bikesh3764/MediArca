@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthShell } from '../../components/auth/AuthShell';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -145,9 +146,9 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
 
 
   return (
-    <div className="sm:min-h-screen bg-[#f5f5f7] flex flex-col sm:justify-center py-6 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
+    <AuthShell variant={role === 'DOCTOR' ? 'doctor' : 'patient'}>
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
-        <div className="bg-white rounded-2xl border border-[#e5e5ea]  p-6 sm:p-7">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-9">
           {/* Brand & Header */}
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
@@ -398,7 +399,7 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           onClose={() => setVerificationPendingEmail(null)}
         />
       </div>
-    </div>
+    </AuthShell>
   );
 };
 

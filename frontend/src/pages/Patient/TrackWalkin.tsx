@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { Building2, CheckCircle2, Clock, Phone, Search, Users } from 'lucide-react';
+import { Building2, CheckCircle2, Clock, Phone, Search, Users, Ticket } from 'lucide-react';
 import { api, WalkinTrackResult, formatDisplayDate, cleanSlotName, getFileUrl } from '../../services/api';
-import { SubNav } from '../../components/layout/SubNav';
+import { PageHero } from '../../components/layout/PageHero';
 import { AvatarImage } from '../../components/ui/AvatarImage';
 import { CabinStatusBadge } from '../../components/ui/DoctorCabinPresence';
 import { formatDisplayPhone, isValidIndianPhone, sanitizeIndianPhone, toTelUri } from '../../utils/phoneUtils';
@@ -105,10 +105,21 @@ export const TrackWalkin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
-      <SubNav title="Track walk-in" width="2xl" />
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-5">
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-6 space-y-4">
+    <div className="min-h-screen bg-[#f5f5f7] pb-24 sm:pb-0 pb-safe">
+      <PageHero
+        compact
+        eyebrow="Walk-in"
+        title="Track your token."
+        subtitle="Use the mobile number and code from your walk-in slip."
+      />
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24 space-y-5">
+        <form onSubmit={handleSubmit} className="bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-8 space-y-4">
+          <div className="flex items-center gap-3 rounded-2xl bg-primary-soft px-4 py-3">
+            <span className="w-9 h-9 rounded-full bg-white text-primary inline-flex items-center justify-center shrink-0">
+              <Ticket className="w-4 h-4" />
+            </span>
+            <p className="text-xs sm:text-sm text-[#1d1d1f]">The code is printed on the slip from the front desk.</p>
+          </div>
           <div>
             <label htmlFor="walkin-phone" className="block text-xs font-normal text-[#1d1d1f] mb-1.5">
               Mobile number
@@ -161,7 +172,7 @@ export const TrackWalkin: React.FC = () => {
         </form>
 
         {result && (
-          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 sm:p-6 space-y-5">
+          <div className="ma-fade-up bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-8 space-y-5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="w-14 h-14 rounded-2xl overflow-hidden bg-[#f5f5f7] border border-[#e5e5ea] shrink-0">
@@ -197,11 +208,11 @@ export const TrackWalkin: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
-              <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] text-center">
-                <span className="text-[11px] text-[#86868b] block">Your token</span>
+              <div className="bg-primary-soft rounded-2xl p-4 border border-primary-line/60 text-center">
+                <span className="text-[11px] text-primary block">Your token</span>
                 <span className="text-3xl font-semibold text-[#0066cc] tracking-tight">#{result.queueNumber}</span>
               </div>
-              <div className="bg-[#f5f5f7] rounded-xl p-3.5 border border-[#e5e5ea] text-center">
+              <div className="bg-[#f5f5f7] rounded-2xl p-4 border border-[#e5e5ea] text-center">
                 <span className="text-[11px] text-[#86868b] block">Now serving</span>
                 <span className="text-3xl font-semibold text-[#1d1d1f] tracking-tight">
                   {live?.currentServingQueueNumber ? `#${live.currentServingQueueNumber}` : '—'}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthShell, type AuthVariant } from '../../components/auth/AuthShell';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { BrandLogo } from '../../components/ui/BrandLogo';
@@ -17,6 +18,14 @@ const ROLE_INFO: Record<Role, { label: string; login: string }> = {
   CLINIC: { label: 'Clinic', login: '/clinic/login' },
   RECEPTIONIST: { label: 'Receptionist', login: '/receptionist/login' },
   ADMIN: { label: 'Admin', login: '/admin-login' },
+};
+
+const SHELL_VARIANT: Record<Role, AuthVariant> = {
+  PATIENT: 'patient',
+  DOCTOR: 'doctor',
+  CLINIC: 'clinic',
+  RECEPTIONIST: 'receptionist',
+  ADMIN: 'admin',
 };
 
 const inputClass =
@@ -80,9 +89,9 @@ export const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="sm:min-h-screen bg-[#f5f5f7] flex flex-col sm:justify-center py-6 sm:py-10 px-4 sm:px-6 pb-24 sm:pb-12 pb-safe">
+    <AuthShell variant={SHELL_VARIANT[role]}>
       <div className="sm:mx-auto sm:w-full sm:max-w-[450px]">
-        <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 sm:p-7">
+        <div className="bg-white rounded-[28px] border border-[#e5e5ea] p-6 sm:p-9">
           <div className="flex flex-col items-center text-center mb-6">
             <Link to="/" className="mb-2.5 hover:opacity-90 transition-opacity">
               <BrandLogo variant="full" size="md" imgClassName="h-7 w-auto object-contain mx-auto" />
@@ -190,6 +199,6 @@ export const ForgotPassword: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </AuthShell>
   );
 };

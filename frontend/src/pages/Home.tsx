@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, MapPin, X, Ticket, Check } from 'lucide-react';
+import { Search, MapPin, X, Ticket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useHomeState, HomeContext } from './home/state';
 import { ClinicsGridSection } from './home/ClinicsGridSection';
@@ -44,22 +44,13 @@ export const Home: React.FC = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-12 pb-24 sm:pt-16 sm:pb-28 lg:pt-24 lg:pb-36 grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6 lg:gap-12 items-center">
           <div className="text-center lg:text-left">
-            <span className="ma-fade-up inline-flex items-center gap-2 h-8 px-3.5 rounded-full bg-white/80 backdrop-blur-md border border-[#e5e5ea] text-xs text-[#1d1d1f]">
-              <span className="w-1.5 h-1.5 rounded-full bg-success-dot" />
-              Live OPD queue for Indian clinics
-            </span>
-
-            <h1 className="ma-fade-up ma-delay-1 mt-5 font-display text-[40px] leading-[1.05] sm:text-6xl lg:text-[54px] xl:text-[58px] font-semibold text-[#1d1d1f] tracking-tight">
+            <h1 className="ma-fade-up ma-delay-1 font-display text-[40px] leading-[1.05] sm:text-6xl lg:text-[54px] xl:text-[58px] font-semibold text-[#1d1d1f] tracking-tight">
               Book your token.
               <br />
               <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] bg-clip-text text-transparent">
                 Skip the waiting room.
               </span>
             </h1>
-
-            <p className="ma-fade-up ma-delay-2 mt-5 text-lg sm:text-xl text-[#48484a] max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              See your place in line live. Arrive when it&rsquo;s your turn.
-            </p>
 
             {/* Search: doctor/clinic + location */}
             <div className="ma-fade-up ma-delay-3 mt-8 max-w-2xl mx-auto lg:mx-0 bg-white p-2 rounded-2xl sm:rounded-full border border-[#d2d2d7] flex flex-col sm:flex-row items-center gap-2 focus-within:border-primary transition-colors">
@@ -122,7 +113,7 @@ export const Home: React.FC = () => {
               </button>
             </div>
 
-            <div className="ma-fade-up ma-delay-4 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-3">
+            <div className="ma-fade-up ma-delay-4 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-3">
               {/* Walk-in patients track their queue with mobile number + code (FIX-058) */}
               <Link
                 to="/track"
@@ -131,12 +122,6 @@ export const Home: React.FC = () => {
                 <Ticket className="w-4 h-4 text-[#0066cc]" />
                 <span>Track walk-in</span>
               </Link>
-              {['₹0 platform fee', 'Pay the receptionist'].map((t) => (
-                <span key={t} className="inline-flex items-center gap-1.5 text-sm text-[#48484a]">
-                  <Check className="w-4 h-4 text-success" />
-                  {t}
-                </span>
-              ))}
             </div>
           </div>
 

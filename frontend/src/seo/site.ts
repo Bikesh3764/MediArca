@@ -191,7 +191,7 @@ export const FAQS: FaqItem[] = [
   {
     question: 'Do I pay anything online?',
     answer:
-      'No. There is no booking fee. You pay the doctor’s fee to the receptionist, by UPI over a call or at the desk. Your token is confirmed once you pay.',
+      'No. MediArca has a ₹0 platform fee. You pay the doctor’s fee to the receptionist, by UPI over a call or at the desk. Your token is confirmed once you pay.',
   },
   {
     question: 'Can I book for my family?',

@@ -5,7 +5,7 @@ import lobbyPhoto from '../../assets/clinic-lobby-bg.webp';
 
 /* Small pictures for each step (decorative). */
 // Doctors work in shifts (no fixed time slots); the patient gets a token and an estimated time.
-const ShiftVisual: React.FC = () => (
+export const ShiftVisual: React.FC = () => (
   <div className="w-full max-w-[260px]">
     <div className="grid grid-cols-2 gap-2">
       {[
@@ -37,7 +37,7 @@ const ShiftVisual: React.FC = () => (
   </div>
 );
 
-const QueueVisual: React.FC = () => (
+export const QueueVisual: React.FC = () => (
   <div className="w-full max-w-[240px]">
     <div className="flex items-center justify-between">
       {[14, 15, 16, 17].map((n) => (
@@ -67,7 +67,7 @@ const QueueVisual: React.FC = () => (
   </div>
 );
 
-const ScanVisual: React.FC = () => (
+export const ScanVisual: React.FC = () => (
   <div className="flex items-center gap-4">
     <span className="relative w-[72px] h-[72px] rounded-2xl bg-white border border-[#e5e5ea] inline-flex items-center justify-center overflow-hidden">
       <QrCode className="w-9 h-9 text-[#1d1d1f]" />
