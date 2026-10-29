@@ -95,6 +95,7 @@ export const HowItWorksSection: React.FC = () => (
         <h2 className="mt-2 text-3xl sm:text-[44px] font-semibold tracking-tight leading-tight text-[#1d1d1f]">
           Wait at home, not in the clinic.
         </h2>
+        <p className="mt-3 text-base sm:text-lg text-[#86868b]">Three steps. No crowded waiting room.</p>
       </div>
 
       <ol className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
@@ -149,7 +150,11 @@ export const ForClinicsSection: React.FC = () => (
             <h2 className="mt-2 text-3xl sm:text-[40px] font-semibold tracking-tight leading-tight text-[#1d1d1f]">
               A calmer waiting room starts here.
             </h2>
-            <ul className="mt-6grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+            <p className="mt-3 text-base sm:text-lg text-[#6e6e73] max-w-md">
+              Run your OPD queue from one screen. Patients arrive on time.
+            </p>
+
+            <ul className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
               {CLINIC_FEATURES.map((f) => (
                 <li key={f} className="flex items-center gap-2.5 text-sm text-[#1d1d1f]">
                   <span className="w-5 h-5 rounded-full bg-primary text-white inline-flex items-center justify-center shrink-0">
