@@ -30,8 +30,8 @@ export const HeroQueuePreview: React.FC = () => {
 
   return (
     <div className="relative w-full max-w-[340px] mx-auto py-4 sm:py-6" aria-hidden="true">
-      {/* Live token card */}
-      <div className={`relative rounded-[22px] bg-white/95 backdrop-blur-xl border border-black/[0.06] ${FLOAT} p-5`}>
+      {/* Live token card (first design, with the doctor row) */}
+      <div className={`relative rounded-2xl bg-white border border-black/[0.06] ${FLOAT} p-5`}>
         <div className="flex items-center justify-between">
           <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#1d1d1f]">
             <span className="relative flex w-2 h-2">
@@ -53,14 +53,14 @@ export const HeroQueuePreview: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-[#f5f5f7] px-3.5 py-3">
+        <div className="mt-4 flex items-end justify-between gap-3">
+          <div>
             <p className="text-xs text-[#86868b]">Your token</p>
-            <p className="text-[32px] font-semibold tracking-tight text-[#1d1d1f] leading-none mt-1.5">{YOUR_TOKEN}</p>
+            <p className="text-4xl font-semibold tracking-tight text-[#1d1d1f] leading-none mt-1">{YOUR_TOKEN}</p>
           </div>
-          <div className="rounded-xl bg-primary-soft px-3.5 py-3 overflow-hidden">
-            <p className="text-xs text-primary">Now serving</p>
-            <p key={serving} className="ma-tick text-[32px] font-semibold tracking-tight text-primary leading-none mt-1.5">
+          <div className="text-right">
+            <p className="text-xs text-[#86868b]">Now serving</p>
+            <p key={serving} className="ma-tick text-2xl font-semibold tracking-tight text-primary leading-none mt-1">
               {serving}
             </p>
           </div>
@@ -78,24 +78,20 @@ export const HeroQueuePreview: React.FC = () => {
             <span className="font-semibold text-success">Your turn</span>
           ) : (
             <span className="text-[#1d1d1f]">
-              <span className="font-semibold">{ahead}</span> ahead of you
+              <span className="font-semibold">{ahead}</span> ahead
             </span>
           )}
           <span className="text-[#86868b]">{yourTurn ? 'Go in' : `~${ahead * MINUTES_PER_PATIENT} min`}</span>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#f0f0f2] flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[#86868b]">Fee ₹400</p>
-            <p className="text-sm font-semibold text-[#1d1d1f]">Pay receptionist</p>
-          </div>
-          <span className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-primary text-white text-xs">
-            <Phone className="w-3.5 h-3.5" />
+        <div className="mt-4 pt-3 border-t border-[#f0f0f2] flex items-center justify-between">
+          <span className="text-xs text-[#86868b]">Pay the receptionist</span>
+          <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-primary-soft text-primary text-xs font-semibold">
+            <Phone className="w-3 h-3" />
             Call desk
           </span>
         </div>
       </div>
-
     </div>
   );
 };
