@@ -308,7 +308,7 @@ export const DoctorsSection: React.FC = () => {
                     return (
                       <div
                         key={doctor.id}
-                        className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                        className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-primary-line hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group"
                       >
                         {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                         <div
@@ -330,7 +330,7 @@ export const DoctorsSection: React.FC = () => {
                           <div
                             className={`doc-cat-fallback-banner w-full h-full ${
                               doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                            } items-center justify-center font-semibold text-[44px] text-[#c7c7cc] bg-[#f5f5f7] select-none`}
+                            } items-center justify-center font-semibold text-[44px] text-primary/40 bg-gradient-to-br from-[#eef4fc] to-[#f5f5f7] select-none`}
                           >
                             {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                           </div>

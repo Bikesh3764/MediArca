@@ -228,3 +228,34 @@
   .table-stack td:not([data-label]) > div { justify-content: flex-start; flex-wrap: wrap; }
   .table-stack td:not([data-label]):last-child:not(:first-child) { padding-top: 0.5rem; }
 }
+
+/* Home page motion (respects reduced motion) */
+@keyframes ma-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ma-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes ma-tick {
+  from { opacity: 0.25; transform: translateY(45%); }
+  to { opacity: 1; transform: none; }
+}
+.ma-fade-up { animation: ma-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.ma-delay-1 { animation-delay: 0.08s; }
+.ma-delay-2 { animation-delay: 0.16s; }
+.ma-delay-3 { animation-delay: 0.24s; }
+.ma-delay-4 { animation-delay: 0.32s; }
+.ma-float { animation: ma-float 4s ease-in-out infinite; }
+.ma-tick { display: inline-block; animation: ma-tick 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes ma-scan {
+  0%, 100% { top: 14%; }
+  50% { top: 84%; }
+}
+.ma-float-late { animation-delay: -2s; }
+.ma-scan { animation: ma-scan 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ma-fade-up, .ma-float, .ma-tick, .ma-scan { animation: none; }
+  .ma-scan { top: 50%; }
+}

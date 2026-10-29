@@ -23,7 +23,7 @@ export const SEO_PAGES: SeoPage[] = [
     file: 'index.html',
     title: 'MediArca — Book a Doctor, Skip the Wait',
     description:
-      'Book a clinic visit in India, get a queue token and see your live place in line. No booking fee, pay at the clinic.',
+      'Book a clinic visit in India, get a queue token and see your live place in line. ₹0 platform fee, pay the receptionist.',
     changefreq: 'weekly',
     priority: '1.0',
   },

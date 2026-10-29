@@ -3,7 +3,7 @@ import { parseDoctorSlots, format12Hour, formatDoctorDegrees, getFileUrl } from 
 import { AppleButton } from '../../components/ui/AppleButton';
 import clinicLobbyBg from '../../assets/clinic-lobby-bg.webp';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
-import { MapPin, Clock, ArrowLeft, Phone, Building2 } from 'lucide-react';
+import { MapPin, Clock, ArrowLeft, Phone, Building2, Stethoscope, ChevronRight } from 'lucide-react';
 import { EmptyState } from '../../components/common/EmptyState';
 import { getClinicLocationDisplay } from './helpers';
 import { useHome } from './state';
@@ -111,7 +111,7 @@ export const ClinicsSection: React.FC = () => {
                         return (
                           <div
                             key={doctor.id}
-                            className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group"
+                            className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-primary-line hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group"
                           >
                             {/* Doctor Photo Banner - Natural 16:10 proportion displaying the full photo */}
                             <div
@@ -133,7 +133,7 @@ export const ClinicsSection: React.FC = () => {
                               <div
                                 className={`doc-fallback-banner w-full h-full ${
                                   doctor.user?.avatarUrl ? 'hidden' : 'flex'
-                                } items-center justify-center font-semibold text-[44px] text-[#c7c7cc] bg-[#f5f5f7] select-none`}
+                                } items-center justify-center font-semibold text-[44px] text-primary/40 bg-gradient-to-br from-[#eef4fc] to-[#f5f5f7] select-none`}
                               >
                                 {(doctor.user?.fullName ? doctor.user.fullName.replace(/^Dr\.\s*/i, '').trim()[0] : null) || 'D'}
                               </div>
@@ -254,7 +254,7 @@ export const ClinicsSection: React.FC = () => {
                         <div
                           key={clinic.id}
                           onClick={() => handleSelectClinic(clinic)}
-                          className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/40 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
+                          className="w-full bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-primary-line hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between group cursor-pointer"
                         >
                           {/* Top Facility Photography Banner */}
                           <div className="relative w-full aspect-[16/10] bg-[#f5f5f7] border-b border-[#f0f0f2] overflow-hidden flex items-center justify-center">
@@ -266,6 +266,13 @@ export const ClinicsSection: React.FC = () => {
                                 (e.currentTarget as HTMLImageElement).src = clinicLobbyBg;
                               }}
                             />
+                            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
+                            {clinic.city && (
+                              <span className="absolute left-3 bottom-3 inline-flex items-center gap-1 h-7 px-3 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-semibold text-[#1d1d1f]">
+                                <MapPin className="w-3 h-3 text-primary" />
+                                {clinic.city}
+                              </span>
+                            )}
                           </div>
 
                           {/* Card Body */}
@@ -298,8 +305,9 @@ export const ClinicsSection: React.FC = () => {
 
                             {/* Apple HIG Card Footer */}
                             <div className="mt-4 pt-3.5 border-t border-[#f0f0f2] flex items-center justify-between gap-3">
-                              <span className="text-xs font-normal text-[#48484a] bg-[#f5f5f7] px-2.5 py-1 rounded-full border border-[#e5e5ea]">
-                                {docCount === 1 ? '1 Specialist' : `${docCount} Specialists`}
+                              <span className="inline-flex items-center gap-1.5 text-xs text-[#48484a]">
+                                <Stethoscope className="w-3.5 h-3.5 text-primary" />
+                                {docCount === 1 ? '1 doctor' : `${docCount} doctors`}
                               </span>
                               <button
                                 type="button"
@@ -307,9 +315,10 @@ export const ClinicsSection: React.FC = () => {
                                   e.stopPropagation();
                                   handleSelectClinic(clinic);
                                 }}
-                                className="h-8 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center cursor-pointer select-none "
+                                className="h-9 pl-4 pr-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-1 cursor-pointer select-none"
                               >
-                                View Doctors
+                                View doctors
+                                <ChevronRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </div>

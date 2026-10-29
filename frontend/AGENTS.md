@@ -77,6 +77,9 @@ The MediArca frontend is an ultra-fast, mobile-first web application built with 
    - `src/seo/site.ts` is the one list of public pages (title, description), app routes, redirects and robots rules. `seo-plugin.ts` builds per-page HTML, `sitemap.xml`, `robots.txt`, `_redirects` and `404.html` from it; don't add those files to `public/`.
    - A new route in `App.tsx` must be added to `SEO_PAGES` (public) or `APP_ROUTES` (app screen), or Cloudflare answers it with 404.
    - Never add a `/*` catch-all to `_redirects`: unknown addresses must return 404 so old pages leave Google.
+15. **Payment & Booking Wording (FIX-060)**:
+   - Say "₹0 platform fee" and "Pay the receptionist" (UPI over call or at the desk). Never "booking fee", "pay at clinic" or online payment.
+   - Doctors work in shifts (e.g. Morning 9 AM – 1 PM) with an estimated token time. Never show fixed time slots like 10:00 / 10:30.
 11. **Typography**:
    Do not load SF Pro from third-party CDNs (licence + render blocking). Apple devices get SF Pro via `-apple-system`; others use Inter.
 

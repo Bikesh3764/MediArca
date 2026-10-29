@@ -1,12 +1,15 @@
 import React from 'react';
-import healthcareHeroBg from '../assets/healthcare-hero-bg.webp';
-import { Search, MapPin, X, Ticket } from 'lucide-react';
+import { Search, MapPin, X, Ticket, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useHomeState, HomeContext } from './home/state';
 import { ClinicsGridSection } from './home/ClinicsGridSection';
 import { DoctorsIntroSection } from './home/DoctorsIntroSection';
 import { ClinicsSection } from './home/ClinicsSection';
 import { DoctorsSection } from './home/DoctorsSection';
+import { HeroQueuePreview } from './home/HeroQueuePreview';
+import { HowItWorksSection, ForClinicsSection } from './home/HomeMarketing';
+import { BenefitsStrip, SpecialtySection } from './home/HomeHighlights';
+import heroPhoto from '../assets/healthcare-hero-bg.webp';
 export const Home: React.FC = () => {
   const state = useHomeState();
   const {
@@ -18,98 +21,145 @@ export const Home: React.FC = () => {
     setHeroLocationQuery,
     handleHeroSearch,
     handleSectionSwitch,
+    clinics,
+    doctors,
+    loadingClinics,
+    loadingDoctors,
   } = state;
   return (
     <HomeContext.Provider value={state}>
 <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
-      {/* 1. Hero Section - Healthcare Themed Canvas with Queue Booking Focus */}
-      <section className="relative overflow-hidden border-b border-[#e5e5ea] py-16 sm:py-20 md:py-24 px-4 sm:px-6 flex items-center justify-center min-h-[420px] sm:min-h-[460px]">
-        {/* Healthcare Themed Hero Background Photo - Clearly Visible */}
-        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
-          <img
-            src={healthcareHeroBg}
-            alt="Healthcare clinical facility"
-            className="w-full h-full object-cover object-center"
-          />
-          {/* Subtle light balance so the hospital photo is vibrant and clearly visible */}
-          <div className="absolute inset-0 bg-white/55" />
-        </div>
+      {/* 1. Hero: headline + search on the left, sample live token on the right */}
+      <section className="relative overflow-hidden bg-[#eaf2fb]">
+        {/* Full-width clinic photo; white wash keeps the text readable */}
+        <img
+          src={heroPhoto}
+          alt=""
+          fetchPriority="high"
+          className="absolute inset-0 w-full h-full object-cover object-[70%_center] lg:object-center"
+        />
+        <div className="absolute inset-0 lg:hidden bg-gradient-to-b from-white/95 via-white/75 to-white/10" />
+        <div className="absolute inset-0 hidden lg:block bg-[linear-gradient(90deg,rgba(255,255,255,0.97)_0%,rgba(255,255,255,0.9)_34%,rgba(255,255,255,0.4)_56%,rgba(255,255,255,0)_74%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#f5f5f7] via-[#f5f5f7]/60 to-transparent" />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold text-[#1d1d1f] tracking-tight leading-[1.08] max-w-3xl mx-auto">
-            Book doctor queue tokens. <span className="text-[#0066cc]">Skip the waiting room.</span>
-          </h1>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-12 pb-24 sm:pt-16 sm:pb-28 lg:pt-24 lg:pb-36 grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-6 lg:gap-12 items-center">
+          <div className="text-center lg:text-left">
+            <span className="ma-fade-up inline-flex items-center gap-2 h-8 px-3.5 rounded-full bg-white/80 backdrop-blur-md border border-[#e5e5ea] text-xs text-[#1d1d1f]">
+              <span className="w-1.5 h-1.5 rounded-full bg-success-dot" />
+              Live OPD queue for Indian clinics
+            </span>
 
-          {/* Unified Apple Dual Search Bar (Two Searches in One Bar) */}
-          <div className="mt-8 sm:mt-10 max-w-2xl mx-auto backdrop-blur-md bg-white/95 p-2 sm:p-2.5 rounded-2xl sm:rounded-full border border-black/[0.1]  flex flex-col sm:flex-row items-center gap-2">
-            <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
-              <Search className="w-4 h-4 text-[#86868b] shrink-0" />
-              <input
-                type="text"
-                value={heroSearchQuery}
-                onChange={(e) => setHeroSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
-                placeholder="Search doctor, clinic or specialty..."
-                className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
-              />
-              {heroSearchQuery && (
-                <button aria-label="Close"
-                  type="button"
-                  onClick={() => setHeroSearchQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            <h1 className="ma-fade-up ma-delay-1 mt-5 font-display text-[40px] leading-[1.05] sm:text-6xl lg:text-[54px] xl:text-[58px] font-semibold text-[#1d1d1f] tracking-tight">
+              Book your token.
+              <br />
+              <span className="bg-gradient-to-r from-[#0066cc] to-[#2997ff] bg-clip-text text-transparent">
+                Skip the waiting room.
+              </span>
+            </h1>
+
+            <p className="ma-fade-up ma-delay-2 mt-5 text-lg sm:text-xl text-[#48484a] max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              See your place in line live. Arrive when it&rsquo;s your turn.
+            </p>
+
+            {/* Search: doctor/clinic + location */}
+            <div className="ma-fade-up ma-delay-3 mt-8 max-w-2xl mx-auto lg:mx-0 bg-white p-2 rounded-2xl sm:rounded-full border border-[#d2d2d7] flex flex-col sm:flex-row items-center gap-2 focus-within:border-primary transition-colors">
+              <div className="flex items-center gap-2.5 flex-1 w-full px-3.5 py-1">
+                <Search className="w-4 h-4 text-[#86868b] shrink-0" />
+                <input
+                  type="text"
+                  value={heroSearchQuery}
+                  onChange={(e) => setHeroSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
+                  placeholder="Doctor, clinic or specialty"
+                  aria-label="Search doctor, clinic or specialty"
+                  className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                />
+                {heroSearchQuery && (
+                  <button
+                    aria-label="Clear search"
+                    type="button"
+                    onClick={() => setHeroSearchQuery('')}
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="hidden sm:block w-px h-6 bg-[#e0e0e0]" />
+              <div className="block sm:hidden w-full h-px bg-[#f0f0f2]" />
+
+              <div className="flex items-center gap-2.5 w-full sm:w-40 px-3.5 py-1">
+                <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
+                <input
+                  type="text"
+                  value={heroLocationQuery}
+                  onChange={(e) => setHeroLocationQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
+                  placeholder="City"
+                  aria-label="City or location"
+                  className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
+                />
+                {heroLocationQuery && (
+                  <button
+                    aria-label="Clear city"
+                    type="button"
+                    onClick={() => setHeroLocationQuery('')}
+                    className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleHeroSearch}
+                className="w-full sm:w-auto h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-normal transition-all duration-150 active:scale-[0.98] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0"
+              >
+                <Search className="w-4 h-4" />
+                <span>Search</span>
+              </button>
             </div>
 
-            <div className="hidden sm:block w-px h-6 bg-[#e0e0e0]" />
-            <div className="block sm:hidden w-full h-px bg-[#f0f0f2]" />
-
-            <div className="flex items-center gap-2.5 w-full sm:w-52 px-3.5 py-1">
-              <MapPin className="w-4 h-4 text-[#86868b] shrink-0" />
-              <input
-                type="text"
-                value={heroLocationQuery}
-                onChange={(e) => setHeroLocationQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
-                placeholder="City or location..."
-                className="w-full bg-transparent text-base sm:text-sm text-[#1d1d1f] placeholder-[#86868b] focus:outline-none"
-              />
-              {heroLocationQuery && (
-                <button aria-label="Close"
-                  type="button"
-                  onClick={() => setHeroLocationQuery('')}
-                  className="text-[#86868b] hover:text-[#1d1d1f] cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+            <div className="ma-fade-up ma-delay-4 mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-3">
+              {/* Walk-in patients track their queue with mobile number + code (FIX-058) */}
+              <Link
+                to="/track"
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white/90 backdrop-blur-md hover:bg-white border border-[#d2d2d7] text-sm text-[#1d1d1f] transition-all active:scale-[0.98]"
+              >
+                <Ticket className="w-4 h-4 text-[#0066cc]" />
+                <span>Track walk-in</span>
+              </Link>
+              {['₹0 platform fee', 'Pay the receptionist'].map((t) => (
+                <span key={t} className="inline-flex items-center gap-1.5 text-sm text-[#48484a]">
+                  <Check className="w-4 h-4 text-success" />
+                  {t}
+                </span>
+              ))}
             </div>
-
-            <button
-              type="button"
-              onClick={handleHeroSearch}
-              className="w-full sm:w-auto h-11 sm:h-10 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-sm font-normal transition-all duration-150 active:scale-[0.97] inline-flex items-center justify-center gap-2 cursor-pointer select-none shrink-0 "
-            >
-              <Search className="w-4 h-4" />
-              <span>Search</span>
-            </button>
           </div>
 
-          {/* Walk-in patients track their queue with mobile number + code (FIX-058) */}
-          <Link
-            to="/track"
-            className="mt-4 inline-flex items-center gap-2 h-10 px-5 rounded-full bg-white/95 hover:bg-white border border-black/[0.1] text-sm font-normal text-[#1d1d1f] transition-all active:scale-[0.98]"
-          >
-            <Ticket className="w-4 h-4 text-[#0066cc]" />
-            <span>Track walk-in</span>
-          </Link>
+          <div className="ma-fade-up ma-delay-2 lg:pl-10">
+            <HeroQueuePreview />
+          </div>
         </div>
       </section>
 
+      <BenefitsStrip />
+      <SpecialtySection />
+
       {/* 2. Main Discovery Workspace */}
-      <section id="catalog-section" className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 py-8 sm:py-10 flex-1">
+      <section id="catalog-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-14 pb-16 sm:pt-20 sm:pb-24 flex-1 scroll-mt-16">
+        <div className="mb-6 text-center sm:text-left">
+          <h2 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1d1d1f]">Find care near you</h2>
+          {!loadingClinics && !loadingDoctors && (clinics.length > 0 || doctors.length > 0) && (
+            <p className="mt-2 text-sm text-[#86868b]">
+              {clinics.length} {clinics.length === 1 ? 'clinic' : 'clinics'} · {doctors.length}{' '}
+              {doctors.length === 1 ? 'doctor' : 'doctors'}
+            </p>
+          )}
+        </div>
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">
           <div className="h-11 inline-flex items-center p-1 bg-[#e8e8ed]/70 rounded-full border border-[#e5e5ea] shrink-0 no-scrollbar">
@@ -157,6 +207,9 @@ export const Home: React.FC = () => {
           <DoctorsSection />
         )}
       </section>
+
+      <HowItWorksSection />
+      <ForClinicsSection />
     </div>
     </HomeContext.Provider>
   );
