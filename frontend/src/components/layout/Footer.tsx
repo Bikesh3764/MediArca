@@ -63,9 +63,6 @@ export const Footer: React.FC = () => {
             <Link to="/" className="inline-block hover:opacity-90 transition-opacity">
               <BrandLogo variant="full" size="md" imgClassName="h-8 w-auto" />
             </Link>
-            <p className="text-[15px] text-[#48484a] leading-relaxed max-w-sm">
-              Book a clinic visit, track your token live, and skip the waiting room. ₹0 platform fee.
-            </p>
             <div className="flex flex-wrap gap-2.5">
               <Link
                 to="/doctors"
@@ -105,7 +102,6 @@ export const Footer: React.FC = () => {
           <div className="mt-14 rounded-2xl bg-white border border-[#e5e5ea] p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-8">
             <div className="lg:w-44 shrink-0 px-1">
               <p className="text-sm font-semibold text-[#1d1d1f]">Sign in as</p>
-              <p className="text-xs text-[#86868b] mt-0.5">Pick your portal</p>
             </div>
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {PORTALS.map(({ label, to, icon: Icon }) => (
