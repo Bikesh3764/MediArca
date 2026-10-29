@@ -21,10 +21,6 @@ export const Home: React.FC = () => {
     setHeroLocationQuery,
     handleHeroSearch,
     handleSectionSwitch,
-    clinics,
-    doctors,
-    loadingClinics,
-    loadingDoctors,
   } = state;
   return (
     <HomeContext.Provider value={state}>
@@ -138,12 +134,6 @@ export const Home: React.FC = () => {
       <section id="catalog-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 pt-14 pb-16 sm:pt-20 sm:pb-24 flex-1 scroll-mt-16">
         <div className="mb-6 text-center sm:text-left">
           <h2 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1d1d1f]">Find care near you</h2>
-          {!loadingClinics && !loadingDoctors && (clinics.length > 0 || doctors.length > 0) && (
-            <p className="mt-2 text-sm text-[#86868b]">
-              {clinics.length} {clinics.length === 1 ? 'clinic' : 'clinics'} · {doctors.length}{' '}
-              {doctors.length === 1 ? 'doctor' : 'doctors'}
-            </p>
-          )}
         </div>
         {/* Navigation & Search Bar Header */}
         <div className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 pb-6 mb-8 border-b border-[#e5e5ea]">

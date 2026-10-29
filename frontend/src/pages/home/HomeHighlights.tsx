@@ -64,7 +64,7 @@ const SPECIALTIES = [
 
 /** Quick specialty picker: opens the Doctors tab filtered to that specialty. */
 export const SpecialtySection: React.FC = () => {
-  const { handleSectionSwitch, setSelectedSpecialty, specialtyCounts } = useHome();
+  const { handleSectionSwitch, setSelectedSpecialty } = useHome();
 
   const pick = (value: string) => {
     setSelectedSpecialty(value);
@@ -77,7 +77,6 @@ export const SpecialtySection: React.FC = () => {
       <div className="flex items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1d1d1f]">Browse by specialty</h2>
-          <p className="mt-1.5 text-sm sm:text-base text-[#86868b]">Find the right doctor in one tap.</p>
         </div>
         <button
           type="button"
@@ -92,7 +91,6 @@ export const SpecialtySection: React.FC = () => {
       <div className="mt-7 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar">
         <ul className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 w-max sm:w-full">
           {SPECIALTIES.map(({ label, value, icon: Icon }) => {
-            const count = specialtyCounts[value] ?? 0;
             return (
               <li key={value} className="w-[112px] sm:w-auto shrink-0">
                 <button
@@ -103,12 +101,7 @@ export const SpecialtySection: React.FC = () => {
                   <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary-soft text-primary group-hover:bg-primary group-hover:text-white inline-flex items-center justify-center transition-colors duration-200">
                     <Icon className="w-5 h-5 sm:w-[22px] sm:h-[22px]" />
                   </span>
-                  <span className="block w-full">
-                    <span className="block text-sm sm:text-[15px] font-semibold text-[#1d1d1f]">{label}</span>
-                    <span className="block mt-0.5 text-xs text-[#86868b]">
-                      {count > 0 ? `${count} ${count === 1 ? 'doctor' : 'doctors'}` : 'Doctors'}
-                    </span>
-                  </span>
+                  <span className="block w-full text-sm sm:text-[15px] font-semibold text-[#1d1d1f]">{label}</span>
                 </button>
               </li>
             );
