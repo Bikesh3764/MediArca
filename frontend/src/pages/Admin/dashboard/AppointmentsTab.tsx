@@ -361,7 +361,7 @@ export const AppointmentsTab: React.FC = () => {
                                 </td>
                                 <td data-label="Doctor" className="py-3 px-3">
                                   <div>
-                                    <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                    <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Doctor'}</span>
                                     <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                       {appt.doctor?.specialty || 'Specialist'}
                                     </span>
@@ -467,7 +467,7 @@ export const AppointmentsTab: React.FC = () => {
                                         </td>
                                         <td data-label="Doctor" className="py-3 px-3">
                                           <div>
-                                            <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                            <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Doctor'}</span>
                                             <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                               {appt.doctor?.specialty || 'Specialist'}
                                             </span>
@@ -590,7 +590,7 @@ export const AppointmentsTab: React.FC = () => {
                                       </td>
                                       <td data-label="Doctor" className="py-3 px-3">
                                         <div>
-                                          <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Practitioner'}</span>
+                                          <span className="font-normal text-[#1d1d1f]">{appt.doctor?.user?.fullName || 'Doctor'}</span>
                                           <span className="text-[11px] text-[#0066cc] block mt-0.5">
                                             {appt.doctor?.specialty || 'Specialist'}
                                           </span>

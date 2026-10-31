@@ -130,6 +130,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       navigate('/receptionist/login');
     } else if (portalType === 'ADMIN') {
       navigate('/admin-login');
+    } else if (portalType === 'DOCTOR') {
+      navigate('/doctor/login');
     } else {
       navigate('/login');
     }

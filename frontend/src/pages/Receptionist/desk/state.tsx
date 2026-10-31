@@ -843,6 +843,8 @@ export const useReceptionistDashboardState = () => {
     setHasLoadedInitialQueue,
     isAnyModalOpen,
     fetchPendingAppointments,
+    // Desk details never loaded (server down/offline): show a retry, not "No doctors yet".
+    deskLoadFailed: !data && Boolean(error),
     fetchDeskData,
     fetchQueue,
     handleConfirmReschedule,

@@ -13,6 +13,16 @@ export const getHeaders = (isMultipart = false) => {
   return headers;
 };
 
+/** Plain words for an HTTP error when the server didn't send its own message. */
+export const friendlyHttpError = (status: number): string => {
+  if (status === 429) return 'Too many tries. Wait a minute and try again.';
+  if (status === 401) return 'Please sign in again.';
+  if (status === 403) return 'You don’t have access to this.';
+  if (status === 404) return 'Not found.';
+  if (status >= 500) return 'Server is busy. Try again in a minute.';
+  return 'Something went wrong. Try again.';
+};
+
 export async function handleResponse<T>(res: Response): Promise<T> {
   let data: any = null;
   const text = await res.text();
@@ -20,9 +30,7 @@ export async function handleResponse<T>(res: Response): Promise<T> {
     data = text ? JSON.parse(text) : {};
   } catch {
     if (!res.ok) {
-      const error: any = new Error(
-        `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
-      );
+      const error: any = new Error(friendlyHttpError(res.status));
       error.status = res.status;
       throw error;
     }
@@ -33,7 +41,7 @@ export async function handleResponse<T>(res: Response): Promise<T> {
     const error: any = new Error(
       data?.message ||
         data?.error ||
-        `Request failed with status ${res.status}${res.statusText ? `: ${res.statusText}` : ''}`
+        friendlyHttpError(res.status)
     );
     error.status = res.status;
     if (typeof data?.code === 'string') error.code = data.code;

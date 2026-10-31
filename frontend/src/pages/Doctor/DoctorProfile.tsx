@@ -23,9 +23,11 @@ import {
 } from 'lucide-react';
 import { AvatarCropModal } from '../../components/ui/AvatarCropModal';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const DoctorProfile: React.FC = () => {
   const { user, updateUser, refreshUser } = useAuth();
+  const { confirm } = useConfirm();
   const { toast } = useToast();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -71,7 +73,8 @@ export const DoctorProfile: React.FC = () => {
   };
 
   const handleRemoveAvatar = async () => {
-    if (!window.confirm('Remove photo?')) return;
+    const ok = await confirm({ title: 'Remove photo?', message: 'Your photo will be removed from your profile.', confirmText: 'Remove', isDestructive: true });
+    if (!ok) return;
     setAvatarLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -285,7 +288,7 @@ export const DoctorProfile: React.FC = () => {
                     type="button"
                     disabled={avatarLoading}
                     onClick={handleRemoveAvatar}
-                    className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-[#ff3b30] text-xs font-normal flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                    className="h-9 px-4 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] border border-[#e5e5ea] text-danger text-xs font-normal flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Remove</span>

@@ -82,7 +82,7 @@ export const ClinicDetailsModal: React.FC = () => {
                       >
                         <div>
                           <span className="font-semibold text-[#1d1d1f] block">
-                            {dAff.doctor?.user?.fullName || 'Practitioner'}
+                            {dAff.doctor?.user?.fullName || 'Doctor'}
                           </span>
                           <span className="text-[11px] text-[#0066cc]">
                             {dAff.doctor?.specialty || 'General Practitioner'}

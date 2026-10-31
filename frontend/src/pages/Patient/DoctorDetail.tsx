@@ -1,6 +1,7 @@
 import { formatClinicAddress } from '../../utils/address';
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { goBack } from '../../utils/authRedirect';
 import {
   api,
   Doctor,
@@ -34,9 +35,12 @@ export const DoctorDetail: React.FC = () => {
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
+  // Server down or offline (not a missing doctor): offer a retry instead of "Not Found".
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loadingQueue, setLoadingQueue] = useState(false);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const paramClinicId = searchParams.get('clinicId') || searchParams.get('clinic');
 
@@ -64,6 +68,8 @@ export const DoctorDetail: React.FC = () => {
         }
       } catch (err) {
         console.error('Failed to load doctor:', err);
+        const status = (err as { status?: number })?.status;
+        setLoadFailed(status !== 404 && status !== 400);
       } finally {
         setLoading(false);
       }
@@ -116,11 +122,17 @@ export const DoctorDetail: React.FC = () => {
       <div className="min-h-screen bg-[#f5f5f7] flex items-center justify-center py-20 px-4">
         <div className="text-center p-8 bg-white rounded-2xl  border border-[#e5e5ea] max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-danger mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">Doctor Not Found</h2>
-          <p className="text-xs text-[#86868b] mb-6">This doctor isn’t available.</p>
-          <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
-            Find Doctors
-          </AppleButton>
+          <h2 className="text-xl font-semibold text-[#1d1d1f] mb-2">{loadFailed ? 'Couldn’t load doctor' : 'Doctor Not Found'}</h2>
+          <p className="text-xs text-[#86868b] mb-6">{loadFailed ? 'Check your connection and try again.' : 'This doctor isn’t available.'}</p>
+          {loadFailed ? (
+            <AppleButton variant="primary" onClick={() => window.location.reload()}>
+              Try Again
+            </AppleButton>
+          ) : (
+            <AppleButton variant="primary" onClick={() => navigate('/doctors')}>
+              Find Doctors
+            </AppleButton>
+          )}
         </div>
       </div>
     );
@@ -523,7 +535,7 @@ export const DoctorDetail: React.FC = () => {
         <AppleButton
           variant="ghost"
           size="sm"
-          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/doctors'))}
+          onClick={() => goBack(navigate, location, '/doctors')}
           className="flex items-center gap-1 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />

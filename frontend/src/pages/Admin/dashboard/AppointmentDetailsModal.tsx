@@ -80,7 +80,7 @@ export const AppointmentDetailsModal: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Doctor</span>
-                    <strong className="text-[#1d1d1f] mt-0.5 block">{selectedAppointment.doctor?.user?.fullName || 'Practitioner'}</strong>
+                    <strong className="text-[#1d1d1f] mt-0.5 block">{selectedAppointment.doctor?.user?.fullName || 'Doctor'}</strong>
                     <span className="text-[11px] text-[#0066cc] block">{selectedAppointment.doctor?.specialty}</span>
                   </div>
                   <div>

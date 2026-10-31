@@ -2,7 +2,7 @@ import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { DoctorSlot } from '../schedule';
 import { Appointment, ReceptionistDashboardData, ReceptionistQueueItem } from '../types';
-import { getHeaders, handleResponse } from '../http';
+import { getHeaders, handleResponse, friendlyHttpError } from '../http';
 import { safeStorage } from '../../../utils/safeStorage';
 
 export const receptionistApi = {
@@ -116,9 +116,7 @@ export const receptionistApi = {
     try {
       json = text ? JSON.parse(text) : {};
     } catch {
-      const error: any = new Error(
-        `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
-      );
+      const error: any = new Error(friendlyHttpError(res.status));
       error.status = res.status;
       throw error;
     }

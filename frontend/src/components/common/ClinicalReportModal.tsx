@@ -470,7 +470,7 @@ export const ClinicalReportModal: React.FC<ClinicalReportModalProps> = ({
                   <option value="all">All doctors</option>
                   {availableDoctors.map((doc, idx) => {
                     const id = doc.doctorId || doc.id || `doc-${idx}`;
-                    const name = doc.fullName || doc.name || 'Practitioner';
+                    const name = doc.fullName || doc.name || 'Doctor';
                     return (
                       <option key={id} value={id}>
                         {name} {doc.specialty ? `— ${doc.specialty}` : ''}

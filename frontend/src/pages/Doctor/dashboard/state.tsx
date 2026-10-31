@@ -166,7 +166,7 @@ export const useDoctorDashboardState = () => {
     let mounted = true;
     if (loadingAuth) return;
     if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
-      navigate('/login');
+      navigate('/doctor/login', { replace: true, state: { from: '/doctor/dashboard' } });
       return;
     }
     queueMicrotask(() => {

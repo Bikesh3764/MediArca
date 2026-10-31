@@ -32,6 +32,8 @@ export const QueueTab: React.FC = () => {
     hasLoadedInitialQueue,
     linkedDoctors,
     availableQueueShifts,
+    deskLoadFailed,
+    fetchDeskData: retryDeskData,
     handleStatusChange,
     togglingCheckinId,
     handleToggleCheckIn,
@@ -262,7 +264,15 @@ export const QueueTab: React.FC = () => {
               })()}
 
               {/* Queue Content */}
-              {linkedDoctors.length === 0 ? (
+              {linkedDoctors.length === 0 && deskLoadFailed ? (
+                <EmptyState
+                  icon={Users}
+                  title="Couldn’t load doctors"
+                  description="Check your connection and try again."
+                  actionText="Try Again"
+                  onAction={() => retryDeskData()}
+                />
+              ) : linkedDoctors.length === 0 ? (
                 <EmptyState
                   icon={Users}
                   title="No doctors yet"

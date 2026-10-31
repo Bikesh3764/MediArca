@@ -14,6 +14,9 @@ export const useHomeState = () => {
   const [clinics, setClinics] = useState<ClinicProfile[]>([]);
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [loadingClinics, setLoadingClinics] = useState(true);
+  // Last load failed (server down/offline): show a retry, not "none found".
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   // Clinic Selection (derived from searchParams URL query param & clinics data)
   const clinicIdParam = searchParams.get('clinicId');
   const selectedClinic = useMemo(() => {
@@ -82,15 +85,22 @@ export const useHomeState = () => {
         ]);
         setDoctors(docsData);
         setClinics(clinicsData);
+        setLoadFailed(false);
       } catch (err) {
         console.error('Failed to load discovery data:', err);
+        setLoadFailed(true);
       } finally {
         setLoadingDoctors(false);
         setLoadingClinics(false);
       }
     };
     fetchData();
-  }, []);
+  }, [reloadKey]);
+  const retryLoad = () => {
+    setLoadingDoctors(true);
+    setLoadingClinics(true);
+    setReloadKey((n) => n + 1);
+  };
   // Clinic State Options with dynamic facility counts
   const clinicStateOptions = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -374,6 +384,8 @@ export const useHomeState = () => {
   };
   return {
     navigate,
+    loadFailed,
+    retryLoad,
     searchParams,
     setSearchParams,
     activeSection,

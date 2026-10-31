@@ -30,9 +30,11 @@ import {
   RefreshCw,
   Trash2,
 } from 'lucide-react';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export const ClinicProfile: React.FC = () => {
   const { user, updateUser, refreshUser } = useAuth();
+  const { confirm } = useConfirm();
   const { toast } = useToast();
 
   const [clinicName, setClinicName] = useState(
@@ -92,7 +94,8 @@ export const ClinicProfile: React.FC = () => {
   };
 
   const handleRemoveAvatar = async () => {
-    if (!window.confirm('Remove photo?')) return;
+    const ok = await confirm({ title: 'Remove photo?', message: 'Your photo will be removed from your profile.', confirmText: 'Remove', isDestructive: true });
+    if (!ok) return;
     setAvatarLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -300,7 +303,7 @@ export const ClinicProfile: React.FC = () => {
               />
               <div>
                 <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
-                  {clinicName || 'Clinic Facility Logo'}
+                  {clinicName || 'Clinic'}
                 </h4>
               </div>
 
@@ -319,7 +322,7 @@ export const ClinicProfile: React.FC = () => {
                     type="button"
                     disabled={avatarLoading}
                     onClick={handleRemoveAvatar}
-                    className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#d2d2d7] text-[#ff3b30] text-xs font-normal flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                    className="h-9 px-4 rounded-full bg-white hover:bg-[#f5f5f7] border border-[#d2d2d7] text-danger text-xs font-normal flex items-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Remove</span>

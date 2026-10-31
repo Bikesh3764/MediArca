@@ -17,6 +17,8 @@ export const ClinicsSection: React.FC = () => {
     filteredClinics,
     clinicPracticingDoctors,
     resetClinicFilters,
+    loadFailed,
+    retryLoad,
     getDoctorDetailPath,
     getDoctorBookPath,
   } = useHome();
@@ -234,6 +236,14 @@ export const ClinicsSection: React.FC = () => {
                       />
                     ))}
                   </div>
+                ) : filteredClinics.length === 0 && loadFailed ? (
+                  <EmptyState
+                    icon={Building2}
+                    title="Couldn’t load clinics"
+                    description="Check your connection and try again."
+                    actionText="Try Again"
+                    onAction={retryLoad}
+                  />
                 ) : filteredClinics.length === 0 ? (
                   <EmptyState
                     icon={Building2}

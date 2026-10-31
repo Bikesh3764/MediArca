@@ -10,6 +10,7 @@ import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecial
 import { formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { EmailVerificationModal } from '../../components/auth/EmailVerificationModal';
 import { useToast } from '../../context/ToastContext';
+import { getReturnPath, returnState } from '../../utils/authRedirect';
 import { preloadBotCheck } from '../../services/botCheck';
 
 // Start loading the bot check as soon as this page opens
@@ -56,25 +57,10 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
   };
 
   const getTargetDestination = (targetRole: string) => {
-    const params = new URLSearchParams(location.search);
-    const redirectParam = params.get('redirect');
-    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
-      return redirectParam;
-    }
-    const rawFrom = (location.state as any)?.from;
-    const fromPath = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
-    const search = typeof rawFrom === 'object' && rawFrom?.search ? rawFrom.search : '';
-    if (
-      fromPath &&
-      fromPath.startsWith('/') &&
-      !fromPath.startsWith('//') &&
-      fromPath !== '/login' &&
-      fromPath !== '/signup' &&
-      fromPath !== '/doctor/login' &&
-      fromPath !== '/patient/login'
-    ) {
-      return `${fromPath}${search}`;
-    }
+    const returnPath = getReturnPath(location);
+    // Booking and patient pages only work for patient accounts.
+    const isPatientPage = returnPath?.startsWith('/book') || returnPath?.startsWith('/patient/');
+    if (returnPath && (targetRole === 'PATIENT' || !isPatientPage)) return returnPath;
     return getDestination(targetRole);
   };
 
@@ -381,7 +367,8 @@ export const Signup: React.FC<SignupProps> = ({ initialRole }) => {
           Already registered?{' '}
           <Link
             to={role === 'DOCTOR' ? '/doctor/login' : '/patient/login'}
-            className="text-[#0066cc] font-semibold hover:underline"
+            state={returnState(location)}
+            className="inline-block py-2 text-[#0066cc] font-semibold hover:underline"
           >
             Sign in to {role === 'DOCTOR' ? 'Doctor Console' : 'Patient Account'}
           </Link>

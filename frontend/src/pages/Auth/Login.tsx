@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuthShell } from '../../components/auth/AuthShell';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { getReturnPath, returnState } from '../../utils/authRedirect';
 import { useAuth } from '../../context/AuthContext';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { AlertCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
@@ -16,7 +17,7 @@ export interface LoginProps {
 export const Login: React.FC<LoginProps> = ({ portal }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const { toast } = useToast();
 
   const isDoctorInitial =
@@ -25,7 +26,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     new URLSearchParams(location.search).get('role')?.toUpperCase() === 'DOCTOR';
 
   const [activeRole, setActiveRole] = useState<'PATIENT' | 'DOCTOR'>(isDoctorInitial ? 'DOCTOR' : 'PATIENT');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(String((location.state as { email?: string } | null)?.email || ''));
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,25 +43,10 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
   };
 
   const getTargetDestination = (role: string) => {
-    const params = new URLSearchParams(location.search);
-    const redirectParam = params.get('redirect');
-    if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')) {
-      return redirectParam;
-    }
-    const rawFrom = (location.state as any)?.from;
-    const fromPath = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
-    const search = typeof rawFrom === 'object' && rawFrom?.search ? rawFrom.search : '';
-    if (
-      fromPath &&
-      fromPath.startsWith('/') &&
-      !fromPath.startsWith('//') &&
-      fromPath !== '/login' &&
-      fromPath !== '/signup' &&
-      fromPath !== '/doctor/login' &&
-      fromPath !== '/patient/login'
-    ) {
-      return `${fromPath}${search}`;
-    }
+    const returnPath = getReturnPath(location);
+    // Booking and patient pages only work for patient accounts.
+    const isPatientPage = returnPath?.startsWith('/book') || returnPath?.startsWith('/patient/');
+    if (returnPath && (role === 'PATIENT' || !isPatientPage)) return returnPath;
     return getDestination(role);
   };
 
@@ -91,7 +77,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     setSubmitting(true);
     try {
       const loggedUser = await login({ email: demoEmail, password: demoPass, role: demoRole });
-      navigate(redirectPath || getTargetDestination(loggedUser.role), { replace: true });
+      navigate(getReturnPath(location) ? getTargetDestination(loggedUser.role) : redirectPath || getDestination(loggedUser.role), { replace: true });
     } catch (err: any) {
       setError(err.message || 'Demo login failed');
     } finally {
@@ -114,6 +100,11 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
     }
   };
 
+
+  // Already signed in with this kind of account: skip the form.
+  if (user && user.role === activeRole && !submitting && !verificationPendingEmail) {
+    return <Navigate to={getTargetDestination(user.role)} replace />;
+  }
 
   return (
     <AuthShell variant={activeRole === 'DOCTOR' ? 'doctor' : 'patient'}>
@@ -220,7 +211,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
                 </label>
                 <Link
                   to={`/forgot-password?role=${activeRole}`}
-                  state={{ email: email.trim() }}
+                  state={{ email: email.trim(), ...returnState(location) }}
                   className="text-xs text-[#0066cc] hover:underline py-1"
                 >
                   Forgot password?
@@ -305,6 +296,7 @@ export const Login: React.FC<LoginProps> = ({ portal }) => {
           Don't have an account?{' '}
           <Link
             to={activeRole === 'DOCTOR' ? '/doctor/signup' : '/patient/signup'}
+            state={returnState(location)}
             className="inline-block py-2 text-[#0066cc] font-semibold hover:underline"
           >
             Create {activeRole === 'DOCTOR' ? 'Doctor Profile' : 'Patient Account'}

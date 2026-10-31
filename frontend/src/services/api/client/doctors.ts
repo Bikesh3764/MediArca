@@ -2,7 +2,7 @@ import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { DoctorLeave, DoctorScheduleConfig } from '../schedule';
 import { Doctor, DoctorAffiliationsData, PaginatedResult } from '../types';
-import { cachedPublicGet, getHeaders, handleResponse } from '../http';
+import { cachedPublicGet, getHeaders, handleResponse, friendlyHttpError } from '../http';
 import { DEMO_DOCTORS } from '../demoData';
 
 export const doctorsApi = {
@@ -99,9 +99,7 @@ export const doctorsApi = {
       try {
         json = text ? JSON.parse(text) : {};
       } catch {
-        const error: any = new Error(
-          `Server returned error ${res.status}: ${res.statusText || 'Unexpected error'}`
-        );
+        const error: any = new Error(friendlyHttpError(res.status));
         error.status = res.status;
         throw error;
       }

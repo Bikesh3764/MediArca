@@ -66,6 +66,10 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [allCatalogDoctors, setAllCatalogDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  // True when the last load failed (server down or offline), so we don't claim "no doctors".
+  const [doctorsError, setDoctorsError] = useState(false);
+  const [clinicsError, setClinicsError] = useState(false);
+  const [clinicsReload, setClinicsReload] = useState(0);
   // Grey placeholders only before the first results; after that a filter change keeps the
   // current cards (slightly faded) until the new ones arrive.
   const [hasLoadedDoctors, setHasLoadedDoctors] = useState(false);
@@ -234,10 +238,16 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   // Load public clinics
   useEffect(() => {
     api.getPublicClinics()
-      .then((data) => setClinics(data))
-      .catch((err) => console.error('Failed to load clinics:', err))
+      .then((data) => {
+        setClinics(data);
+        setClinicsError(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load clinics:', err);
+        setClinicsError(true);
+      })
       .finally(() => setLoadingClinics(false));
-  }, []);
+  }, [clinicsReload]);
 
   // Filtered Clinics List
   const filteredClinics = useMemo(() => {
@@ -350,11 +360,13 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
       if (requestId !== doctorsRequestRef.current) return;
       setDoctors(res.data);
       setDoctorPagination(res.pagination);
+      setDoctorsError(false);
       if (specialtyFilter === 'All' && !combinedSearch && expFilter === 0 && feeCap >= 3000 && stateFilter === 'All' && cityFilter === 'All' && targetPage === 1) {
         setAllCatalogDoctors(res.data);
       }
     } catch (err) {
       console.error('Failed to load doctors:', err);
+      if (requestId === doctorsRequestRef.current) setDoctorsError(true);
     } finally {
       if (requestId === doctorsRequestRef.current) {
         setLoading(false);
@@ -842,6 +854,17 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                     />
                   ))}
                 </div>
+              ) : filteredClinics.length === 0 && clinicsError ? (
+                <EmptyState
+                  icon={Building2}
+                  title="Couldn’t load clinics"
+                  description="Check your connection and try again."
+                  actionText="Try Again"
+                  onAction={() => {
+                    setLoadingClinics(true);
+                    setClinicsReload((n) => n + 1);
+                  }}
+                />
               ) : filteredClinics.length === 0 ? (
                 <EmptyState
                   icon={Building2}
@@ -1355,6 +1378,14 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
                 <div key={i} className="h-72 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-4"></div>
               ))}
             </div>
+          ) : filteredDoctors.length === 0 && doctorsError ? (
+            <EmptyState
+              icon={Stethoscope}
+              title="Couldn’t load doctors"
+              description="Check your connection and try again."
+              actionText="Try Again"
+              onAction={() => loadDoctors(search, locationQuery, selectedSpecialty, sortBy, minExp, maxFee, selectedState, selectedCity, doctorPage)}
+            />
           ) : filteredDoctors.length === 0 ? (
             <EmptyState
               icon={Stethoscope}
@@ -1580,8 +1611,12 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         title={activeSection === 'clinics' ? 'Clinics near you.' : 'Doctors near you.'}
         subtitle={
           activeSection === 'clinics'
-            ? `${filteredClinics.length} verified clinic${filteredClinics.length === 1 ? '' : 's'}. Book a token and track it live.`
-            : `${doctorPagination.total || doctors.length} verified doctor${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}. Book a token and track it live.`
+            ? loadingClinics || clinicsError
+              ? 'Book a token and track it live.'
+              : `${filteredClinics.length} verified clinic${filteredClinics.length === 1 ? '' : 's'}. Book a token and track it live.`
+            : !hasLoadedDoctors || doctorsError
+              ? 'Book a token and track it live.'
+              : `${doctorPagination.total || doctors.length} verified doctor${(doctorPagination.total || doctors.length) === 1 ? '' : 's'}. Book a token and track it live.`
         }
       />
 

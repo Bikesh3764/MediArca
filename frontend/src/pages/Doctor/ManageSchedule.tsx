@@ -53,6 +53,8 @@ export const ManageSchedule: React.FC = () => {
   const [clinics, setClinics] = useState<DoctorAffiliationClinic[]>([]);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
   const [loadingClinics, setLoadingClinics] = useState(true);
+  // Clinics couldn't load (server down/offline): show a retry, not "Add a clinic first".
+  const [clinicsLoadFailed, setClinicsLoadFailed] = useState(false);
 
   const [slots, setSlots] = useState<DoctorSlot[]>([
     {
@@ -157,6 +159,7 @@ export const ManageSchedule: React.FC = () => {
     if (!hasLoadedClinicsRef.current) setLoadingClinics(true);
     try {
       const aff = await api.getDoctorAffiliations();
+      setClinicsLoadFailed(false);
       const activeClinics = aff.clinics || [];
       setClinics(activeClinics);
       hasLoadedClinicsRef.current = true;
@@ -195,7 +198,8 @@ export const ManageSchedule: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load doctor clinics for schedule:', err);
-      setError('Unable to load affiliated clinics.');
+      if (!hasLoadedClinicsRef.current) setClinicsLoadFailed(true);
+      else setError('Couldn’t load your clinics. Try again.');
     } finally {
       setLoadingClinics(false);
     }
@@ -205,7 +209,7 @@ export const ManageSchedule: React.FC = () => {
     let mounted = true;
     if (loadingAuth) return;
     if (!user || user.role?.toUpperCase() !== 'DOCTOR') {
-      navigate('/login');
+      navigate('/doctor/login', { replace: true, state: { from: '/doctor/schedule' } });
       return;
     }
     queueMicrotask(() => {
@@ -479,6 +483,19 @@ export const ManageSchedule: React.FC = () => {
       <div className="max-w-4xl space-y-6 pb-24 md:pb-16 pb-safe">
         {loadingClinics ? (
           <div className="h-64 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse p-8" />
+        ) : clinicsLoadFailed ? (
+          <div className="p-8 rounded-2xl bg-white border border-[#e5e5ea] text-center">
+            <AlertCircle className="w-8 h-8 text-[#86868b] mx-auto mb-3" />
+            <p className="text-base font-semibold text-[#1d1d1f]">Couldn’t load your clinics</p>
+            <p className="text-xs text-[#86868b] mt-1 mb-5">Check your connection and try again.</p>
+            <button
+              type="button"
+              onClick={() => fetchAffiliations()}
+              className="h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all cursor-pointer"
+            >
+              Try Again
+            </button>
+          </div>
         ) : (
           <>
             {clinics.length === 0 && (

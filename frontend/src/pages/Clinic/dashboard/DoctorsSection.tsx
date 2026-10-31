@@ -9,6 +9,7 @@ export const DoctorsSection: React.FC = () => {
   const {
     data,
     loading,
+    fetchClinicData,
     setShowAddModal,
     handleDetachDoctor,
     handleCancelInvitation,
@@ -121,6 +122,14 @@ export const DoctorsSection: React.FC = () => {
 
           {loading && !data ? (
             <div className="py-12 text-center text-xs text-[#86868b]">Loading…</div>
+          ) : !data ? (
+            <EmptyState
+              icon={Stethoscope}
+              title="Couldn’t load doctors"
+              description="Check your connection and try again."
+              actionText="Try Again"
+              onAction={() => fetchClinicData()}
+            />
           ) : doctors.length === 0 ? (
             <EmptyState
               icon={Stethoscope}

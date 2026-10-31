@@ -31,6 +31,9 @@ export const MyAppointments: React.FC = () => {
   const [pastPage, setPastPage] = useState(1);
   const [hasMorePast, setHasMorePast] = useState(false);
   const [loadingMorePast, setLoadingMorePast] = useState(false);
+  // Last load failed (server down/offline): don't tell the patient they have no bookings.
+  const [upcomingFailed, setUpcomingFailed] = useState(false);
+  const [pastFailed, setPastFailed] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -53,8 +56,10 @@ export const MyAppointments: React.FC = () => {
     try {
       const data = await api.getPatientAppointments({ status: 'active' });
       setUpcomingAppointments(Array.isArray(data) ? data : []);
+      setUpcomingFailed(false);
     } catch (err) {
       console.error('Failed to load active appointments:', err);
+      setUpcomingFailed(true);
     } finally {
       if (!isSilent) setLoadingUpcoming(false);
     }
@@ -70,8 +75,10 @@ export const MyAppointments: React.FC = () => {
       setHasLoadedPast(true);
       setPastPage(1);
       setHasMorePast(list.length === 10);
+      setPastFailed(false);
     } catch (err) {
       console.error('Failed to load past appointments:', err);
+      setPastFailed(true);
     } finally {
       setLoadingPast(false);
     }
@@ -104,7 +111,7 @@ export const MyAppointments: React.FC = () => {
   useEffect(() => {
     if (loadingAuth) return;
     if (!user) {
-      navigate('/login');
+      navigate('/patient/login', { replace: true, state: { from: '/patient/appointments' } });
       return;
     }
     queueMicrotask(() => {
@@ -306,7 +313,15 @@ export const MyAppointments: React.FC = () => {
             ))}
           </div>
         ) : activeTab === 'upcoming' ? (
-          upcomingList.length === 0 ? (
+          upcomingList.length === 0 && upcomingFailed ? (
+            <EmptyState
+              icon={Calendar}
+              title="Couldn’t load appointments"
+              description="Check your connection and try again."
+              actionText="Try Again"
+              onAction={() => fetchActiveAppointments()}
+            />
+          ) : upcomingList.length === 0 ? (
             <EmptyState
               icon={Calendar}
               title="No upcoming appointments"
@@ -333,8 +348,17 @@ export const MyAppointments: React.FC = () => {
                     setUpcomingAppointments((prev) =>
                       prev.map((a) => (a.id === apptId ? { ...a, isCheckedIn: isPresent } : a))
                     );
-                    await api.checkInAppointmentDirect(apptId, isPresent);
-                    await fetchActiveAppointments(true);
+                    try {
+                      await api.checkInAppointmentDirect(apptId, isPresent);
+                    } catch (err: any) {
+                      // Undo the instant flip so the ticket shows the real state
+                      setUpcomingAppointments((prev) =>
+                        prev.map((a) => (a.id === apptId ? { ...a, isCheckedIn: !isPresent } : a))
+                      );
+                      toast.error(err?.message || 'Couldn’t update. Try again.');
+                      return;
+                    }
+                    fetchActiveAppointments(true);
                   }}
                 />
               ))}
@@ -346,6 +370,14 @@ export const MyAppointments: React.FC = () => {
               <div key={i} className="h-48 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse"></div>
             ))}
           </div>
+        ) : pastAppointments.length === 0 && pastFailed ? (
+          <EmptyState
+            icon={Clock}
+            title="Couldn’t load past visits"
+            description="Check your connection and try again."
+            actionText="Try Again"
+            onAction={() => fetchInitialPastAppointments()}
+          />
         ) : pastAppointments.length === 0 ? (
           <EmptyState
             icon={Clock}

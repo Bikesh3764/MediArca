@@ -15,6 +15,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { getFileUrl } from '../../services/api';
+import { currentPageState } from '../../utils/authRedirect';
 import { useVisibilityPolling } from '../../utils/useVisibilityPolling';
 import { useNotifications } from '../../context/NotificationContext';
 import { NotificationPanel } from '../notifications/NotificationPanel';
@@ -358,12 +359,14 @@ export const GlobalNav: React.FC = () => {
             <div className="flex items-center gap-2">
               <Link
                 to="/login"
+                state={currentPageState(location)}
                 className="text-[#1d1d1f] hover:text-[#0066cc] px-3.5 py-1.5 text-xs font-normal transition-colors hover:bg-black/[0.04] rounded-full"
               >
                 Sign In
               </Link>
               <Link
                 to="/signup"
+                state={currentPageState(location)}
                 className="bg-[#0066cc] hover:bg-[#0071e3] text-white px-4 py-1.5 rounded-full text-xs font-normal active:scale-95 transition-all"
               >
                 Sign Up
@@ -411,7 +414,7 @@ export const GlobalNav: React.FC = () => {
             className="fixed inset-0 top-14 bg-black/25 backdrop-blur-xs z-40 md:hidden animate-fadeIn"
             onClick={closeMenu}
           />
-          <div className="relative z-50 md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-2xl px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-2xl">
+          <div className="relative z-50 md:hidden bg-white/95 backdrop-blur-2xl border-b border-black/[0.06] rounded-b-2xl px-5 py-5 animate-fadeIn space-y-3.5 text-sm shadow-[0_12px_32px_rgba(0,0,0,0.12)]">
           {user && (
             <div className="flex items-center gap-3 pb-3.5 border-b border-black/[0.06]">
               <div className="w-9 h-9 rounded-full bg-[#0066cc] flex items-center justify-center text-xs font-semibold text-white  overflow-hidden flex-shrink-0">
@@ -582,6 +585,7 @@ export const GlobalNav: React.FC = () => {
               <div className="grid grid-cols-2 gap-2 w-full">
                 <Link
                   to="/login"
+                  state={currentPageState(location)}
                   onClick={closeMenu}
                   className="py-2.5 text-center rounded-full bg-[#f5f5f7] text-[#1d1d1f] font-semibold text-xs hover:bg-[#ebebee] transition-colors"
                 >
@@ -589,6 +593,7 @@ export const GlobalNav: React.FC = () => {
                 </Link>
                 <Link
                   to="/signup"
+                  state={currentPageState(location)}
                   onClick={closeMenu}
                   className="py-2.5 text-center rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white font-normal text-xs active:scale-95 transition-all"
                 >

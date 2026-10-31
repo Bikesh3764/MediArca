@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuthShell, type AuthVariant } from '../../components/auth/AuthShell';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { returnState } from '../../utils/authRedirect';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { BrandLogo } from '../../components/ui/BrandLogo';
 import { api } from '../../services/api';
@@ -80,7 +81,7 @@ export const ForgotPassword: React.FC = () => {
     try {
       await api.resetPassword({ email: email.trim(), role, otp: otp.trim(), newPassword: password });
       toast.success('Password updated. Sign in with your new password.');
-      navigate(info.login, { replace: true });
+      navigate(info.login, { replace: true, state: { email: email.trim(), ...returnState(location) } });
     } catch (err: any) {
       setError(err?.message || 'Could not reset the password.');
     } finally {
@@ -193,7 +194,7 @@ export const ForgotPassword: React.FC = () => {
           )}
 
           <div className="mt-6 pt-5 border-t border-[#e5e5ea] text-center">
-            <Link to={info.login} className="inline-block py-2 text-sm text-[#0066cc] hover:underline">
+            <Link to={info.login} state={returnState(location)} className="inline-block py-2 text-sm text-[#0066cc] hover:underline">
               Back to sign in
             </Link>
           </div>

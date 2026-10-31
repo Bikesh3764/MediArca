@@ -120,7 +120,7 @@ export const HowItWorksSection: React.FC = () => (
       <div className="mt-10 text-center">
         <Link
           to="/how-it-works"
-          className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover"
+          className="inline-flex items-center gap-1.5 py-2 text-sm text-primary hover:text-primary-hover"
         >
           Learn more
           <ArrowRight className="w-4 h-4" />

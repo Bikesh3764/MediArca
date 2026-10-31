@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { currentPageState } from '../../utils/authRedirect';
 import {
   Compass,
   Ticket,
@@ -49,11 +50,13 @@ export const MobileTabBar: React.FC = () => {
     to: string,
     label: string,
     Icon: React.ElementType,
-    isActive: boolean
+    isActive: boolean,
+    state?: unknown
   ) => (
     <Link
       key={to + label}
       to={to}
+      state={state}
       onClick={() => handleTabClick(to)}
       className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-150 active:scale-[0.93] select-none cursor-pointer ${
         isActive ? 'text-[#0066cc]' : 'text-[#86868b] hover:text-[#1d1d1f]'
@@ -205,7 +208,7 @@ export const MobileTabBar: React.FC = () => {
         {user ? (
           renderTab('/patient/profile', 'Profile', User, isProfileActive)
         ) : (
-          renderTab('/login', 'Sign In', LogIn, isProfileActive)
+          renderTab('/login', 'Sign In', LogIn, isProfileActive, currentPageState(location))
         )}
       </div>
     </nav>

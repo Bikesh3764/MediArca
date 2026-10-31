@@ -2,7 +2,7 @@ import { safeFetch } from '../../safeFetch';
 import { API_BASE_URL } from '../config';
 import { SlotStatusResult, evaluateSlotStatus, parseDoctorSlots } from '../schedule';
 import { Appointment, QueuePreview, WalkinTrackResult } from '../types';
-import { getHeaders, handleResponse } from '../http';
+import { getHeaders, handleResponse, friendlyHttpError } from '../http';
 import { DEMO_DOCTORS } from '../demoData';
 
 export const appointmentsApi = {
@@ -154,7 +154,7 @@ export const appointmentsApi = {
       json = text ? JSON.parse(text) : {};
     } catch {
       if (!res.ok) {
-        throw new Error(`Server returned error ${res.status}`);
+        throw new Error(friendlyHttpError(res.status));
       }
       return text;
     }

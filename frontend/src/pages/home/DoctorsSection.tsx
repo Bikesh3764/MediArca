@@ -29,6 +29,8 @@ export const DoctorsSection: React.FC = () => {
     specialtyCounts,
     filteredDoctors,
     resetDoctorFilters,
+    loadFailed,
+    retryLoad,
     getDoctorDetailPath,
     getDoctorBookPath,
   } = useHome();
@@ -289,6 +291,14 @@ export const DoctorsSection: React.FC = () => {
                     />
                   ))}
                 </div>
+              ) : filteredDoctors.length === 0 && loadFailed ? (
+                <EmptyState
+                  icon={Stethoscope}
+                  title="Couldn’t load doctors"
+                  description="Check your connection and try again."
+                  actionText="Try Again"
+                  onAction={retryLoad}
+                />
               ) : filteredDoctors.length === 0 ? (
                 <EmptyState
                   icon={Stethoscope}

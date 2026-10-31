@@ -68,7 +68,9 @@ const ProtectedRoute: React.FC<{
     );
   }
 
-  if (!user) {
+  // Not signed in, or signed in with a different kind of account (e.g. a doctor
+  // opening a booking link): send them to the right sign-in page and come back after.
+  if (!user || (allowedRoles && !allowedRoles.includes(user.role))) {
     if (allowedRoles && allowedRoles.length === 1 && allowedRoles[0] === 'ADMIN') {
       return <Navigate to="/admin-login" replace />;
     }
@@ -85,10 +87,6 @@ const ProtectedRoute: React.FC<{
       return <Navigate to="/patient/login" state={{ from: location }} replace />;
     }
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

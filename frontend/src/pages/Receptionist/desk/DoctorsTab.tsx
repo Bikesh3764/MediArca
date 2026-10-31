@@ -15,6 +15,7 @@ export const DoctorsTab: React.FC = () => {
     setScheduleModalDoctor,
     fetchDeskData,
     linkedDoctors,
+    deskLoadFailed,
   } = useReceptionistDashboard();
   return (
 <div className="space-y-5">
@@ -29,7 +30,15 @@ export const DoctorsTab: React.FC = () => {
                 </span>
               </div>
 
-              {linkedDoctors.length === 0 ? (
+              {linkedDoctors.length === 0 && deskLoadFailed ? (
+                <EmptyState
+                  icon={Users}
+                  title="Couldn’t load doctors"
+                  description="Check your connection and try again."
+                  actionText="Try Again"
+                  onAction={() => fetchDeskData()}
+                />
+              ) : linkedDoctors.length === 0 ? (
                 <EmptyState
                   icon={Users}
                   title="No doctors yet"
