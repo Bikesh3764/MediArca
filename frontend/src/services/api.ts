@@ -1,18 +1,7 @@
-// API client and shared helpers, split by area into ./api/. Import from this file.
-export * from './api/config';
-export * from './api/schedule';
-export * from './api/types';
-export * from './api/http';
-export * from './api/demoData';
-import { authApi } from './api/client/auth';
-import { doctorsApi } from './api/client/doctors';
-import { appointmentsApi } from './api/client/appointments';
-import { consultationApi } from './api/client/consultation';
-import { adminApi } from './api/client/admin';
-import { clinicApi } from './api/client/clinic';
-import { receptionistApi } from './api/client/receptionist';
-import { notificationsApi } from './api/client/notifications';
-import { reportsApi } from './api/client/reports';
+// API client. The code lives in shared/src/api (used by the website and the mobile app);
+// ./platform plugs in the browser first. Import from this file.
+import './platform';
+export * from '@mediarca/shared/api';
 
 import {
   safeFetch,
@@ -38,16 +27,3 @@ export {
   isRetryableError,
 };
 export type { SafeFetchOptions } from './safeFetch';
-
-/** One object with every API call, combined from the per-area clients. */
-export const api = {
-  ...authApi,
-  ...doctorsApi,
-  ...appointmentsApi,
-  ...consultationApi,
-  ...adminApi,
-  ...clinicApi,
-  ...receptionistApi,
-  ...notificationsApi,
-  ...reportsApi,
-};

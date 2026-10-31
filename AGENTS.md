@@ -45,6 +45,7 @@ MediArca is an Indian healthcare outpatient appointment and live queue managemen
 10. **Email-Only Account Uniqueness & Verification**: Account uniqueness is strictly enforced on `(email, role)` via `@@unique([email, role])`. Mobile number uniqueness is NOT required or enforced, permitting shared phone numbers for family members and dependents. OTP verification is performed exclusively via Email (Gmail SMTP with 6-digit numeric OTP). Phone numbers are collected and validated for the Indian standard (`+91` 10-digit mobile), but require no phone OTP or phone verification.
 11. **Silent Background Updates & Zero Disruptive Polling Screens**: Background real-time polling (`useVisibilityPolling`) MUST update state silently in-place without triggering full-screen loading spinners, clearing table rosters, or flashing "Loading live queue..." banners. Loading screens are reserved strictly for the initial empty mount.
 12. **Supabase Public API Stays Closed**: Row-level security is on for every table; new tables must enable it in their migration (see FIX-030).
+13. **Shared Code Stays Platform-Free**: `shared/` is used by the website and the mobile app. It must never use `window`, `document`, `localStorage`, `import.meta` or React Native directly; those come through `configurePlatform()` (see `docs/mobile-roadmap.md`).
 
 ### Strict DON'Ts
 1. **NO Online Payment Gateways**: NEVER introduce Stripe, Razorpay, PayPal, or automated upfront credit/debit card checkout. MediArca operates under a zero-upfront payment policy where patients coordinate payment directly with the receptionist.
@@ -75,6 +76,9 @@ cd frontend && npm run lint
 
 # 4. Frontend Production Build (Vite & tsc)
 cd frontend && npm run build
+
+# 5. Mobile app (when mobile/ or shared/ changes)
+cd mobile && npm run typecheck && npm run lint && npx expo export --platform android
 ```
 
 ---
@@ -97,8 +101,15 @@ MediArca/
 │   │   ├── 003-queue-atomic-transactions.md
 │   │   ├── 004-currency-localization-inr.md
 │   │   └── 005-api-resilience-and-caching.md
+│   ├── mobile-roadmap.md              # Mobile app (React Native) phases and progress — read first for app work
 │   └── tasks/
 │       └── current-task.md            # Active sprint checklist and test execution log
+│
+├── mobile/                            # React Native (Expo) app, all portals except Admin — see mobile/AGENTS.md
+│   └── src/app/                       # Screens (Expo Router); src/lib/platform.ts plugs the phone into shared/
+│
+├── shared/                            # Code used by website AND mobile app (API client, types, safeFetch, +91 phone)
+│   └── src/platform.ts                # configurePlatform(): each side plugs in server URL, storage, bot check
 │
 ├── backend/                           # Express 5 + Prisma 6 + TypeScript Backend
 │   ├── AGENTS.md                      # Scoped backend engineering rules

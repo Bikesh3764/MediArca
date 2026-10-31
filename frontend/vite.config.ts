@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { seoPlugin } from './seo-plugin.ts';
 
@@ -6,7 +7,12 @@ import { seoPlugin } from './seo-plugin.ts';
 export default defineConfig({
   plugins: [react(), seoPlugin()],
   base: process.env.VITE_BASE || '/',
+  resolve: {
+    // Code shared with the mobile app (../shared)
+    alias: { '@mediarca/shared': fileURLToPath(new URL('../shared/src', import.meta.url)) },
+  },
   server: {
+    fs: { allow: ['..'] },
     port: 5173,
     host: true,
     // Optional: preview locally against a remote API (e.g. DEV_API_PROXY=https://mediarca-api-sg.onrender.com

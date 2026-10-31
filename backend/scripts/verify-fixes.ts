@@ -76,11 +76,35 @@ const SPLIT_SOURCE_FAMILIES: Array<{ file: string; dir: string }> = [
   { file: 'frontend/src/pages/Admin/AdminDashboard.tsx', dir: 'frontend/src/pages/Admin/dashboard' },
   { file: 'frontend/src/pages/Home.tsx', dir: 'frontend/src/pages/home' },
 ];
+// Code used by both the website and the mobile app moved to shared/src (docs/mobile-roadmap.md, Phase 0).
+// The website file is now a thin re-export; reading it also returns the moved code. No assertion is changed.
+const SHARED_SOURCE_MOVES: Array<{ file: string; moved: string }> = [
+  { file: 'frontend/src/services/api.ts', moved: 'shared/src/api' },
+  { file: 'frontend/src/services/safeFetch.ts', moved: 'shared/src/safeFetch.ts' },
+  { file: 'frontend/src/utils/phoneUtils.ts', moved: 'shared/src/utils/phoneUtils.ts' },
+  { file: 'frontend/src/utils/address.ts', moved: 'shared/src/utils/address.ts' },
+  { file: 'frontend/src/utils/indiaStates.ts', moved: 'shared/src/utils/indiaStates.ts' },
+];
+const listSourceFiles = (target: string): string[] => {
+  if (!fs.existsSync(target)) return [];
+  if (!fs.statSync(target).isDirectory()) return [target];
+  return fs
+    .readdirSync(target)
+    .sort()
+    .flatMap((name) => listSourceFiles(path.join(target, name)))
+    .filter((f) => /\.tsx?$/.test(f));
+};
 const originalReadFileSync = fs.readFileSync.bind(fs);
 (fs as any).readFileSync = (target: any, ...rest: any[]) => {
   const content = originalReadFileSync(target, ...rest);
   if (typeof target !== 'string' || typeof content !== 'string') return content;
   const normalized = path.resolve(target).split(path.sep).join('/');
+  const move = SHARED_SOURCE_MOVES.find((m) => normalized.endsWith('/' + m.file));
+  if (move) {
+    const repoRoot = normalized.slice(0, normalized.length - move.file.length);
+    const movedParts = listSourceFiles(path.join(repoRoot, move.moved)).map((f) => originalReadFileSync(f, 'utf8'));
+    return [content, ...movedParts].join(String.fromCharCode(10));
+  }
   const family = SPLIT_SOURCE_FAMILIES.find((f) => normalized.endsWith('/' + f.file) || normalized.endsWith('/backend/' + f.file) || normalized.endsWith(f.file));
   if (!family) return content;
   const base = normalized.slice(0, normalized.length - family.file.length);

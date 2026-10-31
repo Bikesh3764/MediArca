@@ -1,0 +1,9 @@
+{
+  "name": "@mediarca/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Code shared by the MediArca website and mobile app: API client, data types, phone/₹/IST helpers.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

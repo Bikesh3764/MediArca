@@ -15,6 +15,7 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
+    "paths": { "@mediarca/shared/*": ["../shared/src/*"], "@mediarca/shared": ["../shared/src/index.ts"] },
 
     /* Linting */
     "noUnusedLocals": false,
