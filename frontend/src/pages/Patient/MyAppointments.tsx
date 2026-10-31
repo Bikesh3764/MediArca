@@ -227,7 +227,7 @@ export const MyAppointments: React.FC = () => {
             : 'You’re checked in.'),
       });
 
-      await fetchActiveAppointments(true);
+      void fetchActiveAppointments(true);
     } catch (err: any) {
       setCheckinMessage({
         type: 'error',

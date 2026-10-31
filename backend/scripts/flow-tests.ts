@@ -343,6 +343,23 @@ async function bugHuntChecks() {
     'FIX-052: resend/verify code replies don\'t reveal which emails have accounts',
     [resendReal.status, resendNone.status, verifyReal.status, verifyNone.status]
   );
+
+  // FIX-064: the desk QR tells a patient with no visit today to book, and the booking link works
+  const PQ = await patient('qr');
+  const noVisit = await call('POST', '/api/appointments/check-in', PQ.token, { clinicId: A.clinic.id, code: `bh-A-${RUN}` });
+  check(
+    noVisit.status === 404 && noVisit.json?.code === 'NO_APPOINTMENT_TODAY' && noVisit.json?.clinic?.id === A.clinic.id,
+    'FIX-064: scanning the desk QR with no visit today offers booking at that clinic',
+    noVisit.json
+  );
+  const bookingQr = await call('POST', '/api/appointments/check-in', PQ.token, { clinicId: A.clinic.id });
+  check(bookingQr.status === 403 && bookingQr.json?.code === 'WRONG_QR', 'FIX-064: the booking QR (no code) never checks anyone in', bookingQr.json);
+  const publicClinic = await call('GET', `/api/clinics/public/${A.clinic.id}`);
+  check(
+    publicClinic.status === 200 && publicClinic.json?.data?.doctors?.some((cd: any) => cd.doctorId === D.doctor.id) && !('checkinCode' in (publicClinic.json?.data || {})),
+    "FIX-064: the booking QR page lists the clinic's doctors without the check-in code",
+    publicClinic.status
+  );
 }
 
 /**

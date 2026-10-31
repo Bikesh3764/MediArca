@@ -9,6 +9,42 @@ interface CameraQrScannerModalProps {
   defaultClinicId?: string;
 }
 
+/** Reads clinicId + code from the desk check-in QR. Booking QRs (no code) return null. */
+const parseQrText = (text: string): { clinicId: string; code: string } | null => {
+  try {
+    const raw = String(text || '').trim();
+    // 1. Try URL parameter parsing (e.g. ...#/clinic-checkin?clinicId=xxx&code=yyy or /check-in?clinicId=xxx&code=yyy)
+    if (raw.includes('clinicId')) {
+      let queryString = '';
+      if (raw.includes('?')) {
+        queryString = raw.slice(raw.indexOf('?') + 1);
+      } else {
+        queryString = raw;
+      }
+      const params = new URLSearchParams(queryString);
+      const clinicId = params.get('clinicId');
+      const code = params.get('code') || params.get('checkinCode') || '';
+      if (clinicId && code) {
+        return { clinicId, code };
+      }
+    }
+
+    // 2. Try JSON parsing
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      const parsed = JSON.parse(raw);
+      if (parsed.clinicId) {
+        return {
+          clinicId: parsed.clinicId,
+          code: String(parsed.code || parsed.checkinCode || ''),
+        };
+      }
+    }
+  } catch {
+    // Fallback
+  }
+  return null;
+};
+
 export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
   isOpen,
   onClose,
@@ -17,46 +53,25 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
 }) => {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [scannedFeedback, setScannedFeedback] = useState(false);
+  // Short hint when the camera sees a QR that isn't the desk check-in QR
+  const [hint, setHint] = useState<string | null>(null);
+  const hintTimerRef = useRef<number | null>(null);
+  const lastScanRef = useRef(0);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const parseQrText = (text: string): { clinicId: string; code: string } | null => {
-    try {
-      const raw = String(text || '').trim();
-      // 1. Try URL parameter parsing (e.g. ...#/clinic-checkin?clinicId=xxx&code=yyy or /check-in?clinicId=xxx&code=yyy)
-      if (raw.includes('clinicId')) {
-        let queryString = '';
-        if (raw.includes('?')) {
-          queryString = raw.slice(raw.indexOf('?') + 1);
-        } else {
-          queryString = raw;
-        }
-        const params = new URLSearchParams(queryString);
-        const clinicId = params.get('clinicId');
-        const code = params.get('code') || params.get('checkinCode') || '';
-        if (clinicId) {
-          return { clinicId, code };
-        }
-      }
+  const showHint = useCallback((text: string) => {
+    setHint(text);
+    if (hintTimerRef.current) window.clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = window.setTimeout(() => setHint(null), 2500);
+  }, []);
 
-      // 2. Try JSON parsing
-      if (raw.startsWith('{') && raw.endsWith('}')) {
-        const parsed = JSON.parse(raw);
-        if (parsed.clinicId) {
-          return {
-            clinicId: parsed.clinicId,
-            code: String(parsed.code || parsed.checkinCode || ''),
-          };
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return null;
-  };
+  useEffect(() => () => {
+    if (hintTimerRef.current) window.clearTimeout(hintTimerRef.current);
+  }, []);
 
   const handleDetected = useCallback((data: { clinicId: string; code: string }) => {
     if (scannedFeedback) return;
@@ -139,29 +154,68 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
       startCamera();
     });
 
-    const scanFrame = () => {
+    // The browser's own QR reader is faster where it exists (Android Chrome); jsQR is the fallback.
+    const BarcodeDetectorCtor = (window as any).BarcodeDetector;
+    let detector: any = null;
+    try {
+      detector = BarcodeDetectorCtor ? new BarcodeDetectorCtor({ formats: ['qr_code'] }) : null;
+    } catch {
+      detector = null;
+    }
+    let busy = false;
+
+    const handleText = (text: string): boolean => {
+      const parsed = parseQrText(text);
+      if (parsed) {
+        handleDetected(parsed);
+        return true;
+      }
+      if (/\/clinics\/|clinicId=/.test(text)) {
+        showHint('That’s the booking QR. Scan the check-in QR at the front desk.');
+      } else {
+        showHint('This isn’t a clinic check-in QR.');
+      }
+      return false;
+    };
+
+    const readWithJsQr = (video: HTMLVideoElement, canvas: HTMLCanvasElement): string | null => {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+      // A smaller frame is enough for a QR and keeps phones cool
+      const scale = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'attemptBoth',
+      });
+      return qrCode?.data || null;
+    };
+
+    const scanFrame = async (now: number) => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
 
-      if (video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        if (ctx) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const qrCode = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
-          });
-
-          if (qrCode && qrCode.data) {
-            const parsed = parseQrText(qrCode.data);
-            if (parsed) {
-              handleDetected(parsed);
-              return;
+      // About 8 reads a second is plenty
+      if (!busy && now - lastScanRef.current > 120 && video && canvas && video.readyState === video.HAVE_ENOUGH_DATA) {
+        lastScanRef.current = now;
+        busy = true;
+        try {
+          let text: string | null = null;
+          if (detector) {
+            try {
+              const codes = await detector.detect(video);
+              text = codes?.[0]?.rawValue || null;
+            } catch {
+              detector = null;
             }
+          } else {
+            text = readWithJsQr(video, canvas);
           }
+          if (text && handleText(text)) return;
+        } finally {
+          busy = false;
         }
       }
 
@@ -173,7 +227,7 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, scannedFeedback, startCamera, stopCamera, handleDetected]);
+  }, [isOpen, scannedFeedback, startCamera, stopCamera, handleDetected, showHint]);
 
   if (!isOpen) return null;
 
@@ -244,15 +298,15 @@ export const CameraQrScannerModal: React.FC<CameraQrScannerModalProps> = ({
             {scannedFeedback && (
               <div className="absolute inset-0 bg-[#0066cc]/95 backdrop-blur-xs flex flex-col items-center justify-center text-white animate-fadeIn">
                 <CheckCircle2 className="w-10 h-10 mb-2" />
-                <p className="text-sm font-semibold">You’re checked in</p>
+                <p className="text-sm font-semibold">Scanned. Checking you in…</p>
               </div>
             )}
           </div>
         )}
 
-        <div className="mt-5 pt-3 border-t border-[#f0f0f2]">
-          <p className="text-[11px] text-[#86868b]">
-            Point your camera at the QR code
+        <div className="mt-5 pt-3 border-t border-[#f0f0f2]" aria-live="polite">
+          <p className={`text-[11px] ${hint ? 'text-[#1d1d1f] font-semibold' : 'text-[#86868b]'}`}>
+            {hint || 'Point your camera at the QR code'}
           </p>
         </div>
       </div>

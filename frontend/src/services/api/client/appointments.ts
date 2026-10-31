@@ -159,7 +159,12 @@ export const appointmentsApi = {
       return text;
     }
     if (!res.ok || json.success === false) {
-      throw new Error(json.message || json.error || 'Couldn’t complete clinic check-in. Try again.');
+      // `code` tells the page what to offer next (e.g. NO_APPOINTMENT_TODAY -> book a doctor here).
+      throw Object.assign(new Error(json.message || json.error || 'Couldn’t check you in. Try again.'), {
+        status: res.status,
+        code: json.code as string | undefined,
+        clinic: json.clinic as { id: string; clinicName: string } | undefined,
+      });
     }
     const apptData = json.data || {};
     return {

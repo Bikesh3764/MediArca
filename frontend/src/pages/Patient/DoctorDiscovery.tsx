@@ -53,10 +53,33 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
   const [clinics, setClinics] = useState<ClinicProfile[]>([]);
   const [loadingClinics, setLoadingClinics] = useState(true);
   const selectedClinicId = searchParams.get('clinicId');
-  const selectedClinic = useMemo(() => {
+  const listedClinic = useMemo(() => {
     if (!selectedClinicId || clinics.length === 0) return null;
     return clinics.find((c) => c.id === selectedClinicId) || null;
   }, [selectedClinicId, clinics]);
+  // A clinic's booking QR opens this page directly. The list only has the first page of
+  // clinics, so look the clinic up by id when it isn't there.
+  const [fetchedClinic, setFetchedClinic] = useState<ClinicProfile | null>(null);
+  const [missingClinicId, setMissingClinicId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!selectedClinicId || loadingClinics || listedClinic) return;
+    if (fetchedClinic?.id === selectedClinicId || missingClinicId === selectedClinicId) return;
+    let cancelled = false;
+    api
+      .getPublicClinicById(selectedClinicId)
+      .then((clinic) => {
+        if (!cancelled) setFetchedClinic(clinic);
+      })
+      .catch(() => {
+        if (!cancelled) setMissingClinicId(selectedClinicId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClinicId, loadingClinics, listedClinic, fetchedClinic, missingClinicId]);
+  const selectedClinic = listedClinic || (fetchedClinic && fetchedClinic.id === selectedClinicId ? fetchedClinic : null);
+  const clinicLookupPending =
+    Boolean(selectedClinicId) && !selectedClinic && missingClinicId !== selectedClinicId;
   const [clinicSearchQuery, setClinicSearchQuery] = useState('');
   const [clinicSelectedState, setClinicSelectedState] = useState('All');
   const [clinicSelectedCity, setClinicSelectedCity] = useState('All');
@@ -845,7 +868,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
             </div>
           ) : (
             <div>
-              {loadingClinics ? (
+              {loadingClinics || clinicLookupPending ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:[grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4 sm:gap-6 w-full">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div
@@ -1611,7 +1634,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
         title={activeSection === 'clinics' ? 'Clinics near you.' : 'Doctors near you.'}
         subtitle={
           activeSection === 'clinics'
-            ? loadingClinics || clinicsError
+            ? loadingClinics || clinicsError || selectedClinicId
               ? 'Book a token and track it live.'
               : `${filteredClinics.length} verified clinic${filteredClinics.length === 1 ? '' : 's'}. Book a token and track it live.`
             : !hasLoadedDoctors || doctorsError

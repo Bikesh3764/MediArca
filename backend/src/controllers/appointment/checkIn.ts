@@ -49,7 +49,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (req.user.role && req.user.role !== 'PATIENT') {
       res.status(403).json({
         success: false,
-        message: 'Only patient accounts can perform QR arrival check-in.',
+        message: 'Sign in with your patient account to check in.',
       });
       return;
     }
@@ -59,7 +59,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (!clinicId) {
       res.status(400).json({
         success: false,
-        message: 'Clinic ID is required to verify clinic arrival from QR scan.',
+        message: 'Scan the QR code at the front desk.',
       });
       return;
     }
@@ -69,7 +69,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     });
 
     if (!clinic) {
-      res.status(404).json({ success: false, message: 'Clinic facility not found' });
+      res.status(404).json({ success: false, message: 'Clinic not found.' });
       return;
     }
 
@@ -78,7 +78,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (!clinicCheck.active) {
       res.status(403).json({
         success: false,
-        message: clinicCheck.reason || 'This clinic facility is currently inactive or not verified for arrival check-ins.',
+        message: clinicCheck.reason || 'This clinic isn’t taking check-ins right now.',
       });
       return;
     }
@@ -94,7 +94,8 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (!submittedCode || (clinic.checkinCode && submittedCode !== String(clinic.checkinCode).trim())) {
       res.status(403).json({
         success: false,
-        message: 'Invalid or missing clinic QR verification code. Please scan the official QR standee at the clinic reception desk.',
+        message: 'This isn’t the check-in QR. Scan the one at the front desk.',
+        code: 'WRONG_QR',
       });
       return;
     }
@@ -113,13 +114,13 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       });
 
       if (!appointment || appointment.patient.userId !== req.user.id) {
-        res.status(404).json({ success: false, message: 'Appointment not found or not owned by your account' });
+        res.status(404).json({ success: false, message: 'Appointment not found.' });
         return;
       }
       if (appointment.clinicId !== clinic.id) {
         res.status(400).json({
           success: false,
-          message: `This appointment is booked at a different venue (${appointment.clinic?.clinicName || 'another clinic'}).`,
+          message: `This appointment is at ${appointment.clinic?.clinicName || 'another clinic'}.`,
         });
         return;
       }
@@ -130,7 +131,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       });
 
       if (!patient) {
-        res.status(404).json({ success: false, message: 'Patient profile not found' });
+        res.status(404).json({ success: false, message: 'Patient profile not found.' });
         return;
       }
 
@@ -176,7 +177,9 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (!appointment) {
       res.status(404).json({
         success: false,
-        message: `No active consultation appointment found for today (${todayStr}) at ${clinic.clinicName}.`,
+        message: `No appointment today at ${clinic.clinicName}.`,
+        code: 'NO_APPOINTMENT_TODAY',
+        clinic: { id: clinic.id, clinicName: clinic.clinicName },
       });
       return;
     }
@@ -186,7 +189,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       if (!docCheck.eligible) {
         res.status(403).json({
           success: false,
-          message: docCheck.reason || 'This practitioner is currently unavailable for clinical check-ins.',
+          message: docCheck.reason || 'This doctor isn’t available right now. Please ask the front desk.',
         });
         return;
       }
@@ -195,7 +198,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (appointment.appointmentDate !== todayStr) {
       res.status(400).json({
         success: false,
-        message: `Check-in is only available on the date of your consultation (${appointment.appointmentDate}). Today is ${todayStr}.`,
+        message: 'You can check in on the day of your visit.',
       });
       return;
     }
@@ -224,7 +227,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (appointment.status === 'PENDING_APPROVAL') {
       res.status(400).json({
         success: false,
-        message: 'Your booking request is awaiting desk confirmation. Please pay your consultation fee at the reception desk to confirm your queue spot.',
+        message: 'Your booking isn’t confirmed yet. Pay the receptionist to confirm your token.',
       });
       return;
     }
@@ -232,7 +235,9 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (appointment.status === 'EXPIRED') {
       res.status(400).json({
         success: false,
-        message: 'This appointment request has expired because the consultation shift has already concluded. Please book for the next available shift.',
+        message: 'This booking has expired. Please book again.',
+        code: 'NO_APPOINTMENT_TODAY',
+        clinic: { id: clinic.id, clinicName: clinic.clinicName },
       });
       return;
     }
@@ -240,7 +245,9 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
     if (appointment.status !== 'WAITING' && appointment.status !== 'IN_CONSULTATION') {
       res.status(400).json({
         success: false,
-        message: `Cannot check in appointment in '${appointment.status}' status.`,
+        message: 'This appointment is already closed.',
+        code: 'NO_APPOINTMENT_TODAY',
+        clinic: { id: clinic.id, clinicName: clinic.clinicName },
       });
       return;
     }
@@ -254,7 +261,7 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
       res.json({
         success: true,
         alreadyCheckedIn: true,
-        message: `You are already checked in at ${clinic.clinicName} (Queue #${appointment.queueNumber}).`,
+        message: `You’re already checked in. Token #${appointment.queueNumber}.`,
         data: safeAppointment,
       });
       return;
@@ -310,14 +317,14 @@ export const checkInAppointmentWithQR = async (req: AuthRequest, res: Response):
 
     res.json({
       success: true,
-      message: `Arrival verified! You are checked in at ${clinic.clinicName} (Queue #${updated.queueNumber}). Dr. ${updated.doctor.user.fullName} and reception desk are notified.`,
+      message: `You’re checked in. Token #${updated.queueNumber}.`,
       data: updated,
     });
   } catch (error: any) {
     console.error('checkInAppointmentWithQR error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to process physical clinic check-in',
+      message: 'Couldn’t check you in. Try again.',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
   }

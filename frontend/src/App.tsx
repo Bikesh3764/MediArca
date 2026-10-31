@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { siteBase } from './utils/siteUrl';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -12,6 +12,12 @@ import { MobileTabBar } from './components/layout/MobileTabBar';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ProfileCompletionModal } from './components/auth/ProfileCompletionModal';
 import { ScrollToTop } from './components/common/ScrollToTop';
+
+// Short link printed on a clinic's booking QR: mediarca.in/clinics/<id> -> that clinic's doctors.
+const ClinicBookingLink: React.FC = () => {
+  const { id = '' } = useParams();
+  return <Navigate to={`/doctors?tab=clinics&clinicId=${encodeURIComponent(id)}`} replace />;
+};
 
 // Route-level code-split pages (FIX-011)
 const Home = lazy(() => import('./pages/Home'));
@@ -196,6 +202,7 @@ function AppShell() {
             {/* Directory & Booking */}
             <Route path="/doctors" element={<DoctorDiscovery />} />
             <Route path="/patient/doctors" element={<Navigate to="/doctors" replace />} />
+            <Route path="/clinics/:id" element={<ClinicBookingLink />} />
             <Route path="/doctor/:id" element={<DoctorDetail />} />
             <Route path="/patient/doctor/:id" element={<DoctorDetail />} />
             <Route

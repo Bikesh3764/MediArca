@@ -10863,6 +10863,41 @@ Follow-up Date: 2026-10-15`;
     assert(homeSrc.includes('to="/track"'), 'FIX-058: home page links to Track walk-in');
   }
 
+  // FIX-064: clinic booking QR (no check-in code inside) and a check-in page that offers booking
+  {
+    const fe = (f: string) => fs.readFileSync(path.join(__dirname, '../../frontend/src', f), 'utf8');
+    const standee = fe('components/common/ClinicQrStandeeModal.tsx');
+    const bookingLine = standee.split('\n').find((l) => l.includes('const clinicBookingUrl')) || '';
+    assert(
+      bookingLine.includes("appUrl(`/clinics/${encodeURIComponent(clinicId)}`)") && !/checkinCode|[?&]code=/.test(bookingLine),
+      'FIX-064: booking QR links to /clinics/<id> and never carries the check-in code'
+    );
+    assert(
+      fe('App.tsx').includes('<Route path="/clinics/:id" element={<ClinicBookingLink />} />') &&
+        fe('seo/site.ts').includes("'/clinics/:id'"),
+      'FIX-064: /clinics/:id is routed in the app and served by Cloudflare'
+    );
+    assert(
+      fe('pages/Patient/DoctorDiscovery.tsx').includes('.getPublicClinicById(selectedClinicId)'),
+      'FIX-064: clinic page loads a clinic by id when it is not in the first page of the list'
+    );
+    const checkInCtl = fs.readFileSync(path.join(__dirname, '../src/controllers/appointment/checkIn.ts'), 'utf8');
+    assert(
+      checkInCtl.includes("code: 'NO_APPOINTMENT_TODAY'") && checkInCtl.includes("code: 'WRONG_QR'"),
+      'FIX-064: check-in errors say why, so the page can offer booking'
+    );
+    const checkInPage = fe('pages/Patient/ClinicCheckIn.tsx');
+    assert(
+      checkInPage.includes("errorCode === 'NO_APPOINTMENT_TODAY'") && checkInPage.includes('Book a Doctor Here'),
+      'FIX-064: no appointment today -> Book a Doctor Here at that clinic'
+    );
+    const scanner = fe('components/common/CameraQrScannerModal.tsx');
+    assert(
+      scanner.includes('if (clinicId && code)') && scanner.includes('That’s the booking QR') && !scanner.includes('>You’re checked in<'),
+      'FIX-064: in-app scanner ignores booking QRs with a hint and does not claim check-in before the server confirms'
+    );
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

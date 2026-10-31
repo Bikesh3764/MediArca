@@ -25,61 +25,17 @@ export const ClinicCheckIn: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [autoAttempted, setAutoAttempted] = useState(false);
 
-  // Auto-attempt check-in when clinicId is present from QR scan
-  useEffect(() => {
-    let mounted = true;
-    if (loadingAuth || autoAttempted) return;
-    if (!user) return; // Will prompt login
-    if (!clinicId) return; // Direct visit: show informational guide
+  // What to offer when check-in fails: book here (no visit today) or nothing to retry (wrong QR)
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const isPatient = user?.role === 'PATIENT';
 
-    queueMicrotask(async () => {
-      if (!mounted) return;
-
-      setCheckingIn(true);
-      setErrorMessage(null);
-      try {
-        const res: any = await api.checkInWithQR({
-          clinicId,
-          code,
-          appointmentId,
-        });
-
-        if (!mounted) return;
-        const apptData = res?.id ? res : (res?.data || null);
-        if (apptData) {
-          setSuccessData(apptData);
-          setSuccessMessage(res?.message || 'You’re checked in.');
-        } else {
-          setErrorMessage(res?.message || 'Couldn’t check in. Try again.');
-        }
-      } catch (err: any) {
-        if (!mounted) return;
-        console.error('Check-in error:', err);
-        setErrorMessage(err.message || 'Couldn’t check you in. Please ask the front desk.');
-      } finally {
-        if (mounted) {
-          setCheckingIn(false);
-          setAutoAttempted(true);
-        }
-      }
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, [user, loadingAuth, clinicId, code, appointmentId, autoAttempted]);
-
-  const handleManualCheckIn = async () => {
-    if (!clinicId) return;
+  const runCheckIn = React.useCallback(async (isActive: () => boolean = () => true) => {
     setCheckingIn(true);
     setErrorMessage(null);
+    setErrorCode(null);
     try {
-      const res: any = await api.checkInWithQR({
-        clinicId,
-        code,
-        appointmentId,
-      });
-
+      const res: any = await api.checkInWithQR({ clinicId, code, appointmentId });
+      if (!isActive()) return;
       const apptData = res?.id ? res : (res?.data || null);
       if (apptData) {
         setSuccessData(apptData);
@@ -88,12 +44,34 @@ export const ClinicCheckIn: React.FC = () => {
         setErrorMessage(res?.message || 'Couldn’t check in. Try again.');
       }
     } catch (err: any) {
-      console.error('Check-in error:', err);
-      setErrorMessage(err.message || 'Couldn’t check you in. Please ask the front desk.');
+      if (!isActive()) return;
+      setErrorMessage(err?.message || 'Couldn’t check you in. Please ask the front desk.');
+      setErrorCode(err?.code || null);
     } finally {
-      setCheckingIn(false);
+      if (isActive()) setCheckingIn(false);
     }
+  }, [clinicId, code, appointmentId]);
+
+  // Scanned the desk QR while signed in as a patient: check in straight away
+  useEffect(() => {
+    let mounted = true;
+    if (loadingAuth || autoAttempted || !isPatient || !clinicId) return;
+    queueMicrotask(async () => {
+      if (!mounted) return;
+      await runCheckIn(() => mounted);
+      if (mounted) setAutoAttempted(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [isPatient, loadingAuth, clinicId, autoAttempted, runCheckIn]);
+
+  const handleManualCheckIn = () => {
+    if (clinicId) void runCheckIn();
   };
+
+  const currentTarget = encodeURIComponent(`${location.pathname}${location.search}`);
+  const bookHere = () => navigate(`/clinics/${encodeURIComponent(clinicId)}`);
 
   const hasQueryParams = Boolean(clinicId);
 
@@ -152,7 +130,7 @@ export const ClinicCheckIn: React.FC = () => {
               </div>
 
               <div className="space-y-2.5">
-                {user ? (
+                {isPatient ? (
                   <button
                     type="button"
                     onClick={() => navigate('/patient/appointments')}
@@ -164,7 +142,7 @@ export const ClinicCheckIn: React.FC = () => {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => navigate('/login?redirect=/patient/appointments')}
+                    onClick={() => navigate('/patient/login?redirect=/patient/appointments')}
                     className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
                   >
                     <span>Sign In</span>
@@ -184,18 +162,17 @@ export const ClinicCheckIn: React.FC = () => {
           )}
 
           {/* Not Logged In Prompt (When valid QR params exist) */}
-          {hasQueryParams && !loadingAuth && !user && (
+          {hasQueryParams && !loadingAuth && !isPatient && (
             <div className="space-y-5">
               <p className="text-xs text-[#86868b] leading-relaxed">
-                Sign in with the account you booked with.
+                {user
+                  ? 'Sign in with your patient account to check in.'
+                  : 'Sign in with the account you booked with.'}
               </p>
               <div className="space-y-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    const currentTarget = `${location.pathname}${location.search}`;
-                    navigate(`/login?redirect=${encodeURIComponent(currentTarget)}`);
-                  }}
+                  onClick={() => navigate(`/patient/login?redirect=${currentTarget}`)}
                   className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
                 >
                   <span>Sign In</span>
@@ -203,15 +180,18 @@ export const ClinicCheckIn: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const currentTarget = `${location.pathname}${location.search}`;
-                    navigate(`/signup?redirect=${encodeURIComponent(currentTarget)}`);
-                  }}
+                  onClick={() => navigate(`/patient/signup?redirect=${currentTarget}`)}
                   className="w-full h-11 px-6 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] active:scale-[0.98] text-[#1d1d1f] border border-[#e5e5ea] text-sm font-normal transition-all duration-150 flex items-center justify-center cursor-pointer select-none"
                 >
                   Create Account
                 </button>
               </div>
+              <p className="text-xs text-[#86868b] text-center">
+                No appointment?{' '}
+                <button type="button" onClick={bookHere} className="inline-block py-2 text-[#0066cc] hover:underline cursor-pointer">
+                  Book a doctor here
+                </button>
+              </p>
             </div>
           )}
 
@@ -280,13 +260,24 @@ export const ClinicCheckIn: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-2.5">
-                <button
-                  type="button"
-                  onClick={handleManualCheckIn}
-                  className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer select-none"
-                >
-                  Try Again
-                </button>
+                {errorCode === 'NO_APPOINTMENT_TODAY' ? (
+                  <button
+                    type="button"
+                    onClick={bookHere}
+                    className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center gap-2 cursor-pointer select-none"
+                  >
+                    <span>Book a Doctor Here</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : errorCode !== 'WRONG_QR' ? (
+                  <button
+                    type="button"
+                    onClick={handleManualCheckIn}
+                    className="w-full h-11 px-6 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-sm font-normal transition-all duration-150  flex items-center justify-center cursor-pointer select-none"
+                  >
+                    Try Again
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => navigate('/patient/appointments')}

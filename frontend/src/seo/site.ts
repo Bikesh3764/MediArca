@@ -125,6 +125,7 @@ export const APP_ROUTES: string[] = [
   '/signup',
   '/forgot-password',
   '/clinic-checkin',
+  '/clinics/:id',
   '/patient/login',
   '/patient/signup',
   '/patient/appointments',
