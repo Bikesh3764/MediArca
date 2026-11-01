@@ -15,7 +15,7 @@ const FooterColumn: React.FC<{ title: string; links: FooterLink[] }> = ({ title,
     <ul className="space-y-1 sm:space-y-3 text-sm text-[#1d1d1f]">
       {links.map((l) => (
         <li key={l.label}>
-          <Link to={l.to} className="text-[#48484a] hover:text-primary transition-colors py-1.5 sm:py-0 inline-block">
+          <Link to={l.to} onClick={() => window.scrollTo({ top: 0 })} className="text-[#48484a] hover:text-primary transition-colors py-1.5 sm:py-0 inline-block">
             {l.label}
           </Link>
         </li>

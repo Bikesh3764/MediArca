@@ -40,9 +40,9 @@ export const ScrollToTop: React.FC<ScrollToTopProps> = ({
     const isPathChange = prevPathnameRef.current !== pathname;
     prevPathnameRef.current = pathname;
 
-    // Reset scroll on page-level pathname change, or when user explicitly navigates (PUSH)
-    // or when navigating back/forward (POP)
-    const shouldScroll = isPathChange || navigationType === 'PUSH' || (navigationType === 'POP' && scrollOnPop);
+    // Only a new page (pathname) resets scroll. Same-page ?query changes (filters, picking a clinic)
+    // keep the position, so the page does not jump to the top.
+    const shouldScroll = isPathChange && (navigationType !== 'POP' || scrollOnPop);
 
     if (shouldScroll) {
       // Immediate execution

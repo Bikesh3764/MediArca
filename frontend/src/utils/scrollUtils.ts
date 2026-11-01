@@ -50,3 +50,17 @@ export const setManualScrollRestoration = (): void => {
     }
   }
 };
+
+/**
+ * Smooth-scrolls to an element once it is on the page (it may render a few frames later,
+ * e.g. after a URL filter change). Gives up quietly after ~1 second.
+ */
+export const scrollToElementWhenReady = (id: string, tries = 60): void => {
+  if (typeof window === 'undefined') return;
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  if (tries > 0) requestAnimationFrame(() => scrollToElementWhenReady(id, tries - 1));
+};

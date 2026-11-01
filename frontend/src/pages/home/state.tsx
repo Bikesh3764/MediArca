@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, createContext, useContext } from '
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, Doctor, ClinicProfile, PublicClinicDoctor, ALL_SPECIALTIES } from '../../services/api';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
+import { scrollToElementWhenReady } from '../../utils/scrollUtils';
 
 /** All data, effects and actions for Home, shared with its parts through context. */
 export const useHomeState = () => {
@@ -69,6 +70,7 @@ export const useHomeState = () => {
     newParams.set('tab', 'clinics');
     newParams.set('clinicId', clinic.id);
     setSearchParams(newParams);
+    scrollToElementWhenReady('clinic-doctors');
   };
   const handleClearClinic = () => {
     const newParams = new URLSearchParams(searchParams);

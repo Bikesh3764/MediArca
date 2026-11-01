@@ -35,6 +35,7 @@ import { SearchableSpecialtySelect } from '../../components/ui/SearchableSpecial
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
 import { formatClinicAddress } from '../../utils/address';
+import { scrollToElementWhenReady } from '../../utils/scrollUtils';
 
 const getClinicLocationDisplay = (clinic?: { address?: string; city?: string | null; state?: string | null } | null): string => {
   return formatClinicAddress(clinic) || 'Clinic';
@@ -512,6 +513,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
     newParams.set('tab', 'clinics');
     newParams.set('clinicId', clinic.id);
     setSearchParams(newParams);
+    scrollToElementWhenReady('clinic-doctors');
   };
 
   const handleClearClinic = () => {
@@ -679,7 +681,7 @@ export const DoctorDiscovery: React.FC<DoctorDiscoveryProps> = () => {
       {activeSection === 'clinics' && (
         <div>
           {selectedClinic ? (
-            <div className="space-y-6 animate-fadeIn">
+            <div id="clinic-doctors" className="space-y-6 animate-fadeIn scroll-mt-20">
               {/* Selected Clinic Header Card */}
               <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

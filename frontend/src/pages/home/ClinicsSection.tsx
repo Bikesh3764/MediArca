@@ -26,7 +26,7 @@ export const ClinicsSection: React.FC = () => {
 <div>
             {/* If a clinic is selected, show its full dedicated view with practicing doctors & time slots */}
             {selectedClinic ? (
-              <div className="space-y-8 animate-fadeIn">
+              <div id="clinic-doctors" className="space-y-8 animate-fadeIn scroll-mt-20">
                 {/* Selected Clinic Header Card */}
                 <div className="bg-white rounded-2xl border border-[#e5e5ea] p-6 ">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
