@@ -2,7 +2,8 @@
 // Same rules as frontend/src/pages/Patient/DoctorDetail.tsx.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Doctor, type QueuePreview, api, formatDisplayDate, formatDoctorDegrees, getLocalDateString } from '@mediarca/shared/api';
 import { ClinicChoice, DateStrip, ShiftList, TokenTile } from '@/components/booking';

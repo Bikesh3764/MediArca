@@ -18,7 +18,9 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "in.mediarca.app"
+      "package": "in.mediarca.app",
+      "googleServicesFile": "./google-services.json",
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,13 +45,32 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MediArca uses your photos to set your profile picture.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ],
     "scheme": "mediarca",
     "backgroundColor": "#f5f5f7",
     "experiments": {
       "typedRoutes": false,
       "tsconfigPaths": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "5de51dfe-c719-4e09-918a-fd2b9361e298"
+      }
+    },
+    "owner": "bikesh_1435"
   }
 }

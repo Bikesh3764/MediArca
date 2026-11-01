@@ -440,7 +440,7 @@ export const checkInAppointmentDirect = async (req: AuthRequest, res: Response):
     if (newCheckedInState && appointment.appointmentDate !== todayIso) {
       res.status(400).json({
         success: false,
-        message: `Cannot check in an appointment scheduled for ${appointment.appointmentDate}. Check-in is only available on the scheduled date (${todayIso}).`,
+        message: 'Arrival can be marked only on the day of the visit.',
       });
       return;
     }

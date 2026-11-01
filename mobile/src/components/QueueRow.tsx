@@ -1,6 +1,7 @@
 // One patient in a doctor's or front desk queue: token, name, details, and the quick actions.
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { kitStyles } from '@/components/kit';
 import { tap } from '@/lib/haptics';
@@ -16,6 +17,8 @@ export interface QueueRowData {
   meta?: string;
   phone?: string | null;
   arrived?: boolean;
+  /** Walk-in tracking code, shown so staff can read it out again. */
+  code?: string | null;
 }
 
 export function QueueRow({
@@ -53,6 +56,14 @@ export function QueueRow({
             <Text style={type.footnote} numberOfLines={1}>
               {[item.tag, item.meta].filter(Boolean).join(' · ')}
             </Text>
+          ) : null}
+          {item.code && !muted ? (
+            <View style={styles.code} accessibilityLabel={`Tracking code ${item.code}`}>
+              <Ionicons name="key-outline" size={12} color={colors.primary} />
+              <Text style={styles.codeText} selectable>
+                {item.code}
+              </Text>
+            </View>
           ) : null}
         </View>
         {item.phone ? (
@@ -126,6 +137,8 @@ const styles = StyleSheet.create({
   tokenText: { fontSize: 16, fontWeight: '600', color: colors.ink },
   round: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
+  code: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
+  codeText: { fontSize: 12, fontWeight: '600', letterSpacing: 1.5, color: colors.primary },
   arrived: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.canvas },
   arrivedOn: { backgroundColor: colors.primaryTint },
   arrivedText: { fontSize: 14, color: colors.ink },

@@ -1,6 +1,7 @@
 // Grouped list where several rows can be ticked (which doctors a receptionist looks after).
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { tap } from '@/lib/haptics';
 import { colors, radius, space, type } from '@/theme';
 

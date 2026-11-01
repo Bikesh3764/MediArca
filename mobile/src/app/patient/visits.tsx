@@ -2,7 +2,8 @@
 // Background refresh is silent: the list stays on screen and updates in place.
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { type Appointment, api, getLocalDateString } from '@mediarca/shared/api';
 import { AppointmentCard } from '@/components/AppointmentCard';
@@ -10,7 +11,7 @@ import { EmptyState, IconButton, PlaceholderCard } from '@/components/kit';
 
 import { Button, Segmented } from '@/components/ui';
 import { tap } from '@/lib/haptics';
-import { usePolling } from '@/lib/usePolling';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
 import { colors, space, type } from '@/theme';
 
 const PAST_PAGE = 10;
@@ -39,7 +40,7 @@ export default function Visits() {
   const loadActive = useCallback(async () => {
     try {
       const data = await api.getPatientAppointments({ status: 'active' });
-      setActive(Array.isArray(data) ? data : []);
+      setActive(keepIfSame(Array.isArray(data) ? data : []));
       setActiveFailed(false);
     } catch {
       setActiveFailed(true);
@@ -150,7 +151,7 @@ export default function Visits() {
           <View style={styles.header}>
             <View style={styles.titleRow}>
               <Text style={type.largeTitle}>Visits</Text>
-              <IconButton icon="qr-code-outline" label="Scan to check in" onPress={() => router.push('/scan')} style={styles.scan} />
+              <IconButton icon="qr-code-outline" label="Scan to check in" onPress={() => router.push('/scan')} />
             </View>
             <Segmented
               options={[
@@ -183,7 +184,6 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: space.lg + 4, paddingTop: space.sm, paddingBottom: space.xxl * 2 },
   header: { gap: space.md, marginTop: space.sm, marginBottom: space.md },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  scan: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card },
   placeholders: { gap: space.md },
   more: { marginTop: space.lg },
 });

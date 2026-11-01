@@ -1,11 +1,13 @@
 // Clinic account: clinic details (edit), password, sign out.
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { formatDisplayPhone } from '@mediarca/shared/utils/phoneUtils';
-import { ChangePasswordCard, SignOutAndDelete } from '@/components/AccountSettings';
+import { AccountActions } from '@/components/AccountSettings';
 import { ClinicDetailsSheet } from '@/components/ClinicDetailsSheet';
-import { Chip, ClinicImage, InfoRow, SectionTitle } from '@/components/kit';
-import { Button, Screen, Title } from '@/components/ui';
+import { Chip, ClinicImage, InfoRow, ListRow, SectionTitle } from '@/components/kit';
+import { PhotoPicker } from '@/components/PhotoPicker';
+import { Notice, Screen, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useClinic } from '@/context/ClinicContext';
 import { colors, radius, shadow, space, type } from '@/theme';
@@ -14,6 +16,7 @@ export default function ClinicAccount() {
   const { user } = useAuth();
   const { data, reload } = useClinic();
   const [editing, setEditing] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const clinic = data?.clinic;
   const verified = clinic?.verificationStatus === 'VERIFIED' || clinic?.isVerified;
   const phone = clinic?.phone || user?.phone;
@@ -22,7 +25,9 @@ export default function ClinicAccount() {
     <Screen edges={['top']}>
       <Title>Account</Title>
       <View style={styles.header}>
-        <ClinicImage uri={clinic?.avatarUrl || user?.avatarUrl} size={64} />
+        <PhotoPicker rounded hasPhoto={Boolean(user?.avatarUrl)} onChanged={reload} onError={setPhotoError}>
+          <ClinicImage uri={user?.avatarUrl || clinic?.avatarUrl} size={64} />
+        </PhotoPicker>
         <View style={styles.flex}>
           <Text style={type.heading} numberOfLines={2}>
             {clinic?.clinicName || user?.fullName}
@@ -36,6 +41,7 @@ export default function ClinicAccount() {
           </View>
         </View>
       </View>
+      <Notice tone="error" message={photoError} />
 
       <SectionTitle title="Clinic details" />
       <View style={styles.group}>
@@ -44,10 +50,8 @@ export default function ClinicAccount() {
         <InfoRow label="State" value={clinic?.state || '—'} />
         <InfoRow label="Phone" value={phone ? formatDisplayPhone(phone) : '—'} />
       </View>
-      <Button label="Edit details" variant="secondary" icon="create-outline" onPress={() => setEditing(true)} disabled={!clinic} />
 
-      <ChangePasswordCard />
-      <SignOutAndDelete />
+      <AccountActions rows={[<ListRow key="edit" icon="create" label="Edit details" onPress={() => setEditing(true)} disabled={!clinic} />]} />
       <ClinicDetailsSheet clinic={clinic} visible={editing} onClose={() => setEditing(false)} onSaved={reload} />
     </Screen>
   );

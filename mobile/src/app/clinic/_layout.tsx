@@ -1,13 +1,13 @@
 import { Tabs } from 'expo-router';
 import { PortalGuard } from '@/components/PortalGuard';
-import { tabIcon, tabScreenOptions } from '@/components/tabs';
+import { tabIcon, tabListeners, tabScreenOptions } from '@/components/tabs';
 import { ClinicProvider, useClinic } from '@/context/ClinicContext';
 
 function ClinicTabs() {
   const { data } = useClinic();
   const requests = data?.incomingRequests?.length || 0;
   return (
-    <Tabs screenOptions={tabScreenOptions}>
+    <Tabs screenOptions={tabScreenOptions} screenListeners={tabListeners}>
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('business', 'business-outline') }} />
       <Tabs.Screen
         name="doctors"

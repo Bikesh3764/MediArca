@@ -3,14 +3,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { type Appointment, api, getLocalDateString } from '@mediarca/shared/api';
 import { DeskCard, QueuePass, passFromAppointment } from '@/components/QueuePass';
 import { EmptyState, PlaceholderCard } from '@/components/kit';
 import { Button, Notice, Screen } from '@/components/ui';
 import { confirmAction } from '@/lib/confirm';
 import { success } from '@/lib/haptics';
-import { usePolling } from '@/lib/usePolling';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 export default function Visit() {
@@ -23,7 +24,7 @@ export default function Visit() {
 
   const load = useCallback(async () => {
     try {
-      setAppt(await api.getAppointmentById(String(id)));
+      setAppt(keepIfSame(await api.getAppointmentById(String(id))));
       setFailed(false);
     } catch {
       // Keep the last pass on screen during background refreshes
@@ -141,7 +142,7 @@ export default function Visit() {
         </View>
       ) : null}
 
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
       {(pending || active) && deskPhone ? <DeskCard name={appt.receptionistName} phone={deskPhone} prominent={pending} /> : null}
 

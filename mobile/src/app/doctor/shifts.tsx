@@ -1,9 +1,10 @@
 // Doctor's shifts, working days, fee and leave, per clinic.
 // Same server calls and checks as frontend/src/pages/Doctor/ManageSchedule.tsx and DoctorScheduleLeaveModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import {
   ALL_WEEKDAYS,
   type DoctorAffiliationClinic,
@@ -12,19 +13,15 @@ import {
   api,
   cleanSlotName,
   format12Hour,
-  formatDisplayDate,
-  getLocalDateString,
   timeToMinutes,
 } from '@mediarca/shared/api';
-import { EmptyState, PillButton, PlaceholderCard, SectionTitle, Sheet, kitStyles } from '@/components/kit';
+import { EmptyState, PillButton, PlaceholderCard, SectionTitle } from '@/components/kit';
+import { LeaveList, LeaveSheet, leaveDates, upcomingLeaves, WeekdayDiscs } from '@/components/LeaveTools';
 import { Button, Card, Field, Notice, Screen, SelectField, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { confirmAction } from '@/lib/confirm';
-import { nextDays } from '@/lib/dates';
 import { success, tap } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
-
-const DAY_LETTER: Record<string, string> = { MON: 'M', TUE: 'T', WED: 'W', THU: 'T', FRI: 'F', SAT: 'S', SUN: 'S' };
 
 const TIMES = Array.from({ length: 96 }, (_, i) => {
   const value = `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
@@ -32,8 +29,6 @@ const TIMES = Array.from({ length: 96 }, (_, i) => {
 });
 const timeLabel = (v: string) => TIMES.find((t) => t.value === v)?.label || format12Hour(v);
 const timeValue = (label: string) => TIMES.find((t) => t.label === label)?.value || label;
-
-const LEAVE_DAYS = nextDays(90);
 
 type EditSlot = Omit<DoctorSlot, 'maxPatients' | 'avgConsultationMinutes'> & { maxPatients: string; avgConsultationMinutes: string };
 
@@ -101,11 +96,7 @@ export default function DoctorShifts() {
   );
 
   const clinic = clinics?.find((c) => c.clinicId === clinicId);
-  const today = getLocalDateString();
-  const upcomingLeaves = useMemo(
-    () => leaves.filter((l) => l.endDate >= today && l.type !== 'TODAY').sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    [leaves, today]
-  );
+  const upcoming = useMemo(() => upcomingLeaves(leaves), [leaves]);
 
   const pickClinic = (c: DoctorAffiliationClinic) => {
     setClinicId(c.clinicId);
@@ -207,7 +198,7 @@ export default function DoctorShifts() {
   };
 
   const cancelLeave = async (l: DoctorLeave) => {
-    const ok = await confirmAction({ title: 'Remove leave?', message: `${formatDisplayDate(l.startDate)} – ${formatDisplayDate(l.endDate)}`, confirmLabel: 'Remove' });
+    const ok = await confirmAction({ title: 'Remove leave?', message: leaveDates(l), confirmLabel: 'Remove' });
     if (!ok) return;
     setLeaveMessage(null);
     try {
@@ -240,7 +231,7 @@ export default function DoctorShifts() {
     return (
       <Screen edges={['top']}>
         <Title>Shifts</Title>
-        <EmptyState icon="business-outline" title="No clinics yet" message="Join a clinic on the website, then set your shifts here." />
+        <EmptyState icon="business-outline" title="No clinics yet" message="Join a clinic, then set your shifts here." actionLabel="Join a clinic" onAction={() => router.navigate('/doctor/clinics')} />
       </Screen>
     );
   }
@@ -270,43 +261,11 @@ export default function DoctorShifts() {
       </View>
 
       <SectionTitle title="Leave" right={<PillButton label="Add" icon="add" onPress={() => setAddingLeave(true)} />} />
-      {upcomingLeaves.length === 0 ? (
-        <Text style={type.caption}>No leave planned.</Text>
-      ) : (
-        <View style={styles.group}>
-          {upcomingLeaves.map((l, i) => (
-            <View key={l.id} style={[styles.leaveRow, i > 0 && styles.divider]}>
-              <View style={styles.flex}>
-                <Text style={type.body}>{l.startDate === l.endDate ? formatDisplayDate(l.startDate) : `${formatDisplayDate(l.startDate)} – ${formatDisplayDate(l.endDate)}`}</Text>
-                {l.reason ? <Text style={type.footnote}>{l.reason}</Text> : null}
-              </View>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => cancelLeave(l)}>
-                <Text style={styles.remove}>Remove</Text>
-              </Pressable>
-            </View>
-          ))}
-        </View>
-      )}
+      <LeaveList leaves={upcoming} onRemove={cancelLeave} />
       <Notice tone={leaveMessage?.tone || 'info'} message={leaveMessage?.text} />
 
       <SectionTitle title="Days" />
-      <View style={styles.days}>
-        {ALL_WEEKDAYS.map((d) => {
-          const on = days.includes(d);
-          return (
-            <Pressable
-              key={d}
-              accessibilityRole="checkbox"
-              accessibilityLabel={d}
-              accessibilityState={{ checked: on }}
-              onPress={() => toggleDay(d)}
-              style={({ pressed }) => [styles.disc, on && styles.discOn, pressed && kitStyles.pressed]}
-            >
-              <Text style={[styles.discText, on && { color: colors.white }]}>{DAY_LETTER[d]}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <WeekdayDiscs days={days} onToggle={toggleDay} />
 
       <SectionTitle title="Shifts" right={<PillButton label="Add" icon="add" onPress={addSlot} />} />
       {slots.map((s, i) => (
@@ -347,7 +306,7 @@ export default function DoctorShifts() {
         <Field label="Consultation fee" prefix="₹" value={fee} onChangeText={(t) => setFee(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" />
       </Card>
 
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
       <Button label="Save" onPress={save} loading={saving} />
 
       <LeaveSheet
@@ -364,58 +323,12 @@ export default function DoctorShifts() {
   );
 }
 
-function LeaveSheet({ visible, onClose, onSave }: { visible: boolean; onClose: () => void; onSave: (start: string, end: string, reason: string) => Promise<void> }) {
-  const [start, setStart] = useState(LEAVE_DAYS[1].label);
-  const [end, setEnd] = useState(LEAVE_DAYS[1].label);
-  const [reason, setReason] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const valueOf = (label: string) => LEAVE_DAYS.find((d) => d.label === label)?.value || '';
-
-  const save = async () => {
-    const s = valueOf(start);
-    const e = valueOf(end);
-    if (!s || !e) return setError('Pick a start and end date.');
-    if (s > e) return setError('Start date must be before end date.');
-    setSaving(true);
-    setError(null);
-    try {
-      await onSave(s, e, reason.trim());
-      setReason('');
-      onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Couldn’t add leave. Try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <Sheet visible={visible} title="Add leave" onClose={onClose} doneLabel="Cancel">
-      <Card>
-        <SelectField label="From" value={start} options={LEAVE_DAYS.map((d) => d.label)} onChange={setStart} />
-        <SelectField label="To" value={end} options={LEAVE_DAYS.map((d) => d.label)} onChange={setEnd} />
-        <Field label="Reason (optional)" value={reason} onChangeText={setReason} maxLength={120} placeholder="e.g. Conference" />
-        <Notice tone="error" message={error} />
-        <Button label="Add leave" onPress={save} loading={saving} />
-      </Card>
-    </Sheet>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   group: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden', ...shadow.card },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  leaveRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, minHeight: 56 },
-  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
-  remove: { fontSize: 15, color: colors.danger },
-  days: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: radius.pill, padding: 6, ...shadow.card },
-  disc: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.canvas },
-  discOn: { backgroundColor: colors.ink },
-  discText: { fontSize: 15, fontWeight: '600', color: colors.muted },
   slotHead: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
   trash: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
   row: { flexDirection: 'row', gap: space.md },

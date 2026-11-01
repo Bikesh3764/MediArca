@@ -7,12 +7,10 @@ import {
   Doctor,
   QueuePreview,
   parseDoctorSlots,
-  format12Hour,
   getLocalDateString,
   getTomorrowDateString,
   formatDoctorDegrees,
-  getFileUrl,
-  cleanSlotName, getMaxBookingDateString } from '../../services/api';
+  getFileUrl, getMaxBookingDateString, shiftLabel, slotTimeLabel } from '../../services/api';
 import { SubNav } from '../../components/layout/SubNav';
 import { AppleButton } from '../../components/ui/AppleButton';
 import { UtilityCard } from '../../components/ui/UtilityCard';
@@ -230,12 +228,7 @@ export const DoctorDetail: React.FC = () => {
                   key={slot.id || idx}
                   className="p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-between"
                 >
-                  <span className="text-xs font-normal text-[#1d1d1f]">
-                    {cleanSlotName(slot.name)}
-                  </span>
-                  <span className="text-xs font-semibold text-[#0066cc]">
-                    {format12Hour(slot.startTime)} – {format12Hour(slot.endTime)}
-                  </span>
+                  <span className="text-xs font-semibold text-[#1d1d1f]">{slotTimeLabel(slot)}</span>
                 </div>
               ))}
             </div>
@@ -429,15 +422,13 @@ export const DoctorDetail: React.FC = () => {
                               : 'bg-white border-[#d2d2d7] text-[#1d1d1f] hover:border-[#86868b] cursor-pointer'
                           }`}
                         >
-                          <span className="truncate">{cleanSlotName(slot.name)}</span>
+                          <span className="truncate">{slotTimeLabel(slot)}</span>
                           <span className="text-[11px] text-[#86868b] shrink-0 ml-2">
                             {isPassed ? (
                               <span className="text-[#86868b] font-normal">Ended</span>
                             ) : isFull ? (
                               <span className="text-warning font-normal">Full</span>
-                            ) : (
-                              `${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)}`
-                            )}
+                            ) : null}
                           </span>
                         </button>
                       );
@@ -466,7 +457,7 @@ export const DoctorDetail: React.FC = () => {
                     </div>
                   </div>
                   <div className="pt-2 border-t border-[#e5e5ea] text-[11px] text-[#86868b] flex items-center justify-between">
-                    <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
+                    <span>{slotTimeLabel(queuePreview.selectedSlot?.slot) || shiftLabel(queuePreview)}</span>
                     <span>
                       {queuePreview.patientsAhead === 0
                         ? 'You’d be next'

@@ -1,5 +1,6 @@
 // iOS-style action sheet: a short list of choices sliding up from the bottom, with Cancel.
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/theme';
 

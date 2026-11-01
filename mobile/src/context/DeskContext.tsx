@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { type Appointment, type ReceptionistDashboardData, api } from '@mediarca/shared/api';
 import { useAuth } from '@/context/AuthContext';
-import { usePolling } from '@/lib/usePolling';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
 
 interface DeskContextType {
   desk: ReceptionistDashboardData | null;
@@ -26,7 +26,7 @@ export function DeskProvider({ children }: { children: React.ReactNode }) {
 
   const reloadPending = useCallback(async () => {
     try {
-      setPending(await api.getPendingAppointments());
+      setPending(keepIfSame(await api.getPendingAppointments()));
     } catch {
       // Keep the list on screen
     }
@@ -34,7 +34,7 @@ export function DeskProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     try {
-      setDesk(await api.getMyReceptionist());
+      setDesk(keepIfSame<ReceptionistDashboardData | null>(await api.getMyReceptionist()));
       setFailed(false);
     } catch (err: any) {
       if (err?.status === 401) logout();

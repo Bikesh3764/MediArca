@@ -1,9 +1,10 @@
-import { cleanSlotName } from '../../../services/api';
+import { cleanSlotName, shiftLabel } from '../../../services/api';
 
 export interface TokenPassData {
   queueNumber: number;
   estimatedTime?: string;
   checkingWindow?: string;
+  shiftTime?: string | null;
   appointmentDate: string;
   patientName: string;
   patientPhone?: string;
@@ -53,4 +54,6 @@ export const getCleanReason = (reason?: string | null, patientName?: string | nu
 };
 // Keeps the doctor's own shift name ("Morning Shift"); it used to strip "Morning"/"Evening",
 // which merged different shifts into one "Shift" group.
-export const cleanShiftDisplayName = (shiftStr?: string | null): string => cleanSlotName(shiftStr, 'Shift 1');
+/** A visit's shift as shown on the desk: its timing when known ("9:00 AM – 1:00 PM"), else its name. */
+export const cleanShiftDisplayName = (visit?: string | { shiftTime?: string | null; checkingWindow?: string | null } | null): string =>
+  typeof visit === 'string' || !visit ? cleanSlotName(visit, 'Shift 1') : shiftLabel(visit, 'Shift 1');

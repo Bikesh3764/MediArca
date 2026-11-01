@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { appFonts, Text } from '@/components/AppText';
 import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onSlowChange, setupPlatform } from '@/lib/platform';
 import { BotCheckHost } from '@/lib/botCheck';
 import { AuthProvider, homeFor, useAuth } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { setupPush } from '@/lib/push';
 import { Loading } from '@/components/ui';
 import { colors } from '@/theme';
@@ -40,10 +43,13 @@ function PushTaps() {
 }
 
 export default function RootLayout() {
-  const [ready, setReady] = useState(false);
+  const [platformReady, setPlatformReady] = useState(false);
+  // If the font fails to load the app still opens in the phone's own font
+  const [fontsLoaded, fontError] = useFonts(appFonts);
+  const ready = platformReady && (fontsLoaded || Boolean(fontError));
 
   useEffect(() => {
-    setupPlatform().finally(() => setReady(true));
+    setupPlatform().finally(() => setPlatformReady(true));
   }, []);
 
   return (
@@ -51,10 +57,12 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       {ready ? (
         <AuthProvider>
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
-          <BotCheckHost />
-          <PushTaps />
-          <SlowBanner />
+          <NotificationProvider>
+            <Stack screenOptions={{ headerShown: false, animation: 'ios_from_right', contentStyle: { backgroundColor: colors.canvas } }} />
+            <BotCheckHost />
+            <PushTaps />
+            <SlowBanner />
+          </NotificationProvider>
         </AuthProvider>
       ) : (
         <Loading />

@@ -3,7 +3,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { type ClinicProfile, type Doctor, api } from '@mediarca/shared/api';
 import { INDIAN_STATES, getCitiesForState } from '@mediarca/shared/utils/indiaStates';
 import { ClinicCard, DoctorCard } from '@/components/booking';

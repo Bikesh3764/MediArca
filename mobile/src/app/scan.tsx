@@ -4,7 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { type Appointment, api } from '@mediarca/shared/api';
 import { parseBookingQr, parseCheckinQr } from '@mediarca/shared/utils/checkinQr';
@@ -32,6 +33,20 @@ export default function Scan() {
   useEffect(() => () => {
     if (hintTimer.current) clearTimeout(hintTimer.current);
   }, []);
+
+  // Show Android's own "Allow camera" popup as soon as the scanner opens
+  const asked = useRef(false);
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain && !asked.current) {
+      asked.current = true;
+      requestPermission();
+    }
+  }, [permission, requestPermission]);
+
+  const allowCamera = async () => {
+    const res = await requestPermission();
+    if (!res.granted && !res.canAskAgain) Linking.openSettings();
+  };
 
   const showHint = (text: string, clinicId?: string) => {
     setHint({ text, clinicId });
@@ -133,11 +148,7 @@ export default function Scan() {
   if (!permission.granted) {
     return (
       <Panel icon="camera" title="Allow camera" message="MediArca needs the camera to scan the QR code at the front desk." onClose={close}>
-        {permission.canAskAgain ? (
-          <Button label="Allow camera" onPress={requestPermission} />
-        ) : (
-          <Button label="Open Settings" onPress={() => Linking.openSettings()} />
-        )}
+        <Button label="Allow camera" onPress={allowCamera} />
       </Panel>
     );
   }

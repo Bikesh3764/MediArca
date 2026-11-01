@@ -3,8 +3,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { type Appointment, api, cleanSlotName, formatDisplayDate } from '@mediarca/shared/api';
+import { Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type Appointment, api, formatDisplayDate, shiftLabel } from '@mediarca/shared/api';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { cleanVisitReason, visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { EmptyState, kitStyles } from '@/components/kit';
@@ -100,7 +101,7 @@ export default function DeskRequests() {
                     {doctorName(a.doctor?.user?.fullName)}
                   </Text>
                   <Text style={type.footnote} numberOfLines={1}>
-                    {formatDisplayDate(a.appointmentDate)} · {cleanSlotName(a.checkingWindow, 'Shift')}
+                    {formatDisplayDate(a.appointmentDate)} · {shiftLabel(a)}
                   </Text>
                   {reason ? (
                     <Text style={type.footnote} numberOfLines={2}>

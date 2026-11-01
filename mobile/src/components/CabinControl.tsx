@@ -1,11 +1,14 @@
 // In cabin / Stepped out / Away switch for a doctor. Doctors set their own; the front desk passes doctorId.
 // Same server call and choices as frontend/src/components/ui/DoctorCabinPresence.tsx.
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { api } from '@mediarca/shared/api';
-import { PillButton } from '@/components/kit';
+import { Avatar } from '@/components/kit';
 import { Notice, Segmented } from '@/components/ui';
 import { tap } from '@/lib/haptics';
+import { FadeIn, smoothLayout } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 export type CabinStatus = 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN';
@@ -27,7 +30,10 @@ export function CabinControl({
   expectedReturnTime,
   doctorId,
   onChange,
+  doctor,
 }: {
+  /** Front desk: whose status this is, shown above the switch. */
+  doctor?: { name: string; specialty?: string | null; avatarUrl?: string | null } | null;
   status?: string | null;
   expectedReturnTime?: string | null;
   doctorId?: string;
@@ -48,6 +54,7 @@ export function CabinControl({
 
   const save = async (next: CabinStatus, estimate?: number) => {
     const before = status;
+    if ((next === 'STEPPED_OUT') !== (before === 'STEPPED_OUT')) smoothLayout();
     setStatus(next);
     setError(null);
     if (estimate) setMins(estimate);
@@ -73,11 +80,26 @@ export function CabinControl({
 
   return (
     <View style={styles.card}>
+      {doctor ? (
+        <View style={styles.who}>
+          <Avatar uri={doctor.avatarUrl} name={doctor.name} size={40} />
+          <View style={styles.flex}>
+            <Text style={type.headline} numberOfLines={1}>
+              {doctor.name}
+            </Text>
+            {doctor.specialty ? (
+              <Text style={type.footnote} numberOfLines={1}>
+                {doctor.specialty}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
       <Segmented
         options={[
-          { value: 'IN_CABIN', label: 'In cabin' },
-          { value: 'STEPPED_OUT', label: 'Stepped out' },
-          { value: 'NOT_IN_CABIN', label: 'Away' },
+          { value: 'IN_CABIN', label: 'In cabin', dot: colors.success },
+          { value: 'STEPPED_OUT', label: 'Stepped out', dot: colors.orange },
+          { value: 'NOT_IN_CABIN', label: 'Away', dot: colors.tabInactive },
         ]}
         value={status}
         onChange={(v) => {
@@ -86,14 +108,38 @@ export function CabinControl({
         }}
       />
       {status === 'STEPPED_OUT' ? (
-        <View style={styles.backRow}>
-          <Text style={type.caption}>{back ? `Back ${back}` : 'Back in'}</Text>
-          <View style={styles.pills}>
-            {BACK_IN.map((b) => (
-              <PillButton key={b.mins} label={b.label} active={mins === b.mins} onPress={() => save('STEPPED_OUT', b.mins)} />
-            ))}
+        <FadeIn style={styles.away}>
+          <View style={styles.awayHead}>
+            <View style={styles.awayIcon}>
+              <Ionicons name="time" size={18} color={colors.warning} />
+            </View>
+            <View style={styles.flex}>
+              <Text style={type.footnote}>Back by</Text>
+              <Text style={styles.awayTime} numberOfLines={1}>
+                {back ? back.replace(/^0(\d)/, '$1') : '—'}
+              </Text>
+            </View>
           </View>
-        </View>
+          <View style={styles.pills}>
+            {BACK_IN.map((b) => {
+              const active = mins === b.mins;
+              return (
+                <Pressable
+                  key={b.mins}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => {
+                    tap();
+                    save('STEPPED_OUT', b.mins);
+                  }}
+                  style={({ pressed }) => [styles.pill, active && styles.pillActive, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={[styles.pillText, active && styles.pillTextActive]}>{b.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </FadeIn>
       ) : null}
       <Notice tone="error" message={error} />
     </View>
@@ -102,6 +148,15 @@ export function CabinControl({
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, gap: space.md, ...shadow.card },
-  backRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm, flexWrap: 'wrap' },
+  away: { backgroundColor: colors.warningSoft, borderRadius: radius.tile, padding: space.md, gap: space.md },
+  awayHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  awayIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  awayTime: { fontSize: 20, fontWeight: '600', letterSpacing: -0.3, color: colors.ink },
   pills: { flexDirection: 'row', gap: 6 },
+  pill: { flex: 1, height: 36, borderRadius: radius.pill, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  pillActive: { backgroundColor: colors.warning },
+  pillText: { fontSize: 15, color: colors.ink },
+  pillTextActive: { color: colors.white, fontWeight: '600' },
+  who: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  flex: { flex: 1, minWidth: 0 },
 });

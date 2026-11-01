@@ -1,15 +1,20 @@
 // Clinic home: status notices, three numbers, and recent bookings.
 // Same data as frontend/src/pages/Clinic/ClinicDashboard.tsx + BookingsSection.tsx.
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { type ClinicAppointment, cleanSlotName, formatDisplayDate } from '@mediarca/shared/api';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
+import { type ClinicAppointment, formatDisplayDate, shiftLabel } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { ClinicDetailsSheet } from '@/components/ClinicDetailsSheet';
-import { Chip, ClinicImage, EmptyState, PlaceholderCard, SectionTitle } from '@/components/kit';
+import { Chip, ClinicImage, EmptyState, type IconName, ListGroup, ListRow, PlaceholderCard, SectionTitle } from '@/components/kit';
+import { NotificationBell } from '@/components/NotificationBell';
+import { ReportSheet } from '@/components/ReportSheet';
 import { Button, Notice, Screen, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
 import { doctorName } from '@/lib/booking';
-import { isToday } from '@/lib/dates';
+import { isToday, todayLong } from '@/lib/dates';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 const STATUS: Record<string, { label: string; tone: 'primary' | 'warning' | 'danger' | 'neutral' }> = {
@@ -28,6 +33,7 @@ export default function ClinicHome() {
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [report, setReport] = useState(false);
   const clinic = data?.clinic;
 
   const onRefresh = async () => {
@@ -48,29 +54,31 @@ export default function ClinicHome() {
           <EmptyState icon="cloud-offline-outline" title="Couldn’t load" message="Check your connection." actionLabel="Try again" onAction={reload} />
         ) : (
           <>
-            <Title>Clinic</Title>
+            <Title eyebrow={todayLong()}>Home</Title>
             <PlaceholderCard height={88} />
             <PlaceholderCard height={140} />
           </>
         )
       ) : (
         <>
-          <View style={styles.head}>
+          <View style={styles.titleRow}>
+            <Title eyebrow={todayLong()}>Home</Title>
+            <NotificationBell />
+          </View>
+          <View style={[styles.card, styles.head]}>
             <ClinicImage uri={clinic?.avatarUrl} size={56} />
             <View style={styles.flex}>
-              <Text style={type.title} numberOfLines={2}>
+              <Text style={type.heading} numberOfLines={2}>
                 {clinic?.clinicName}
               </Text>
               {clinic?.address || clinic?.city ? (
-                <Text style={type.caption} numberOfLines={1}>
-                  {formatClinicAddress(clinic as any) || clinic?.city}
-                </Text>
+                <MoreText style={type.caption}>{formatClinicAddress(clinic as any) || clinic?.city || ''}</MoreText>
               ) : null}
             </View>
           </View>
 
-          {status === 'SUSPENDED' ? <Notice tone="error" message="Clinic suspended. Bookings are paused. Contact MediArca support." /> : null}
-          {status === 'REJECTED' ? <Notice tone="error" message="Not approved. Contact MediArca support." /> : null}
+          {status === 'SUSPENDED' ? <Notice tone="error" persist message="Clinic suspended. Bookings are paused. Contact MediArca support." /> : null}
+          {status === 'REJECTED' ? <Notice tone="error" persist message="Not approved. Contact MediArca support." /> : null}
           {(status === 'PENDING' || clinic?.isVerified === false) && status !== 'SUSPENDED' && status !== 'REJECTED' ? (
             <Notice tone="info" message="Waiting for verification. You can add doctors and staff now." />
           ) : null}
@@ -84,10 +92,13 @@ export default function ClinicHome() {
           ) : null}
 
           <View style={styles.stats}>
-            <Stat label="Doctors" value={String(data.totalDoctors ?? data.doctors.length)} />
-            <Stat label="Bookings" value={String(data.totalBookings || 0)} />
-            <Stat label="Revenue" value={rupees(data.totalRevenue)} />
+            <Stat icon="medkit" tint={colors.primary} label="Doctors" value={String(data.totalDoctors ?? data.doctors.length)} />
+            <Stat icon="calendar" tint={colors.orange} label="Bookings" value={String(data.totalBookings || 0)} />
+            <Stat icon="wallet" tint={colors.success} label="Revenue" value={rupees(data.totalRevenue)} />
           </View>
+          <ListGroup>
+            <ListRow icon="document-text" label="Report" onPress={() => setReport(true)} />
+          </ListGroup>
 
           <SectionTitle title="Recent bookings" />
           {bookings.length === 0 ? (
@@ -104,13 +115,17 @@ export default function ClinicHome() {
       )}
 
       <ClinicDetailsSheet clinic={clinic} visible={editing} onClose={() => setEditing(false)} onSaved={reload} />
+      <ReportSheet role="CLINIC" visible={report} onClose={() => setReport(false)} />
     </Screen>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, icon, tint }: { label: string; value: string; icon: IconName; tint: string }) {
   return (
     <View style={styles.stat}>
+      <View style={[styles.statIcon, { backgroundColor: tint }]}>
+        <Ionicons name={icon} size={14} color={colors.white} />
+      </View>
       <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
@@ -131,7 +146,7 @@ function BookingRow({ a, first }: { a: ClinicAppointment; first: boolean }) {
           {a.patientName}
         </Text>
         <Text style={type.footnote} numberOfLines={1}>
-          {[doctorName(a.doctorName), isToday(String(a.date || '').slice(0, 10)) ? '' : formatDisplayDate(a.date), a.estimatedTime || cleanSlotName(a.checkingWindow, '')].filter(Boolean).join(' · ')}
+          {[doctorName(a.doctorName), isToday(String(a.date || '').slice(0, 10)) ? '' : formatDisplayDate(a.date), a.estimatedTime || shiftLabel(a, '')].filter(Boolean).join(' · ')}
         </Text>
       </View>
       <View style={styles.right}>
@@ -144,7 +159,9 @@ function BookingRow({ a, first }: { a: ClinicAppointment; first: boolean }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0, gap: 2 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingTop: space.sm },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.md },
+  statIcon: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
   card: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, gap: space.sm, ...shadow.card },
   stats: { flexDirection: 'row', gap: space.sm },
   stat: { flex: 1, backgroundColor: colors.card, borderRadius: radius.tile + 2, paddingVertical: space.md + 2, paddingHorizontal: space.md, gap: 2, ...shadow.card },

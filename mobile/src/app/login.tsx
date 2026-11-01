@@ -1,9 +1,20 @@
 import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Text } from '@/components/AppText';
 import { GoogleButton } from '@/components/GoogleButton';
 import { Button, Card, Field, LinkText, Notice, Screen, Segmented, Title } from '@/components/ui';
 import { homeFor, type Role, useAuth } from '@/context/AuthContext';
 import { parseRole, ROLE_LABEL, SIGNUP_ROLES } from '@/lib/roles';
+import { space, type } from '@/theme';
+
+// Same demo accounts as the website's sign-in pages
+const DEMO: { role: Role; label: string; email: string; password: string }[] = [
+  { role: 'PATIENT', label: 'Demo Patient', email: 'john.doe@gmail.com', password: 'patient123' },
+  { role: 'DOCTOR', label: 'Demo Doctor', email: 'dr.sarah@mediarca.com', password: 'doctor123' },
+  { role: 'CLINIC', label: 'Try demo clinic', email: 'clinic@mediarca.com', password: 'clinic123' },
+  { role: 'RECEPTIONIST', label: 'Try demo desk', email: 'receptionist@mediarca.com', password: 'receptionist123' },
+];
 
 export default function Login() {
   // `next`: where to return after a patient signs in (e.g. the booking they started)
@@ -15,15 +26,20 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const { login, logout } = useAuth();
 
-  const submit = async () => {
+  const submit = () => {
     if (!email.trim() || !password) {
       setError('Enter your email and password.');
       return;
     }
+    signIn(email.trim(), password, role);
+  };
+
+  const signIn = async (email: string, password: string, role: Role) => {
+    if (submitting) return;
     setError(null);
     setSubmitting(true);
     try {
-      const user = await login({ email: email.trim(), password, role });
+      const user = await login({ email, password, role });
       if (user.role !== role) {
         logout();
         setError(`This isn’t a ${ROLE_LABEL[role].toLowerCase()} account.`);
@@ -39,7 +55,7 @@ export default function Login() {
       if (err?.requiresVerification) {
         router.push({
           pathname: '/verify',
-          params: { email: err.email || email.trim(), role, cooldown: String(err.cooldownSeconds ?? '') },
+          params: { email: err.email || email, role, cooldown: String(err.cooldownSeconds ?? '') },
         });
         return;
       }
@@ -50,6 +66,7 @@ export default function Login() {
   };
 
   const isPatientOrDoctor = role === 'PATIENT' || role === 'DOCTOR';
+  const demos = DEMO.filter((d) => (isPatientOrDoctor ? d.role === 'PATIENT' || d.role === 'DOCTOR' : d.role === role));
 
   return (
     <Screen back="/welcome">
@@ -97,9 +114,37 @@ export default function Login() {
           onPress={() => router.push({ pathname: '/forgot-password', params: { role, email: email.trim() } })}
         />
       </Card>
+      {demos.length ? (
+        <View style={styles.demo}>
+          <Text style={type.footnote}>Try a demo</Text>
+          <View style={styles.demoRow}>
+            {demos.map((d) => (
+              <View key={d.role} style={styles.flex}>
+                <Button
+                  label={d.label}
+                  variant="secondary"
+                  disabled={submitting}
+                  onPress={() => {
+                    setRole(d.role);
+                    setEmail(d.email);
+                    setPassword(d.password);
+                    signIn(d.email, d.password, d.role);
+                  }}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
       {SIGNUP_ROLES.includes(role) ? (
         <LinkText label="Create account" onPress={() => router.push(`/signup?role=${role}`)} />
       ) : null}
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  demo: { gap: space.sm },
+  demoRow: { flexDirection: 'row', gap: space.sm },
+  flex: { flex: 1 },
+});

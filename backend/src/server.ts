@@ -70,6 +70,7 @@ import clinicRoutes from './routes/clinicRoutes';
 import receptionistRoutes from './routes/receptionistRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import prisma from './config/database';
+import { shiftTimes } from './middleware/shiftTime';
 import { authenticate, getJwtSecret } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
@@ -501,6 +502,8 @@ app.post(
   ['/api/auth/register', '/api/auth/forgot-password'],
   requireHuman
 );
+// Shift timings on every visit in a reply (after the caches, so cached replies have them too)
+app.use('/api', shiftTimes);
 app.use('/api/auth', authRoutes);
 // Hidden "website" field: people never fill it, simple bots do. Pretend it worked and drop it.
 const contactHoneypot = (req: Request, res: Response, next: NextFunction): void => {

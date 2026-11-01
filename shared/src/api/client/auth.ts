@@ -121,9 +121,10 @@ export const authApi = {
     return handleResponse(res);
   },
 
-  async uploadAvatar(file: File): Promise<{ avatarUrl: string; user: User }> {
+  /** Website: a File. Phone app: { uri, name, type } of a picked photo (FormData sends it as a file). */
+  async uploadAvatar(file: Blob | { uri: string; name: string; type: string }): Promise<{ avatarUrl: string; user: User }> {
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append('avatar', file as Blob);
     const res = await safeFetch(`${API_BASE_URL}/auth/avatar`, {
       method: 'POST',
       headers: getHeaders(true),

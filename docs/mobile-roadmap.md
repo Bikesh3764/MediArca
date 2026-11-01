@@ -83,7 +83,7 @@ MediArca/
 - [x] Requests (`app/receptionist/requests.tsx`, badge on the tab): fee in ₹, call the patient, Mark paid (confirms the token), Change date, Decline
 - [x] Account: password, sign out
 - Shared parts: `components/QueueRow`, `InCabinCard`, `CabinControl`, `MoveSheet`, `WalkinForm`, `ActionMenu`, `DayPills`, `tabs`; desk data in `context/DeskContext.tsx`; display rules in `shared/src/utils/queueDisplay.ts`
-- Website only for now: doctors' leave from the desk, notifications list, clinic QR
+- Doctors tab, notifications and QR print were added later (see Extras)
 
 ### Phase 7 — Clinic ✅
 - [x] Home (`app/clinic/index.tsx`): verification notices, "Add location", Doctors / Bookings / Revenue (₹), recent bookings
@@ -92,7 +92,15 @@ MediArca/
 - [x] QR Code (`app/clinic/qr.tsx`): Check-in and Booking QR drawn on the phone (`components/QrCode.tsx`, `qrcode` encoder only); Share image (`react-native-view-shot` + `expo-sharing`), Share link for booking. Links in `src/lib/site.ts`
 - [x] Account (`app/clinic/account.tsx`): clinic details (name, address, state, city, phone) via `components/ClinicDetailsSheet.tsx`, password, sign out, delete account
 - Clinic data in `context/ClinicContext.tsx` (refreshes every 30s)
-- Website only for now: Reports / PDF export, clinic photo upload, printing the QR
+- Reports, clinic photo and QR print were added later (see Extras)
+
+### Extras ✅ (after Phase 7)
+- [x] Notifications list (`app/notifications.tsx`, `context/NotificationContext.tsx`, `components/NotificationBell.tsx`): bell with red count on every home screen; read after 1.2s on screen; tap opens the right tab; refreshes every 30s
+- [x] Photo upload (`components/PhotoPicker.tsx`): doctor and clinic, same as the website (patients and front desk have none there either). Pick, crop square, shrink to 600px JPEG, upload; Remove photo. Stored on R2 like the website
+- [x] Reports (`components/ReportSheet.tsx`): clinic Home, doctor and desk Account. 7 days / 30 days / 3 months, filter by doctor or clinic, Share PDF and Print (`src/lib/print.ts`, `expo-print`). PDF uses full dates, never "Today"
+- [x] QR print (`app/clinic/qr.tsx`): A4 poster with clinic name, QR, one line, MediArca; QR as SVG via `qrSvg()`. No code printed as text
+- [x] Doctors join clinics (`app/doctor/clinics.tsx`, new Clinics tab): requests from clinics (Accept / Decline), waiting requests, my clinics (fee, bookings, revenue, Leave clinic), Join a clinic by search
+- [x] Front desk leave (`app/receptionist/doctors.tsx`, new Doctors tab): Available / Day off / On leave, leave-today switch, working days and planned leave per doctor. Shared pieces in `components/LeaveTools.tsx` (also used by the doctor's Shifts)
 
 ### Phase 8 — Admin (dropped)
 - Admin stays on the website only (owner's decision, 1 Nov 2026)
@@ -119,3 +127,7 @@ Checks for app changes: `npm run typecheck`, `npm run lint`, `npx expo-doctor`, 
 - 2026-11-01 — Phase 4 code done. Push alerts (new `PushToken` table, RLS on), "You're next" alert, Google sign-in, APK build profile. Backend verify 2,217/2,217 (FIX-065), backend build; app type check, lint, expo-doctor 20/20, Android bundle; website lint, build, tests 31/31. Not tested on a phone yet (needs the owner steps).
 - 2026-11-01 — Phases 5 and 6 done. Doctor and front desk screens. App type check, lint, expo-doctor 20/20, Android bundle; every screen clicked through at phone size with sample data. Backend verify 2,217/2,217, backend build; website lint, build, tests 31/31.
 - 2026-11-01 — Phase 7 done. Clinic screens: Home, Doctors, Staff, QR Code, Account. App type check, lint, expo-doctor 20/20, Android bundle; every tab clicked through at phone size with sample data. Backend verify 2,217/2,217, backend build; website lint, build, tests 31/31.
+- 2026-11-01 — Extras done: notifications list, doctor and clinic photo, reports with PDF and print, QR print, doctors join clinics, front desk leave. App type check, lint, expo-doctor 20/20, Android bundle; each feature clicked through at phone size with sample data. Backend verify 2,217/2,217, backend build; website lint, build, tests 31/31. Not tried on a real phone yet.
+- 2026-11-01 — UI polish: Apple-style slide between screens on Android, soft shift between tabs with a tap feel, screens ease in on first open, pulsing Live dot on the queue pass, same-size round header buttons, code boxes match other fields, stray colours moved to `src/theme`. Font: Apple system font on iPhone, Inter (400 and 600) on Android and web, through `components/AppText.tsx`; Account pages use settings rows (`ListGroup`/`ListRow` in kit), today's date above home titles, status dots on the cabin switch, clinic Home with stat icons, tidier walk-in shift list, visit cards without repeated status, birth-date pickers fit — import `Text`/`TextInput` from there, not from react-native. App type check, lint, Android bundle pass.
+- 2026-11-01 — Phone feedback fixes: camera permission added to `app.json` (Android never showed the Allow popup) and the scanner asks on open; "See more" on clinic addresses (`components/MoreText.tsx`); symptoms box sized right; new Stepped out card; doctors edit their profile in the app (`components/DoctorProfileSheet.tsx`); reports get Today, shift and status filters and Excel export (`src/lib/excel.ts`, real .xlsx, no extra library; uses `expo-file-system`). App type check, lint, Android bundle pass; checked at phone size in the browser preview.
+- 2026-11-01 — Report custom From–To dates (`components/RangeCalendar.tsx`, up to 90 days back), centred staff chips on Welcome, animations (`src/lib/motion.tsx`: sliding Segmented thumb, spring press, fade-ins), polls skip redraws when nothing changed (`keepIfSame`). Then FIX-066: shift timings instead of "Shift 1" everywhere (server adds `shiftTime`), walk-in code on queue rows, errors hide on their own, no Self/Family on walk-in.

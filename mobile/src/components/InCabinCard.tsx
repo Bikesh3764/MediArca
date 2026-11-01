@@ -1,5 +1,7 @@
 // The patient with the doctor right now, with Complete (and Hold for the doctor).
-import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { Button } from '@/components/ui';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -29,9 +31,13 @@ export function InCabinCard({
   if (!token) {
     return (
       <View style={[styles.card, styles.empty]}>
-        <Text style={styles.label}>In cabin</Text>
-        <Text style={type.headline}>No one in cabin</Text>
-        <Text style={type.caption}>Call the next patient who has arrived.</Text>
+        <View style={styles.emptyIcon}>
+          <Ionicons name="person-outline" size={22} color={colors.primary} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={type.headline}>No one in cabin</Text>
+          <Text style={type.caption}>Call the next patient who has arrived.</Text>
+        </View>
       </View>
     );
   }
@@ -72,7 +78,8 @@ export function InCabinCard({
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   card: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg + 2, gap: space.md, ...shadow.card },
-  empty: { alignItems: 'flex-start', gap: 4 },
+  empty: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  emptyIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   top: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   label: { fontSize: 13, fontWeight: '600', color: colors.primary, marginBottom: 2 },
   token: { fontSize: 34, fontWeight: '600', color: colors.primary, letterSpacing: -0.8 },

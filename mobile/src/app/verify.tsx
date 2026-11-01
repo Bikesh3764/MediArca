@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Text } from 'react-native';
+import { Text } from '@/components/AppText';
 import { router, useLocalSearchParams } from 'expo-router';
 import { api } from '@mediarca/shared/api';
 import { OtpField } from '@/components/OtpField';

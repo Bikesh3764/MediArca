@@ -17,8 +17,6 @@ export const WalkinTab: React.FC = () => {
     setAppointmentDate,
     slotId,
     setSlotId,
-    bookingFor,
-    setBookingFor,
     patientName,
     setPatientName,
     patientAge,
@@ -257,35 +255,9 @@ export const WalkinTab: React.FC = () => {
 
                     {/* 3. Patient Information */}
                     <div className="pt-2 border-t border-[#f0f0f2] space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <label className="text-xs font-normal text-[#1d1d1f] tracking-tight">
-                          Patient
-                        </label>
-                        <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full flex gap-0.5 w-full sm:w-64 select-none">
-                          <button
-                            type="button"
-                            onClick={() => setBookingFor('self')}
-                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
-                              bookingFor === 'self'
-                                ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
-                            }`}
-                          >
-                            Self
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setBookingFor('other')}
-                            className={`flex-1 h-8 text-xs rounded-full transition-all cursor-pointer ${
-                              bookingFor === 'other'
-                                ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
-                                : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
-                            }`}
-                          >
-                            Family
-                          </button>
-                        </div>
-                      </div>
+                      <label className="block text-xs font-normal text-[#1d1d1f] tracking-tight">
+                        Patient
+                      </label>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
@@ -328,7 +300,7 @@ export const WalkinTab: React.FC = () => {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Age {bookingFor === 'other' ? '*' : ''}
+                            Age
                           </label>
                           <input
                             type="text"

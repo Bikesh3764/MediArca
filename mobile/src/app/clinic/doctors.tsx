@@ -2,7 +2,8 @@
 // Same calls as frontend/src/pages/Clinic/dashboard/DoctorsSection.tsx + InviteDoctorModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
-import { Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { type ClinicDoctorStat, type Doctor, api, formatDoctorDegrees } from '@mediarca/shared/api';
 import { toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
@@ -76,7 +77,7 @@ export default function ClinicDoctors() {
         <Title>Doctors</Title>
         <IconButton icon="person-add" label="Invite doctor" onPress={() => setInviting(true)} />
       </View>
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
       {!data ? (
         failed ? (

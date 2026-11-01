@@ -1,7 +1,8 @@
 // Move a patient to another day or shift (doctor and front desk). The server gives the new token.
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { type DoctorSlot, cleanSlotName, format12Hour } from '@mediarca/shared/api';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type DoctorSlot, slotTimeLabel } from '@mediarca/shared/api';
 import { DayPills } from '@/components/DayPills';
 import { OptionList, Sheet } from '@/components/kit';
 import { Button, Notice } from '@/components/ui';
@@ -72,7 +73,7 @@ export function MoveSheet({
               <OptionList
                 options={slots.map((s, i) => ({
                   value: s.id,
-                  label: `${cleanSlotName(s.name, `Shift ${i + 1}`)} · ${format12Hour(s.startTime)} – ${format12Hour(s.endTime)}`,
+                  label: slotTimeLabel(s),
                 }))}
                 value={slotId}
                 onChange={setSlotId}

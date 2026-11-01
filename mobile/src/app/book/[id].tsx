@@ -2,17 +2,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  type Appointment,
-  type Doctor,
-  type QueuePreview,
-  api,
-  cleanSlotName,
-  formatDisplayDate,
-  getLocalDateString,
-} from '@mediarca/shared/api';
+import { type Appointment, type Doctor, type QueuePreview, api, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, BottomBar, EmptyState, InfoRow, NavBar, goBack } from '@/components/kit';
@@ -86,7 +80,7 @@ export default function Book() {
   const fee = feeFor(doctor, clinicId, preview);
   const block = bookingBlock(doctor, clinicId, preview);
   const slotId = preview?.selectedSlotId || params.slot;
-  const shiftName = cleanSlotName(preview?.checkingWindow || preview?.availableSlots?.find((s) => s.slot.id === slotId)?.slot.name);
+  const shiftName = slotTimeLabel(preview?.availableSlots?.find((s) => s.slot.id === slotId)?.slot) || shiftLabel(preview);
 
   const submit = async () => {
     setError(null);
@@ -141,7 +135,7 @@ export default function Book() {
           <Text style={styles.doneEyebrow}>Request sent</Text>
           <Text style={styles.doneTitle}>Pay to confirm your token</Text>
           <Text style={[type.caption, styles.center]}>
-            {formatDisplayDate(booked.appointmentDate)} · {cleanSlotName(booked.checkingWindow)}
+            {formatDisplayDate(booked.appointmentDate)} · {shiftLabel(booked)}
           </Text>
           <View style={styles.tokenPill}>
             <Text style={type.caption}>Est. token</Text>
@@ -153,10 +147,9 @@ export default function Book() {
               <View style={styles.flex}>
                 <Text style={type.caption}>Receptionist</Text>
                 <Text style={type.headline}>{deskName}</Text>
-                <Text style={type.caption} numberOfLines={2}>
-                  {clinic?.clinic.clinicName}
-                  {clinic ? ` · ${formatClinicAddress(clinic.clinic, { withState: false })}` : ''}
-                </Text>
+                <MoreText style={type.caption} lines={2}>
+                  {`${clinic?.clinic.clinicName || ''}${clinic ? ` · ${formatClinicAddress(clinic.clinic, { withState: false })}` : ''}`}
+                </MoreText>
               </View>
               <View style={styles.right}>
                 <Text style={type.headline}>₹{fee}</Text>
@@ -294,7 +287,7 @@ const styles = StyleSheet.create({
   rows: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
   tokenValue: { fontSize: 16, fontWeight: '600', color: colors.primary },
   groupLabel: { ...type.caption, marginLeft: space.xs, marginTop: space.sm },
-  multiline: { height: 72, paddingTop: 10, textAlignVertical: 'top' },
+  multiline: { minHeight: 72, textAlignVertical: 'top' },
   feeCard: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, gap: space.sm, ...shadow.card },
   barNotice: { marginBottom: space.md },
   feeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

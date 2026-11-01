@@ -2,8 +2,10 @@
 // Used for booked visits (visit/[id]) and walk-ins (track). Wording follows
 // frontend/src/components/queue/LiveQueueTicket.tsx and TrackWalkin.tsx.
 import { Ionicons } from '@expo/vector-icons';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { type Appointment, cleanSlotName, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
+import { useEffect, useState } from 'react';
+import { Animated, Easing, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type Appointment, formatDisplayDate, getLocalDateString, shiftLabel } from '@mediarca/shared/api';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, type IconName } from '@/components/kit';
 import { doctorName } from '@/lib/booking';
@@ -42,7 +44,7 @@ export const passFromAppointment = (a: Appointment): PassData => {
     token: pending ? Math.max(1, a.estimatedQueueNumber || a.liveQueue?.estimatedQueueNumber || (a.queueNumber > 0 ? a.queueNumber : 1)) : a.queueNumber,
     estimated: pending,
     date: a.appointmentDate,
-    slot: a.checkingWindow,
+    slot: shiftLabel(a),
     estimatedTime: a.estimatedTime,
     isToday: a.appointmentDate === getLocalDateString(),
     doctor: {
@@ -144,7 +146,7 @@ export function QueuePass({ pass }: { pass: PassData }) {
 
         <View style={styles.metaRow}>
           <Meta label="Date" value={formatDisplayDate(pass.date)} />
-          <Meta label="Shift" value={cleanSlotName(pass.slot, 'Shift')} wide />
+          <Meta label="Shift" value={pass.slot || 'Shift'} wide />
           <Meta label="Time" value={time || '—'} />
         </View>
         {pass.forName ? <Text style={styles.forName}>For {pass.forName}</Text> : null}
@@ -162,7 +164,7 @@ export function QueuePass({ pass }: { pass: PassData }) {
         {showLive && live ? (
           <>
             <View style={styles.liveHead}>
-              <View style={styles.liveDot} />
+              <LiveDot />
               <Text style={styles.liveTitle}>Live queue</Text>
             </View>
             <View style={styles.stats}>
@@ -220,6 +222,26 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Green dot with a soft ring that keeps pulsing while the queue is live. */
+function LiveDot() {
+  const [pulse] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: Platform.OS !== 'web' }));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+  const ring = {
+    opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+    transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 2.6] }) }],
+  };
+  return (
+    <View style={styles.liveDotBox}>
+      <Animated.View style={[styles.liveDot, styles.liveRing, ring]} />
+      <View style={styles.liveDot} />
+    </View>
+  );
+}
+
 /** How far the queue has come towards your token. */
 function Progress({ token, serving }: { token: number; serving: number }) {
   const pct = token > 0 ? Math.min(1, Math.max(0.04, serving / token)) : 0;
@@ -262,7 +284,7 @@ const styles = StyleSheet.create({
   pass: { borderRadius: radius.card + 4, backgroundColor: colors.card, overflow: 'hidden', ...shadow.raised },
   passInactive: { opacity: 0.96 },
   top: { backgroundColor: colors.primary, padding: space.xl - 4, gap: space.lg },
-  topInactive: { backgroundColor: '#6e6e73' },
+  topInactive: { backgroundColor: colors.inactive },
   doctorRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   doctor: { fontSize: 17, fontWeight: '600', color: colors.white },
   topSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
@@ -282,7 +304,9 @@ const styles = StyleSheet.create({
   perforation: { flex: 1, borderTopWidth: 2, borderStyle: 'dashed', borderColor: colors.hairline, marginHorizontal: space.sm },
   bottom: { paddingHorizontal: space.xl - 4, paddingBottom: space.xl - 4, paddingTop: space.xs, gap: space.lg },
   liveHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveDotBox: { width: 8, height: 8, alignItems: 'center', justifyContent: 'center' },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
+  liveRing: { position: 'absolute' },
   liveTitle: { fontSize: 13, fontWeight: '600', color: colors.success },
   stats: { flexDirection: 'row', alignItems: 'center' },
   stat: { flex: 1, alignItems: 'center', gap: 2 },

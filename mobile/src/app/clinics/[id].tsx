@@ -2,7 +2,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type ClinicProfile, type Doctor, api, getFileUrl } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';

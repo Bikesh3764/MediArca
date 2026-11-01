@@ -1,6 +1,7 @@
 // 6-digit email code. One hidden input drives six boxes so paste and SMS-style autofill work.
 import { type ComponentRef, useRef } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, TextInput } from '@/components/AppText';
 import { colors, radius } from '@/theme';
 
 export function OtpField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -33,8 +34,9 @@ export function OtpField({ value, onChange }: { value: string; onChange: (value:
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  box: { flex: 1, height: 52, borderRadius: radius.field, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  boxActive: { borderColor: colors.primary },
+  // Same filled look as the other fields; the box being typed in turns white with a blue edge
+  box: { flex: 1, height: 56, borderRadius: radius.tile, borderWidth: 1.5, borderColor: 'transparent', backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center' },
+  boxActive: { borderColor: colors.primary, backgroundColor: colors.card },
   digit: { fontSize: 22, fontWeight: '600', color: colors.ink },
   hidden: { position: 'absolute', opacity: 0, height: 1, width: 1 },
 });

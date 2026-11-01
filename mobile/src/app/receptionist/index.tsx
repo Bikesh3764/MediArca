@@ -2,15 +2,8 @@
 // Same server calls and rules as frontend/src/pages/Receptionist/desk (state.tsx, QueueTab.tsx).
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import {
-  type ReceptionistQueueItem,
-  api,
-  cleanSlotName,
-  formatDisplayDate,
-  getLocalDateString,
-  getTomorrowDateString,
-} from '@mediarca/shared/api';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { type ReceptionistQueueItem, api, formatDisplayDate, getLocalDateString, getTomorrowDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
 import { cleanVisitReason, visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
 import { CabinControl } from '@/components/CabinControl';
@@ -18,13 +11,15 @@ import { InCabinCard } from '@/components/InCabinCard';
 import { EmptyState, PillButton, PlaceholderCard } from '@/components/kit';
 import { type MoveTarget, MoveSheet } from '@/components/MoveSheet';
 import { QueueRow } from '@/components/QueueRow';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Notice, Screen, Segmented, Title } from '@/components/ui';
 import { useDesk } from '@/context/DeskContext';
 import { doctorName } from '@/lib/booking';
 import { confirmAction } from '@/lib/confirm';
+import { todayLong } from '@/lib/dates';
 import { success } from '@/lib/haptics';
-import { usePolling } from '@/lib/usePolling';
-import { space, type } from '@/theme';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
+import { space } from '@/theme';
 
 type Showing = 'waiting' | 'done';
 
@@ -51,7 +46,7 @@ export default function DeskQueue() {
     if (!doctorId) return;
     try {
       const res = await api.getReceptionistDoctorQueue(doctorId, date);
-      setList(res.appointments);
+      setList(keepIfSame<ReceptionistQueueItem[] | null>(res.appointments));
       setFailed(false);
       if (res.doctor?.cabinStatus) setDoctorCabin(doctorId, res.doctor.cabinStatus, res.doctor.expectedReturnTime ?? null);
     } catch {
@@ -76,7 +71,7 @@ export default function DeskQueue() {
   const shiftOf = (a: ReceptionistQueueItem) => {
     if (slots.length < 2) return null;
     const i = slots.findIndex((s) => visitMatchesSlot(a, s));
-    return i >= 0 ? cleanSlotName(slots[i].name, `Shift ${i + 1}`) : cleanSlotName(a.checkingWindow);
+    return i >= 0 ? slotTimeLabel(slots[i]) : shiftLabel(a);
   };
   const metaOf = (a: ReceptionistQueueItem) =>
     [shiftOf(a), a.status === 'CANCELLED' ? 'Cancelled' : null, cleanVisitReason(a.reasonForVisit, a.patientName)].filter(Boolean).join(' · ');
@@ -164,7 +159,10 @@ export default function DeskQueue() {
   if (doctors.length === 0) {
     return (
       <Screen edges={['top']}>
-        <Title subtitle={desk.clinic?.clinicName}>Queue</Title>
+        <View style={styles.header}>
+          <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName}>Queue</Title>
+          <NotificationBell />
+        </View>
         <EmptyState icon="medkit-outline" title="No doctors yet" message="Your clinic adds doctors to this desk." />
       </Screen>
     );
@@ -172,7 +170,10 @@ export default function DeskQueue() {
 
   return (
     <Screen edges={['top']} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <Title subtitle={desk.clinic?.clinicName}>Queue</Title>
+      <View style={styles.header}>
+        <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName}>Queue</Title>
+        <NotificationBell />
+      </View>
 
       {doctors.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
@@ -189,9 +190,7 @@ export default function DeskQueue() {
             />
           ))}
         </ScrollView>
-      ) : (
-        <Text style={type.headline}>{doctorName(doctor?.fullName)}</Text>
-      )}
+      ) : null}
 
       {doctor ? (
         <CabinControl
@@ -200,6 +199,7 @@ export default function DeskQueue() {
           status={doctor.cabinStatus}
           expectedReturnTime={doctor.expectedReturnTime}
           onChange={(s, back) => setDoctorCabin(doctor.doctorId, s, back)}
+          doctor={{ name: doctorName(doctor.fullName), specialty: doctor.specialty, avatarUrl: doctor.avatarUrl }}
         />
       ) : null}
 
@@ -215,7 +215,7 @@ export default function DeskQueue() {
         }}
       />
 
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
       {!list ? (
         failed ? (
@@ -257,7 +257,8 @@ export default function DeskQueue() {
               waiting.map((a) => (
                 <QueueRow
                   key={a.id}
-                  item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), meta: metaOf(a), phone: a.patientPhone, arrived: a.isCheckedIn }}
+                  item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), meta: metaOf(a), phone: a.patientPhone, arrived: a.isCheckedIn, code: a.walkInCode }}
+                  showArrival={isTodayQueue}
                   onToggleArrived={() => toggleArrived(a)}
                   call={isTodayQueue && a.isCheckedIn ? (away ? 'away' : 'call') : null}
                   onCall={() => setStatus(a, 'IN_CONSULTATION')}
@@ -297,6 +298,7 @@ export default function DeskQueue() {
 }
 
 const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.md },
   bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
 });

@@ -1,24 +1,41 @@
-// Account tab for doctors and the front desk: who is signed in, password, sign out.
-// Profile details are edited on the website for now.
-import { StyleSheet, Text, View } from 'react-native';
+// Account tab for doctors and the front desk: who is signed in, photo (doctors), report, password, sign out.
+// Doctors edit their profile here; front desk details are set by the clinic.
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { formatDisplayPhone } from '@mediarca/shared/utils/phoneUtils';
-import { ChangePasswordCard, SignOutAndDelete } from '@/components/AccountSettings';
-import { Avatar, Chip } from '@/components/kit';
-import { Screen, Title } from '@/components/ui';
+import { AccountActions } from '@/components/AccountSettings';
+import { Avatar, Chip, ListGroup, ListRow } from '@/components/kit';
+import { DoctorProfileSheet } from '@/components/DoctorProfileSheet';
+import { PhotoPicker } from '@/components/PhotoPicker';
+import { ReportSheet } from '@/components/ReportSheet';
+import { Notice, Screen, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { doctorName } from '@/lib/booking';
 import { ROLE_LABEL } from '@/lib/roles';
 import { colors, radius, shadow, space, type } from '@/theme';
 
-export function AccountScreen({ extra }: { extra?: string | null }) {
+export function AccountScreen({ extra, children }: { extra?: string | null; children?: React.ReactNode }) {
   const { user } = useAuth();
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [report, setReport] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
   if (!user) return null;
-  const name = user.role === 'DOCTOR' ? doctorName(user.fullName) : user.fullName;
+  const isDoctor = user.role === 'DOCTOR';
+  const name = isDoctor ? doctorName(user.fullName) : user.fullName;
+  const avatar = <Avatar uri={user.avatarUrl} name={user.fullName} size={64} />;
   return (
     <Screen edges={['top']}>
       <Title>Account</Title>
       <View style={styles.header}>
-        <Avatar uri={user.avatarUrl} name={user.fullName} size={64} />
+        {isDoctor ? (
+          <PhotoPicker hasPhoto={Boolean(user.avatarUrl)} onError={setPhotoError}>
+            {avatar}
+          </PhotoPicker>
+        ) : (
+          avatar
+        )}
         <View style={styles.flex}>
           <Text style={type.heading} numberOfLines={1}>
             {name}
@@ -33,8 +50,17 @@ export function AccountScreen({ extra }: { extra?: string | null }) {
           </View>
         </View>
       </View>
-      <ChangePasswordCard />
-      <SignOutAndDelete />
+      <Notice tone="error" message={photoError} />
+      <Notice tone="success" message={saved} />
+      {isDoctor ? (
+        <ListGroup>
+          <ListRow icon="create" label="Edit profile" onPress={() => setEditing(true)} />
+        </ListGroup>
+      ) : null}
+      {children}
+      <AccountActions rows={[<ListRow key="report" icon="document-text" label="Report" onPress={() => setReport(true)} />]} />
+      {user.role === 'DOCTOR' || user.role === 'RECEPTIONIST' ? <ReportSheet role={user.role} visible={report} onClose={() => setReport(false)} /> : null}
+      {isDoctor ? <DoctorProfileSheet visible={editing} onClose={() => setEditing(false)} onSaved={() => setSaved('Profile saved.')} /> : null}
     </Screen>
   );
 }

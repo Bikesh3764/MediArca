@@ -1,7 +1,6 @@
-import { formatDisplayDate } from '../../../services/api';
+import { formatDisplayDate, shiftLabel } from '../../../services/api';
 import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
-import { cleanSlotName } from '../../../services/api';
 import { X, Printer } from 'lucide-react';
 import { cleanDoctorName } from './helpers';
 import { useReceptionistDashboard } from './state';
@@ -48,7 +47,7 @@ export const BookedPassModal: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[11px] text-[#86868b] block">Shift</span>
-                  <span className="font-semibold text-[#1d1d1f]">{cleanSlotName(bookedPass.checkingWindow) || 'General'}</span>
+                  <span className="font-semibold text-[#1d1d1f]">{shiftLabel(bookedPass, 'General')}</span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, DoctorAffiliationsData, ClinicProfile, cleanSlotName, formatDisplayDate } from '../../../services/api';
+import { api, Appointment, parseDoctorSlots, format12Hour, getLocalDateString, DoctorAffiliationsData, ClinicProfile, cleanSlotName, formatDisplayDate, slotTimeLabel } from '../../../services/api';
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
 import { useLiveEvent } from '../../../utils/liveEvents';
@@ -687,7 +687,7 @@ export const useDoctorDashboardState = () => {
         ? ` (${format12Hour(slot.startTime)} – ${format12Hour(slot.endTime)})`
         : '';
       return {
-        label: `${cleanSlotName(slot.name, `Shift ${idx + 1}`)}${timeRange}`,
+        label: slotTimeLabel(slot) || `${cleanSlotName(slot.name, `Shift ${idx + 1}`)}${timeRange}`,
         value: slot.id,
         count: slotWaitingCounts[slot.id] || 0,
       };

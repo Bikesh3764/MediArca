@@ -159,10 +159,10 @@ export const QueueTab: React.FC = () => {
                       tab.id === 'ALL'
                         ? (queueShiftFilter === 'ALL'
                             ? queueAppointments.length
-                            : queueAppointments.filter((a) => cleanShiftDisplayName(a.checkingWindow) === queueShiftFilter).length)
+                            : queueAppointments.filter((a) => cleanShiftDisplayName(a) === queueShiftFilter).length)
                         : (queueShiftFilter === 'ALL'
                             ? queueAppointments.filter((a) => a.status === tab.id).length
-                            : queueAppointments.filter((a) => a.status === tab.id && cleanShiftDisplayName(a.checkingWindow) === queueShiftFilter).length);
+                            : queueAppointments.filter((a) => a.status === tab.id && cleanShiftDisplayName(a) === queueShiftFilter).length);
                     const isActive = statusFilter === tab.id;
                     return (
                       <button
@@ -291,7 +291,7 @@ export const QueueTab: React.FC = () => {
               ) : (() => {
                 const filteredAppointments = queueAppointments.filter((appt) => {
                   if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
-                  if (queueShiftFilter !== 'ALL' && cleanShiftDisplayName(appt.checkingWindow) !== queueShiftFilter) return false;
+                  if (queueShiftFilter !== 'ALL' && cleanShiftDisplayName(appt) !== queueShiftFilter) return false;
                   if (!queueSearch.trim()) return true;
                   const q = queueSearch.toLowerCase().trim();
                   const name = (appt.patientName || '').toLowerCase();
@@ -408,7 +408,7 @@ export const QueueTab: React.FC = () => {
                 const groupedByShift: Record<string, ReceptionistQueueItem[]> = {};
 
                 filteredAppointments.forEach((appt) => {
-                  const shiftKey = cleanShiftDisplayName(appt.checkingWindow);
+                  const shiftKey = cleanShiftDisplayName(appt);
                   if (!groupedByShift[shiftKey]) {
                     groupedByShift[shiftKey] = [];
                   }
@@ -650,6 +650,7 @@ export const QueueTab: React.FC = () => {
                                     queueNumber: appt.queueNumber,
                                     estimatedTime: appt.estimatedTime,
                                     checkingWindow: appt.checkingWindow,
+                                    shiftTime: appt.shiftTime,
                                     appointmentDate: queueDate,
                                     patientName: appt.patientName,
                                     patientPhone: appt.patientPhone,

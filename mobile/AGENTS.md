@@ -4,6 +4,7 @@ The MediArca app for Patient, Doctor, Clinic and Receptionist (Admin is website-
 
 - Server calls, data types and helpers come from `@mediarca/shared` (`../shared/src`). Never copy them into the app; if logic is missing, add it to `shared/` so the website gets it too.
 - `src/lib/platform.ts` is the only place that configures the shared code for the phone.
+- Text: import `Text` and `TextInput` from `@/components/AppText` (Inter font), never from `react-native`.
 - Tokens: `src/theme`; building blocks: `src/components/ui.tsx` (buttons, fields, cards) and `src/components/kit.tsx` (avatar, chips, search, sheet, empty state, bottom bar). Reuse these instead of styling from scratch.
 - Look: large titles, white rounded cards with soft shadows (`shadow` in `src/theme`, no borders), filled fields, 52pt pill buttons, soft blue tints, haptic tap on choices (`src/lib/haptics.ts`). Short copy, same words as the website.
 - Errors and "saved" messages go next to the button that caused them (or in the bottom bar), never off-screen.
@@ -12,6 +13,7 @@ The MediArca app for Patient, Doctor, Clinic and Receptionist (Admin is website-
 - Doctor and front desk queues reuse `components/QueueRow`, `InCabinCard`, `CabinControl`, `MoveSheet`, `WalkinForm`, `ActionMenu`; tab bars use `components/tabs.tsx`. Pick-from-a-short-list actions use `ActionMenu`, not alerts.
 - Clinic tabs share `context/ClinicContext.tsx`; QR codes are drawn on the phone with `components/QrCode.tsx` (never an outside QR service — the check-in code is private). Website links live in `src/lib/site.ts`.
 - Background refresh uses `src/lib/usePolling.ts` and keeps the list on screen (no spinners after the first load).
+- Notifications: `context/NotificationContext.tsx` (one provider in `app/_layout.tsx`) + `components/NotificationBell.tsx` on each home screen. Photos: `components/PhotoPicker.tsx`. PDFs and printing: `src/lib/print.ts` (escape every value with `escapeHtml`); Excel files: `src/lib/excel.ts`. Long addresses: `components/MoreText.tsx`. Date ranges: `components/RangeCalendar.tsx`. Animations: `src/lib/motion.tsx` (FadeIn, usePressScale, smoothLayout; built-in Animated, no extra library). Polling setters wrap results in `keepIfSame` (`src/lib/usePolling.ts`) so unchanged refreshes don't redraw. Leave UI: `components/LeaveTools.tsx`. Don't open a `Sheet` from inside another `Sheet`; show the form inline instead.
 
 ---
 

@@ -22,7 +22,7 @@ export default function DeskWalkin() {
           doctors={doctors.map((d) => ({ id: d.doctorId, label: doctorName(d.fullName) }))}
           fixedClinicId={desk.clinic?.id || doctors[0]?.clinics?.[0]?.clinicId}
           phoneRequired
-          familyToggle
+          forOther={false}
           submit={async (v) => {
             const res: any = await api.bookWalkinAppointment({
               doctorId: v.doctorId,
@@ -42,6 +42,7 @@ export default function DeskWalkin() {
               queueNumber: a?.queueNumber ?? res?.queueNumber,
               estimatedTime: a?.estimatedTime ?? res?.estimatedTime,
               checkingWindow: a?.checkingWindow ?? res?.checkingWindow,
+              shiftTime: a?.shiftTime ?? res?.shiftTime,
               walkInCode: res?.walkInCode ?? a?.walkInCode ?? null,
               patientName: v.patientName,
               patientPhone: v.patientPhone,

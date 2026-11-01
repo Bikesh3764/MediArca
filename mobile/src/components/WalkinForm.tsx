@@ -1,9 +1,11 @@
 // Add a walk-in: pick day and shift (with the next token and time), then the patient's details.
 // Used by the front desk (any of its doctors) and by doctors (their own queue).
 // Same checks as frontend/src/pages/Receptionist/desk (WalkinTab, state.tsx) and Doctor/dashboard/WalkinModal.tsx.
+import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { type QueuePreview, cleanSlotName, format12Hour, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
+import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type QueuePreview, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
 import { api } from '@mediarca/shared/api';
 import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
 import { DayPills } from '@/components/DayPills';
@@ -30,6 +32,7 @@ export interface IssuedToken {
   queueNumber: number;
   estimatedTime?: string;
   checkingWindow?: string;
+  shiftTime?: string | null;
   walkInCode?: string | null;
   patientName: string;
   patientPhone?: string;
@@ -45,7 +48,7 @@ export function WalkinForm({
   fixedDoctorId,
   fixedClinicId,
   phoneRequired,
-  familyToggle,
+  forOther,
   submit,
 }: {
   /** Front desk: the doctors to choose from. */
@@ -55,7 +58,8 @@ export function WalkinForm({
   fixedDoctorId?: string;
   fixedClinicId?: string;
   phoneRequired: boolean;
-  familyToggle: boolean;
+  /** Doctor walk-ins are always for someone else; the desk lets the server decide from the name. */
+  forOther: boolean;
   submit: (values: WalkinValues) => Promise<IssuedToken>;
 }) {
   const [chosenDoctor, setDoctorId] = useState('');
@@ -67,7 +71,6 @@ export function WalkinForm({
   const [slotId, setSlotId] = useState('');
   const [preview, setPreview] = useState<QueuePreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [forWhom, setForWhom] = useState<'self' | 'other'>('self');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
@@ -111,7 +114,6 @@ export function WalkinForm({
     if (!name.trim()) return setError('Enter the patient’s name.');
     if (phoneRequired && !phone) return setError('Enter the mobile number.');
     if (phone && !isValidIndianPhone(phone)) return setError('Enter a valid 10-digit mobile number.');
-    if (forWhom === 'other' && !age.trim()) return setError('Enter the patient’s age.');
     if (age.trim()) {
       const n = parseInt(age.trim(), 10);
       if (!Number.isFinite(n) || n < 0 || n > 125) return setError('Enter an age between 0 and 125.');
@@ -130,7 +132,7 @@ export function WalkinForm({
         patientPhone: phone ? formatIndianPhone(phone) : undefined,
         patientAge: age.trim() || undefined,
         gender,
-        isForOther: !familyToggle || forWhom === 'other',
+        isForOther: forOther,
         reasonForVisit: reason.trim() || undefined,
       });
       success();
@@ -173,18 +175,22 @@ export function WalkinForm({
         <OptionList
           options={shifts.map((s, i) => ({
             value: s.slot.id,
-            label: `${cleanSlotName(s.slot.name, `Shift ${i + 1}`)} · ${format12Hour(s.slot.startTime)} – ${format12Hour(s.slot.endTime)}${s.isPassed ? ' · Ended' : s.isFull ? ' · Full' : ''}`,
+            label: slotTimeLabel(s.slot),
+            badge: s.isPassed ? 'Ended' : s.isFull ? 'Full' : undefined,
           }))}
           value={slotId || chosen?.slot.id || ''}
           onChange={setSlotId}
         />
       ) : null}
 
-      <View style={styles.preview}>
+      <View style={[styles.preview, Boolean(closed) && !(loadingPreview && !preview) && styles.previewClosed]}>
         {loadingPreview && !preview ? (
           <ActivityIndicator color={colors.primary} />
         ) : closed ? (
-          <Text style={[type.body, { color: colors.warning }]}>{closed}</Text>
+          <>
+            <Ionicons name="moon-outline" size={20} color={colors.warning} />
+            <Text style={[type.body, styles.flexText, { color: colors.warning }]}>{closed}</Text>
+          </>
         ) : chosen ? (
           <>
             <View style={styles.previewCell}>
@@ -206,16 +212,6 @@ export function WalkinForm({
       </View>
 
       <Card>
-        {familyToggle ? (
-          <Segmented
-            options={[
-              { value: 'self', label: 'Self' },
-              { value: 'other', label: 'Family' },
-            ]}
-            value={forWhom}
-            onChange={setForWhom}
-          />
-        ) : null}
         <Field label="Name" value={name} onChangeText={setName} placeholder="Patient’s full name" maxLength={100} autoCapitalize="words" />
         <Field
           label={phoneRequired ? 'Mobile number' : 'Mobile number (optional)'}
@@ -256,7 +252,7 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
     const lines = [
       `MediArca token #${token.queueNumber}`,
       `${token.patientName} · ${doctorName(token.doctorName)}`,
-      `${formatDisplayDate(token.appointmentDate)}${token.checkingWindow ? ` · ${cleanSlotName(token.checkingWindow)}` : ''}${token.estimatedTime ? ` · ~${token.estimatedTime}` : ''}`,
+      `${formatDisplayDate(token.appointmentDate)}${token.checkingWindow ? ` · ${shiftLabel(token)}` : ''}${token.estimatedTime ? ` · ~${token.estimatedTime}` : ''}`,
       token.walkInCode ? `Track: mediarca.in/track · code ${token.walkInCode}` : '',
     ].filter(Boolean);
     Share.share({ message: lines.join('\n') }).catch(() => {});
@@ -267,14 +263,14 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
         <Text style={styles.passLabel}>Token issued</Text>
         <Text style={styles.passToken}>#{token.queueNumber}</Text>
         <View style={styles.passRow}>
-          <View style={styles.flex}>
+          <View style={styles.passCell}>
             <Text style={styles.passSmall}>Est. time</Text>
             <Text style={styles.passValue}>{token.estimatedTime || '–'}</Text>
           </View>
-          <View style={styles.flex}>
+          <View style={styles.passWide}>
             <Text style={styles.passSmall}>Shift</Text>
-            <Text style={styles.passValue} numberOfLines={1}>
-              {cleanSlotName(token.checkingWindow, 'Shift')}
+            <Text style={styles.passValue} numberOfLines={2}>
+              {shiftLabel(token)}
             </Text>
           </View>
         </View>
@@ -314,6 +310,8 @@ const styles = StyleSheet.create({
   bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   preview: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryTint, borderRadius: radius.card, padding: space.lg, gap: space.md, minHeight: 76 },
+  previewClosed: { backgroundColor: colors.warningSoft, minHeight: 0 },
+  flexText: { flex: 1 },
   previewCell: { flex: 1, gap: 2 },
   previewBig: { fontSize: 24, fontWeight: '600', color: colors.primary },
   previewValue: { fontSize: 17, fontWeight: '600', color: colors.ink },
@@ -326,6 +324,8 @@ const styles = StyleSheet.create({
   passLabel: { fontSize: 15, color: 'rgba(255,255,255,0.85)' },
   passToken: { fontSize: 56, fontWeight: '600', color: colors.white, letterSpacing: -1.5 },
   passRow: { flexDirection: 'row', gap: space.lg, marginTop: space.sm },
+  passCell: { flex: 1, minWidth: 0 },
+  passWide: { flex: 1.7, minWidth: 0 },
   passSmall: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
   passValue: { fontSize: 17, fontWeight: '600', color: colors.white },
   detail: { flexDirection: 'row', justifyContent: 'space-between', gap: space.lg, minHeight: 32, alignItems: 'center' },

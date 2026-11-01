@@ -1,14 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { IconName } from '@/components/kit';
 import { Button } from '@/components/ui';
+import { FadeIn } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
+
+const STAFF: { role: string; label: string; icon: IconName }[] = [
+  { role: 'DOCTOR', label: 'Doctor', icon: 'medkit-outline' },
+  { role: 'CLINIC', label: 'Clinic', icon: 'business-outline' },
+  { role: 'RECEPTIONIST', label: 'Receptionist', icon: 'people-outline' },
+];
 
 function QuickLink({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.quick, pressed && { opacity: 0.6 }]}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.quick, pressed && styles.pressed]}>
       <View style={styles.quickIcon}>
         <Ionicons name={icon} size={22} color={colors.primary} />
       </View>
@@ -27,26 +35,34 @@ export default function Welcome() {
         <Text style={styles.brand}>MediArca</Text>
         <Text style={styles.tagline}>Book a doctor. Skip the wait.</Text>
 
-        <View style={styles.quickRow}>
+        <FadeIn delay={120} style={styles.quickRow}>
           <QuickLink icon="search" label="Find doctors" onPress={() => router.push('/find')} />
           <QuickLink icon="ticket-outline" label="Track walk-in" onPress={() => router.push('/track')} />
-        </View>
+        </FadeIn>
       </View>
 
-      <View style={styles.actions}>
+      <FadeIn delay={220} style={styles.actions}>
         <Button label="Sign in" onPress={() => router.push('/login?role=PATIENT')} />
         <Button label="Create account" variant="secondary" onPress={() => router.push('/signup?role=PATIENT')} />
         <View style={styles.staff}>
           <Text style={type.footnote}>For clinics</Text>
           <View style={styles.staffRow}>
-            {(['DOCTOR', 'CLINIC', 'RECEPTIONIST'] as const).map((role) => (
-              <Pressable key={role} accessibilityRole="link" hitSlop={8} onPress={() => router.push(`/login?role=${role}`)}>
-                <Text style={styles.staffLink}>{role === 'DOCTOR' ? 'Doctor' : role === 'CLINIC' ? 'Clinic' : 'Receptionist'}</Text>
+            {STAFF.map((s) => (
+              <Pressable
+                key={s.role}
+                accessibilityRole="button"
+                onPress={() => router.push(`/login?role=${s.role}`)}
+                style={({ pressed }) => [styles.staffChip, pressed && styles.pressed]}
+              >
+                <Ionicons name={s.icon} size={20} color={colors.primary} />
+                <Text style={styles.staffLink} numberOfLines={1} adjustsFontSizeToFit>
+                  {s.label}
+                </Text>
               </Pressable>
             ))}
           </View>
         </View>
-      </View>
+      </FadeIn>
     </SafeAreaView>
   );
 }
@@ -63,7 +79,9 @@ const styles = StyleSheet.create({
   quickIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   quickText: { fontSize: 15, color: colors.ink },
   actions: { paddingHorizontal: space.xl, paddingBottom: space.lg, gap: space.md },
-  staff: { alignItems: 'center', gap: 6, marginTop: space.md },
-  staffRow: { flexDirection: 'row', gap: space.xl },
-  staffLink: { fontSize: 15, color: colors.primary },
+  staff: { alignSelf: 'stretch', alignItems: 'center', gap: space.sm, marginTop: space.md },
+  staffRow: { alignSelf: 'stretch', flexDirection: 'row', gap: space.sm },
+  staffChip: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: space.md, borderRadius: radius.tile + 2, backgroundColor: colors.card, ...shadow.card },
+  staffLink: { fontSize: 14, color: colors.ink },
+  pressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
 });

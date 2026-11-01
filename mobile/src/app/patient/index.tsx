@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Discover } from '@/components/Discover';
 import { IconButton } from '@/components/kit';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useAuth } from '@/context/AuthContext';
 import { colors, space, type } from '@/theme';
 
@@ -18,7 +20,10 @@ export default function PatientHome() {
               {firstName ? <Text style={type.caption}>Hi, {firstName}</Text> : null}
               <Text style={type.largeTitle}>Find a doctor</Text>
             </View>
-            <IconButton icon="qr-code-outline" label="Scan to check in" onPress={() => router.push('/scan')} style={styles.scan} />
+            <View style={styles.actions}>
+              <NotificationBell />
+              <IconButton icon="qr-code-outline" label="Scan to check in" onPress={() => router.push('/scan')} />
+            </View>
           </View>
         }
       />
@@ -30,5 +35,5 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   titleRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: space.sm },
   titleBlock: { gap: 2 },
-  scan: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, marginBottom: 2 },
+  actions: { flexDirection: 'row', gap: space.sm },
 });

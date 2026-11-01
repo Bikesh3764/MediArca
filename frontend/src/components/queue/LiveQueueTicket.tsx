@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api, Appointment, getLocalDateString, getFileUrl, cleanSlotName, formatDisplayDate } from '../../services/api';
+import { api, Appointment, getLocalDateString, getFileUrl, formatDisplayDate, shiftLabel } from '../../services/api';
 import { Clock, Calendar, MapPin, CheckCircle2, Building2, Phone, QrCode } from 'lucide-react';
 import { AppleButton } from '../ui/AppleButton';
 import { CabinStatusBadge } from '../ui/DoctorCabinPresence';
@@ -79,7 +79,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
   const doctorDisplayName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
 
   // Clean shift window display
-  const cleanShiftWindow = cleanSlotName(checkingWindow, 'Shift');
+  const cleanShiftWindow = shiftLabel({ shiftTime: appointment.shiftTime, checkingWindow });
 
   return (
     <div className="bg-white rounded-2xl border border-[#e5e5ea]  overflow-hidden hover:border-[#0066cc]/30 transition-all duration-150">

@@ -2,23 +2,26 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
+  Animated,
   Image,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Text, TextInput } from '@/components/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { getFileUrl } from '@mediarca/shared/api/config';
 import { tap } from '@/lib/haptics';
+import { usePressScale } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -190,18 +193,21 @@ export function PillButton({
   onPress: () => void;
   active?: boolean;
 }) {
+  const press = usePressScale(0.94);
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
+      accessibilityState={{ selected: active }}
       onPress={() => {
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.pill, active && styles.pillActive, pressed && styles.pressed]}
+      {...press.handlers}
+      style={[styles.pill, active && styles.pillActive, press.style]}
     >
       {icon ? <Ionicons name={icon} size={15} color={active ? colors.white : colors.ink} /> : null}
       <Text style={[styles.pillText, active && { color: colors.white }]}>{label}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -321,7 +327,8 @@ export function OptionList<T extends string | number>({
   value,
   onChange,
 }: {
-  options: { value: T; label: string }[];
+  /** `detail` is a grey second line (e.g. shift times); `badge` a small chip on the right (e.g. Ended). */
+  options: { value: T; label: string; detail?: string; badge?: string }[];
   value: T;
   onChange: (value: T) => void;
 }) {
@@ -329,6 +336,29 @@ export function OptionList<T extends string | number>({
     <View style={styles.group}>
       {options.map((o, i) => {
         const selected = o.value === value;
+        if (o.detail || o.badge) {
+          return (
+            <Pressable
+              key={String(o.value)}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              onPress={() => {
+                tap();
+                onChange(o.value);
+              }}
+              style={({ pressed }) => [styles.groupRow, styles.groupRowTall, i > 0 && styles.groupDivider, pressed && { backgroundColor: colors.canvas }]}
+            >
+              <View style={styles.optionText}>
+                <Text style={[type.body, selected && { color: colors.primary, fontWeight: '600' }]} numberOfLines={1}>
+                  {o.label}
+                </Text>
+                {o.detail ? <Text style={type.footnote}>{o.detail}</Text> : null}
+              </View>
+              {o.badge ? <Chip label={o.badge} /> : null}
+              {selected ? <Ionicons name="checkmark" size={20} color={colors.primary} /> : null}
+            </Pressable>
+          );
+        }
         return (
           <Pressable
             key={String(o.value)}
@@ -346,6 +376,71 @@ export function OptionList<T extends string | number>({
         );
       })}
     </View>
+  );
+}
+
+/** White rounded group of ListRows with hairlines between them (iOS Settings style). */
+export function ListGroup({ children }: { children: React.ReactNode }) {
+  const rows = React.Children.toArray(children).filter(Boolean);
+  if (!rows.length) return null;
+  return (
+    <View style={styles.group}>
+      {rows.map((row, i) =>
+        React.isValidElement<{ divider?: boolean }>(row) ? React.cloneElement(row, { key: row.key ?? i, divider: i > 0 }) : row
+      )}
+    </View>
+  );
+}
+
+/** One tappable row: coloured icon tile, label, optional value and a chevron. */
+export function ListRow({
+  icon,
+  tint = colors.primary,
+  label,
+  value,
+  onPress,
+  destructive = false,
+  chevron = true,
+  divider = false,
+  disabled = false,
+}: {
+  icon: IconName;
+  tint?: string;
+  label: string;
+  value?: string | null;
+  onPress: () => void;
+  destructive?: boolean;
+  chevron?: boolean;
+  /** Set by ListGroup. */
+  divider?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      style={({ pressed }) => [styles.listRow, pressed && { backgroundColor: colors.canvas }, disabled && { opacity: 0.5 }]}
+    >
+      <View style={[styles.listIcon, { backgroundColor: destructive ? colors.danger : tint }]}>
+        <Ionicons name={icon} size={17} color={colors.white} />
+      </View>
+      <View style={[styles.listBody, divider && styles.listDivider]}>
+        <Text style={[type.body, styles.flexText, destructive && { color: colors.danger }]} numberOfLines={1}>
+          {label}
+        </Text>
+        {value ? (
+          <Text style={[type.body, { color: colors.muted }]} numberOfLines={1}>
+            {value}
+          </Text>
+        ) : null}
+        {chevron && !destructive ? <Ionicons name="chevron-forward" size={18} color={colors.placeholder} /> : null}
+      </View>
+    </Pressable>
   );
 }
 
@@ -379,8 +474,8 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', borderRadius: radius.pill, paddingHorizontal: 10, height: 26 },
   chipText: { fontSize: 13 },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  iconButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  iconButtonLight: { backgroundColor: 'rgba(255,255,255,0.94)', ...shadow.card },
+  iconButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  iconButtonLight: { backgroundColor: colors.card, marginBottom: 2, ...shadow.card },
   navBar: { flexDirection: 'row', alignItems: 'center', height: 44, paddingHorizontal: space.sm },
   navBack: { width: 44, height: 44, justifyContent: 'center' },
   navTitle: { ...type.headline, flex: 1, textAlign: 'center' },
@@ -406,7 +501,14 @@ const styles = StyleSheet.create({
   sheetBody: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
   group: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden', ...shadow.card },
   groupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 52, paddingHorizontal: space.lg },
+  groupRowTall: { gap: space.md, paddingVertical: space.md - 2 },
+  optionText: { flex: 1, minWidth: 0, gap: 2 },
   groupDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.lg },
+  listIcon: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  listBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 52, paddingRight: space.lg },
+  listDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+  flexText: { flex: 1 },
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.lg, minHeight: 46, paddingVertical: space.sm },
   infoValue: { flexShrink: 1, textAlign: 'right' },
 });

@@ -130,7 +130,7 @@ export const PendingTab: React.FC = () => {
                               </span>
                               <span>•</span>
                               <span>
-                                {formatDisplayDate(appt.appointmentDate)} • {cleanShiftDisplayName(appt.checkingWindow)}
+                                {formatDisplayDate(appt.appointmentDate)} • {cleanShiftDisplayName(appt)}
                               </span>
                               {phoneDisplay && (
                                 <>

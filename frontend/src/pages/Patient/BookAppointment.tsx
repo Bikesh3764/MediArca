@@ -7,13 +7,11 @@ import {
   Appointment,
   QueuePreview,
   parseDoctorSlots,
-  format12Hour,
   getLocalDateString,
   getTomorrowDateString,
   formatDoctorDegrees,
   getFileUrl,
-  cleanSlotName,
-  formatDisplayDate, getMaxBookingDateString } from '../../services/api';
+  formatDisplayDate, getMaxBookingDateString, shiftLabel, slotTimeLabel } from '../../services/api';
 import { formatDisplayPhone, toTelUri } from '../../utils/phoneUtils';
 import { formatClinicAddress } from '../../utils/address';
 import { useAuth } from '../../context/AuthContext';
@@ -367,7 +365,7 @@ export const BookAppointment: React.FC = () => {
                 Pay to confirm your token
               </h2>
               <p className="text-xs text-[#86868b] mt-1 font-normal">
-                {formatDisplayDate(confirmedAppointment.appointmentDate)} · {cleanSlotName(confirmedAppointment.checkingWindow)}
+                {formatDisplayDate(confirmedAppointment.appointmentDate)} · {shiftLabel(confirmedAppointment)}
               </p>
               <div className="mt-3.5 inline-flex items-baseline gap-2 px-4 py-1.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
                 <span className="text-xs font-normal text-[#86868b]">Est. token</span>
@@ -659,7 +657,7 @@ export const BookAppointment: React.FC = () => {
                 const itemDayOff = Boolean(item.isDayOff);
                 const slotPassed = Boolean(item.isPassed && !itemOnLeave && !itemDayOff);
                 const slotFull = Boolean(item.isFull);
-                const cleanShiftName = s.name.replace(/\s*\([^)]*\)/, '').trim() || 'Shift';
+                const shiftTime = slotTimeLabel(s);
 
                 return (
                   <button
@@ -677,17 +675,13 @@ export const BookAppointment: React.FC = () => {
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-xs font-semibold text-[#1d1d1f] truncate">
-                        {cleanShiftName}
+                        {shiftTime}
                       </span>
                       {isSelected && !slotPassed && !itemOnLeave && !itemDayOff && (
                         <span className="w-4 h-4 rounded-full bg-[#0066cc] text-white flex items-center justify-center shrink-0">
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
                       )}
-                    </div>
-
-                    <div className="text-xs text-[#0066cc] font-normal mb-1.5">
-                      {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
                     </div>
 
                     <div>
@@ -751,7 +745,7 @@ export const BookAppointment: React.FC = () => {
                 </div>
               </div>
               <div className="pt-2 border-t border-[#e5e5ea] text-xs text-[#86868b] flex items-center justify-between">
-                <span>{cleanSlotName(queuePreview.checkingWindow)}</span>
+                <span>{slotTimeLabel(queuePreview.selectedSlot?.slot) || shiftLabel(queuePreview)}</span>
                 <span>
                   {isSelectedSlotOnLeave
                     ? 'Pick another date'

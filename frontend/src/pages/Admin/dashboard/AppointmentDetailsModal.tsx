@@ -1,5 +1,5 @@
 import React from 'react';
-import { cleanSlotName } from '../../../services/api';
+import { shiftLabel } from '../../../services/api';
 import { AppleButton } from '../../../components/ui/AppleButton';
 import { X } from 'lucide-react';
 import { useAdminDashboard } from './state';
@@ -92,7 +92,7 @@ export const AppointmentDetailsModal: React.FC = () => {
                   </div>
                   <div className="col-span-2">
                     <span className="text-[#86868b] block text-[11px]">Shift</span>
-                    <span className="text-[#1d1d1f] font-normal mt-0.5 block">{cleanSlotName(selectedAppointment.checkingWindow, 'Shift 1')}</span>
+                    <span className="text-[#1d1d1f] font-normal mt-0.5 block">{shiftLabel(selectedAppointment, 'Shift 1')}</span>
                   </div>
                 </div>
               </div>

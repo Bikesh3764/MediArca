@@ -1,21 +1,10 @@
 // Pieces of the find-and-book flow: doctor/clinic cards, date strip, shifts, token preview.
 import { Ionicons } from '@expo/vector-icons';
 import { type ComponentProps, useEffect, useRef } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import {
-  type ClinicProfile,
-  type Doctor,
-  type DoctorSlot,
-  type QueuePreview,
-  type SlotStatusResult,
-  WEEKDAY_SINGLE_LETTERS,
-  cleanSlotName,
-  format12Hour,
-  formatDisplayDate,
-  formatDoctorDegrees,
-  getDayOfWeekCode,
-  getLocalDateString,
-} from '@mediarca/shared/api';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { MoreText } from '@/components/MoreText';
+import { type ClinicProfile, type Doctor, type DoctorSlot, type QueuePreview, type SlotStatusResult, WEEKDAY_SINGLE_LETTERS, formatDisplayDate, formatDoctorDegrees, getDayOfWeekCode, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { Avatar, CabinBadge, Chip, ClinicImage, PressableCard } from '@/components/kit';
 import { doctorName } from '@/lib/booking';
@@ -67,7 +56,7 @@ export function DoctorCard({
         ) : clinic ? (
           <View style={[styles.metaRow, styles.flex]}>
             <Ionicons name="location" size={13} color={colors.placeholder} />
-            <Text style={[type.footnote, styles.shrink]} numberOfLines={1}>
+            <Text style={[type.footnote, styles.shrink]} numberOfLines={2}>
               {clinic.clinic.clinicName}
               {clinic.clinic.city ? ` · ${clinic.clinic.city}` : ''}
               {doctor.clinics && doctor.clinics.length > 1 ? ` +${doctor.clinics.length - 1}` : ''}
@@ -92,9 +81,7 @@ export function ClinicCard({ clinic, onPress }: { clinic: ClinicProfile; onPress
           <Text style={type.headline} numberOfLines={1}>
             {clinic.clinicName}
           </Text>
-          <Text style={type.caption} numberOfLines={2}>
-            {formatClinicAddress(clinic) || 'Clinic'}
-          </Text>
+          <MoreText style={type.caption} lines={2}>{formatClinicAddress(clinic) || 'Clinic'}</MoreText>
           {count ? <Text style={styles.specialty}>{count === 1 ? '1 doctor' : `${count} doctors`}</Text> : null}
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.placeholder} />
@@ -141,9 +128,7 @@ export function ClinicChoice({
                 </Text>
                 {c.hasReceptionist === false ? <Chip label="Closed" /> : null}
               </View>
-              <Text style={type.caption} numberOfLines={1}>
-                {formatClinicAddress(c.clinic, { withState: false })}
-              </Text>
+              <MoreText style={type.caption}>{formatClinicAddress(c.clinic, { withState: false })}</MoreText>
             </View>
             <View style={styles.feeBox}>
               <Text style={styles.optionFee}>₹{c.consultationFee ?? doctor.consultationFee}</Text>
@@ -297,10 +282,7 @@ export function ShiftList({
               <Ionicons name={shiftIcon(s.startTime)} size={18} color={colors.primary} />
             </View>
             <View style={styles.flex}>
-              <Text style={styles.optionTitle}>{cleanSlotName(s.name)}</Text>
-              <Text style={type.caption}>
-                {format12Hour(s.startTime)} – {format12Hour(s.endTime)}
-              </Text>
+              <Text style={styles.optionTitle}>{slotTimeLabel(s)}</Text>
             </View>
             {status}
           </Pressable>
@@ -334,7 +316,7 @@ export function TokenTile({ preview, blocked }: { preview: QueuePreview; blocked
         </View>
       </View>
       <View style={styles.tokenFooter}>
-        <Text style={type.caption}>{cleanSlotName(preview.checkingWindow)}</Text>
+        <Text style={type.caption}>{slotTimeLabel(preview.selectedSlot?.slot) || shiftLabel(preview)}</Text>
         <Text style={type.caption}>
           {blocked ? 'Pick another' : preview.patientsAhead === 0 ? 'You’d be next' : `${preview.patientsAhead} ahead`}
         </Text>
@@ -375,7 +357,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     boxShadow: '0px 1px 2px rgba(0,0,0,0.04), 0px 4px 14px rgba(0,0,0,0.04)',
   },
-  optionSelected: { borderColor: colors.primary, backgroundColor: '#f7fbff' },
+  optionSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
   optionPressed: { transform: [{ scale: 0.985 }] },
   optionTitle: { fontSize: 16, fontWeight: '600', color: colors.ink },
   optionFee: { fontSize: 15, fontWeight: '600', color: colors.ink },

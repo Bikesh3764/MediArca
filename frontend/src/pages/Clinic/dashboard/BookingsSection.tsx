@@ -1,7 +1,6 @@
-import { formatDisplayDate } from '../../../services/api';
+import { formatDisplayDate, shiftLabel } from '../../../services/api';
 import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
-import { cleanSlotName } from '../../../services/api';
 import { Calendar } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { useClinicDashboard } from './state';
@@ -60,7 +59,7 @@ export const BookingsSection: React.FC = () => {
 
                     <div className="flex items-center justify-between text-[11px] text-[#86868b]">
                       <div>{formatDisplayDate(appt.date)}</div>
-                      <div>{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
+                      <div>{appt.estimatedTime || shiftLabel(appt)}</div>
                     </div>
                   </div>
                 ))}
@@ -94,7 +93,7 @@ export const BookingsSection: React.FC = () => {
                       <td className="py-3.5 font-normal text-[#1d1d1f]">{appt.doctorName}</td>
                       <td className="py-3.5 text-[#86868b]">
                         <div>{formatDisplayDate(appt.date)}</div>
-                        <div className="text-[11px]">{appt.estimatedTime || cleanSlotName(appt.checkingWindow)}</div>
+                        <div className="text-[11px]">{appt.estimatedTime || shiftLabel(appt)}</div>
                       </td>
                       <td className="py-3.5">
                         {(() => {

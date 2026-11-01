@@ -3,11 +3,12 @@
 // EditStaffModal.tsx and CredentialsModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Linking, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, Share, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { type ClinicReceptionistItem, api } from '@mediarca/shared/api';
 import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { CheckList } from '@/components/CheckList';
-import { Chip, EmptyState, IconButton, InfoRow, kitStyles, PlaceholderCard, SectionTitle, Sheet } from '@/components/kit';
+import { Avatar, Chip, EmptyState, IconButton, InfoRow, kitStyles, PlaceholderCard, SectionTitle, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice, Screen, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
 import { doctorName } from '@/lib/booking';
@@ -51,7 +52,7 @@ export default function ClinicStaff() {
         <Title>Staff</Title>
         <IconButton icon="person-add" label="Add receptionist" onPress={() => setAdding(true)} />
       </View>
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
       {!data ? (
         failed ? (
@@ -65,6 +66,7 @@ export default function ClinicStaff() {
         staff.map((rec) => (
           <View key={rec.id} style={styles.card}>
             <View style={styles.top}>
+              <Avatar name={rec.fullName} size={44} />
               <View style={styles.flex}>
                 <Text style={type.headline} numberOfLines={1}>
                   {rec.fullName}

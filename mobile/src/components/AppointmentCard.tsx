@@ -2,8 +2,9 @@
 // Wording follows frontend/src/components/queue/LiveQueueTicket.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { type Appointment, cleanSlotName, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type Appointment, formatDisplayDate, getLocalDateString, shiftLabel } from '@mediarca/shared/api';
 import { toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, Chip } from '@/components/kit';
 import { Button } from '@/components/ui';
@@ -71,7 +72,7 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
           </Text>
           <View style={styles.status}>
             {statusChip(appt, isToday)}
-            {isToday && active && appt.isCheckedIn ? <Chip tone="success" label="Checked in" /> : null}
+            {isToday && appt.status === 'WAITING' && appt.isCheckedIn ? <Chip tone="success" label="Checked in" /> : null}
           </View>
         </View>
         <View style={styles.tokenBox}>
@@ -83,8 +84,8 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
       <View style={styles.when}>
         <Ionicons name="calendar-outline" size={15} color={colors.muted} />
         <Text style={styles.whenText} numberOfLines={1}>
-          {shortDate(appt.appointmentDate)} · {cleanSlotName(appt.checkingWindow, 'Shift')}
-          {active && (live?.liveEstimatedTime || appt.estimatedTime) ? ` · ${live?.liveEstimatedTime || appt.estimatedTime}` : ''}
+          {shortDate(appt.appointmentDate)} · {shiftLabel(appt)}
+          {appt.status === 'WAITING' && (live?.liveEstimatedTime || appt.estimatedTime) ? ` · ${live?.liveEstimatedTime || appt.estimatedTime}` : ''}
         </Text>
       </View>
 
@@ -95,7 +96,7 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
           <View style={styles.liveDot} />
           <Text style={styles.liveText}>
             {appt.status === 'IN_CONSULTATION'
-              ? 'In consultation now'
+              ? 'View queue pass'
               : live!.isYourTurn
                 ? 'It’s your turn'
                 : `Now serving #${live!.currentServingQueueNumber || '—'} · ${live!.patientsAway} ahead`}

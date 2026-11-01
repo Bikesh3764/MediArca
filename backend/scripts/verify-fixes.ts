@@ -10957,6 +10957,23 @@ Follow-up Date: 2026-10-15`;
     }
   }
 
+  // FIX-066: visits show the shift's timing (not just "Shift 1")
+  {
+    const { shiftTimes } = await import('../src/middleware/shiftTime');
+    const run = (body: unknown, statusCode = 200) =>
+      new Promise<unknown>((resolve) => {
+        const res: any = { statusCode, json: (b: unknown) => resolve(b) };
+        shiftTimes({} as any, res, () => res.json(body));
+      });
+    // Old visits carry the times in the name; no database needed for these
+    const old: any = await run({ data: [{ id: 'a1', doctorId: 'no-such-doctor', checkingWindow: 'Morning (09:00 AM - 01:00 PM)' }] });
+    assert(old.data[0].shiftTime === '9:00 AM – 1:00 PM', 'FIX-066: a visit gets its shift timing ("9:00 AM – 1:00 PM")');
+    const failed: any = await run({ checkingWindow: 'Shift 1', doctorId: 'x' }, 400);
+    assert(failed.shiftTime === undefined, 'FIX-066: error replies are sent untouched');
+    const plain: any = await run({ ok: true });
+    assert(plain.ok === true && Object.keys(plain).length === 1, 'FIX-066: replies without visits are sent untouched');
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

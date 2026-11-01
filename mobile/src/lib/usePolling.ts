@@ -27,3 +27,15 @@ export function usePolling(run: () => void, intervalMs: number, enabled: boolean
     }, [enabled, active, intervalMs])
   );
 }
+
+/** For setState: keep the old value when a refresh brings the same data, so the screen doesn't redraw. */
+export const keepIfSame =
+  <T,>(next: T) =>
+  (prev: T | null): T => {
+    if (prev === next) return next;
+    try {
+      return JSON.stringify(prev) === JSON.stringify(next) ? (prev as T) : next;
+    } catch {
+      return next;
+    }
+  };

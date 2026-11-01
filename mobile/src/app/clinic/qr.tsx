@@ -1,13 +1,15 @@
 // Clinic QR codes: Check-in (patients scan it at the front desk) and Booking (opens the clinic page).
-// Same links as frontend/src/components/common/ClinicQrStandeeModal.tsx. Drawn on the phone; shared as an image.
+// Same links as frontend/src/components/common/ClinicQrStandeeModal.tsx. Drawn on the phone; shared as an image or printed.
 import * as Sharing from 'expo-sharing';
 import React, { useRef, useState } from 'react';
-import { Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Share, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { captureRef } from 'react-native-view-shot';
 import { EmptyState, PlaceholderCard } from '@/components/kit';
-import { QrCode } from '@/components/QrCode';
+import { QrCode, qrSvg } from '@/components/QrCode';
 import { Button, Notice, Screen, Segmented, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
+import { escapeHtml, printHtml } from '@/lib/print';
 import { checkinQrUrl, clinicBookingUrl } from '@/lib/site';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -20,7 +22,7 @@ const CAPTION: Record<Kind, string> = {
 export default function ClinicQr() {
   const { data, failed, reload } = useClinic();
   const [kind, setKind] = useState<Kind>('checkin');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'share' | 'print' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const poster = useRef<React.ComponentRef<typeof View>>(null);
   const clinic = data?.clinic;
@@ -29,16 +31,36 @@ export default function ClinicQr() {
 
   const shareImage = async () => {
     if (busy) return;
-    setBusy(true);
+    setBusy('share');
     setError(null);
     try {
       if (Platform.OS === 'web' || !(await Sharing.isAvailableAsync())) throw new Error('no-share');
       const uri = await captureRef(poster, { format: 'png', quality: 1, result: 'tmpfile' });
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: clinic?.clinicName || 'QR Code' });
     } catch {
-      setError('Couldn’t share the image. Use the website to print it.');
+      setError('Couldn’t share the image. Try Print instead.');
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  };
+
+  // A4 poster: clinic name, big QR, one line, MediArca. No codes printed as text.
+  const print = async () => {
+    if (busy || !clinic) return;
+    setBusy('print');
+    setError(null);
+    try {
+      await printHtml(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(clinic.clinicName)}</title>
+<style>@page{size:A4;margin:0}body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1d1d1f}
+.page{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;text-align:center;padding:40px;box-sizing:border-box}
+h1{font-size:40px;letter-spacing:-0.6px;margin:0;max-width:90%}.qr{border:1px solid #e5e5ea;border-radius:28px;padding:24px}
+.cap{font-size:30px;font-weight:600}.brand{font-size:18px;font-weight:600;color:#0066cc}</style></head>
+<body><div class="page"><h1>${escapeHtml(clinic.clinicName)}</h1><div class="qr">${qrSvg(url, 380)}</div>
+<div class="cap">${escapeHtml(CAPTION[kind])}</div><div class="brand">MediArca</div></div></body></html>`);
+    } catch (err: any) {
+      setError(err?.message || 'Couldn’t print. Try again.');
+    } finally {
+      setBusy(null);
     }
   };
 
@@ -86,7 +108,8 @@ export default function ClinicQr() {
             {kind === 'checkin' ? 'Keep it at the front desk.' : 'Put it at the entrance or share it.'}
           </Text>
           <Notice tone="error" message={error} />
-          <Button label="Share image" icon="share-outline" onPress={shareImage} loading={busy} />
+          <Button label="Print" icon="print-outline" onPress={print} loading={busy === 'print'} />
+          <Button label="Share image" variant="secondary" icon="share-outline" onPress={shareImage} loading={busy === 'share'} />
           {kind === 'booking' ? <Button label="Share link" variant="secondary" icon="link" onPress={shareLink} /> : null}
         </>
       )}

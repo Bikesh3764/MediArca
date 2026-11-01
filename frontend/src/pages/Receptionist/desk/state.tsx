@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { api, ReceptionistDashboardData, ReceptionistQueueItem, getLocalDateString, getIndianTimeMinutes, timeToMinutes, Appointment, QueuePreview, formatDisplayDate } from '../../../services/api';
+import { api, ReceptionistDashboardData, ReceptionistQueueItem, getLocalDateString, getIndianTimeMinutes, timeToMinutes, Appointment, QueuePreview, formatDisplayDate, slotTimeLabel } from '../../../services/api';
 import { formatIndianPhone, isValidIndianPhone } from '../../../utils/phoneUtils';
 import { formatClinicAddress } from '../../../utils/address';
 import { useVisibilityPolling } from '../../../utils/useVisibilityPolling';
@@ -79,7 +79,6 @@ export const useReceptionistDashboardState = () => {
   const [walkinClinicId, setWalkinClinicId] = useState<string>('');
   const [appointmentDate, setAppointmentDate] = useState<string>(getLocalDateString());
   const [slotId, setSlotId] = useState<string>('');
-  const [bookingFor, setBookingFor] = useState<'self' | 'other'>('self');
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
@@ -366,12 +365,12 @@ export const useReceptionistDashboardState = () => {
     const targetDoc = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
     if (targetDoc?.slots && Array.isArray(targetDoc.slots)) {
       targetDoc.slots.forEach((s: any, idx: number) => {
-        const cleaned = cleanShiftDisplayName(s.name || `Shift ${idx + 1}`);
+        const cleaned = slotTimeLabel(s) || cleanShiftDisplayName(s.name || `Shift ${idx + 1}`);
         if (cleaned) shiftSet.add(cleaned);
       });
     }
     queueAppointments.forEach((a) => {
-      const cleaned = cleanShiftDisplayName(a.checkingWindow);
+      const cleaned = cleanShiftDisplayName(a);
       if (cleaned) shiftSet.add(cleaned);
     });
     if (shiftSet.size === 0) {
@@ -504,16 +503,6 @@ export const useReceptionistDashboardState = () => {
       return;
     }
 
-    if (bookingFor === 'other') {
-      if (!patientName.trim()) {
-        fail('Enter the patient’s name.');
-        return;
-      }
-      if (!patientAge.trim()) {
-        fail('Enter the patient’s age.');
-        return;
-      }
-    }
 
     if (patientAge.trim()) {
       const parsedAge = parseInt(patientAge.trim(), 10);
@@ -543,7 +532,8 @@ export const useReceptionistDashboardState = () => {
         patientPhone: formattedPhone,
         gender,
         patientAge: patientAge.trim() || undefined,
-        isForOther: bookingFor === 'other',
+        // The server marks family walk-ins itself from the name
+        isForOther: false,
         appointmentDate,
         slotId: slotId || undefined,
         clinicId: effectiveClinicId || undefined,
@@ -562,6 +552,7 @@ export const useReceptionistDashboardState = () => {
         queueNumber: queueNum,
         estimatedTime: estTime,
         checkingWindow: chkWindow,
+        shiftTime: res?.shiftTime ?? res?.data?.shiftTime ?? null,
         appointmentDate,
         patientName: savedPatientName,
         patientPhone: savedPatientPhone,
@@ -802,8 +793,6 @@ export const useReceptionistDashboardState = () => {
     setAppointmentDate,
     slotId,
     setSlotId,
-    bookingFor,
-    setBookingFor,
     patientName,
     setPatientName,
     patientAge,

@@ -1,14 +1,15 @@
-// Password change, delete account and sign out, for every account type.
+// Settings list, password change, sign out and delete account, for every account type.
 // Same rules as frontend/src/components/auth/ChangePasswordCard.tsx and DeleteAccountCard.tsx.
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { api } from '@mediarca/shared/api';
-import { Sheet } from '@/components/kit';
+import { ListGroup, ListRow, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { success } from '@/lib/haptics';
-import { space, type } from '@/theme';
+import { colors, space, type } from '@/theme';
 
 const WHAT_GOES: Record<string, string> = {
   PATIENT: 'Your profile and visit history are removed.',
@@ -18,7 +19,8 @@ const WHAT_GOES: Record<string, string> = {
   ADMIN: 'Your admin login is removed.',
 };
 
-export function ChangePasswordCard() {
+/** Current / new / confirm password form (shown inside the Change password sheet). */
+function ChangePasswordForm() {
   const { changePassword } = useAuth();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -50,20 +52,24 @@ export function ChangePasswordCard() {
 
   return (
     <Card>
-      <Text style={type.headline}>Password</Text>
       <Notice tone="error" message={error} />
       <Notice tone="success" message={done ? 'Password changed.' : null} />
       <Field label="Current password" value={current} onChangeText={setCurrent} secure autoComplete="current-password" maxLength={128} />
       <Field label="New password" value={next} onChangeText={setNext} secure autoComplete="new-password" placeholder="Min. 8 characters" maxLength={128} />
       <Field label="Confirm new password" value={confirm} onChangeText={setConfirm} secure autoComplete="new-password" maxLength={128} />
-      <Button label="Change password" variant="secondary" onPress={submit} loading={saving} />
+      <Button label="Change password" onPress={submit} loading={saving} />
     </Card>
   );
 }
 
-export function SignOutAndDelete() {
+/**
+ * Bottom of every Account page: a settings list (`rows` from the page, then Change password),
+ * Sign out, and a small Delete account link.
+ */
+export function AccountActions({ rows = [] }: { rows?: React.ReactElement[] }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,8 +104,20 @@ export function SignOutAndDelete() {
 
   return (
     <View style={styles.stack}>
-      <Button label="Sign out" variant="secondary" onPress={signOut} />
-      <Button label="Delete account" variant="plain" destructive onPress={() => setOpen(true)} />
+      <ListGroup>
+        {rows}
+        <ListRow icon="key" tint={colors.tabInactive} label="Change password" onPress={() => setPasswordOpen(true)} />
+      </ListGroup>
+      <ListGroup>
+        <ListRow icon="log-out-outline" destructive label="Sign out" onPress={signOut} />
+      </ListGroup>
+      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen(true)} style={styles.deleteLink}>
+        <Text style={styles.deleteText}>Delete account</Text>
+      </Pressable>
+
+      <Sheet visible={passwordOpen} title="Change password" doneLabel="Close" onClose={() => setPasswordOpen(false)}>
+        <ChangePasswordForm />
+      </Sheet>
 
       <Sheet
         visible={open}
@@ -125,5 +143,7 @@ export function SignOutAndDelete() {
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: space.sm, marginTop: space.sm },
+  stack: { gap: space.lg, marginTop: space.sm },
+  deleteLink: { alignSelf: 'center', paddingVertical: space.sm },
+  deleteText: { fontSize: 15, color: colors.danger },
 });

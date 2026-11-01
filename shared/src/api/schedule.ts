@@ -153,11 +153,23 @@ export const cleanSlotName = (name?: string | null, fallback = 'Shift'): string 
   return cleaned || fallback;
 };
 
+/** A shift's timing, "9:00 AM – 1:00 PM". */
+export const slotTimeLabel = (slot?: { startTime?: string; endTime?: string } | null): string =>
+  slot?.startTime && slot?.endTime
+    ? `${format12Hour(slot.startTime).replace(/^0(\d)/, '$1')} – ${format12Hour(slot.endTime).replace(/^0(\d)/, '$1')}`
+    : '';
+
+/** What to show for a visit's shift: its timing when known, else the shift's name. */
+export const shiftLabel = (
+  visit?: { shiftTime?: string | null; checkingWindow?: string | null } | null,
+  fallback = 'Shift'
+): string => visit?.shiftTime || cleanSlotName(visit?.checkingWindow, fallback);
+
 export const formatShiftOption = (
   slot: { name?: string | null; startTime?: string; endTime?: string },
   isEnded?: boolean
 ): string => {
-  const baseName = cleanSlotName(slot.name, 'Shift');
+  const baseName = slotTimeLabel(slot) || cleanSlotName(slot.name, 'Shift');
   return `${baseName}${isEnded ? ' • Ended' : ''}`;
 };
 

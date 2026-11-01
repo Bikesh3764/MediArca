@@ -1,9 +1,10 @@
 // Patient profile. Same fields and checks as frontend/src/pages/Patient/PatientProfile.tsx.
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { api, getLocalDateString } from '@mediarca/shared/api';
 import { formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
-import { ChangePasswordCard, SignOutAndDelete } from '@/components/AccountSettings';
+import { AccountActions } from '@/components/AccountSettings';
 import { Avatar, Chip } from '@/components/kit';
 import { Button, Card, Field, Notice, Screen, Segmented, SelectField } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
@@ -142,11 +143,10 @@ export default function PatientProfile() {
         <SelectField label="Blood group" value={bloodGroup} options={BLOOD_GROUPS} onChange={setBloodGroup} placeholder="Select" />
       </Card>
 
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
       <Button label="Save" onPress={save} loading={saving} />
 
-      <ChangePasswordCard />
-      <SignOutAndDelete />
+      <AccountActions />
     </Screen>
   );
 }
@@ -159,6 +159,6 @@ const styles = StyleSheet.create({
   readOnly: { gap: 4, paddingVertical: space.xs },
   dobRow: { flexDirection: 'row', gap: space.sm, marginTop: -space.xs },
   dobDay: { flex: 1 },
-  dobMonth: { flex: 1.6 },
-  dobYear: { flex: 1.2 },
+  dobMonth: { flex: 1.5 },
+  dobYear: { flex: 1.3 },
 });

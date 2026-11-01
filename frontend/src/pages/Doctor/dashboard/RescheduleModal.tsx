@@ -1,5 +1,5 @@
 import React from 'react';
-import { getLocalDateString, getMaxBookingDateString } from '../../../services/api';
+import { getLocalDateString, getMaxBookingDateString, slotTimeLabel } from '../../../services/api';
 import { AlertCircle, X, ChevronDown } from 'lucide-react';
 import { useDoctorDashboard } from './state';
 export const RescheduleModal: React.FC = () => {
@@ -106,7 +106,7 @@ export const RescheduleModal: React.FC = () => {
                     <option value="">Any shift</option>
                     {availableShifts.map((s: any, idx: number) => (
                       <option key={s.id || idx} value={s.id}>
-                        {s.name || `Shift ${idx + 1}`}
+                        {slotTimeLabel(s) || s.name || `Shift ${idx + 1}`}
                       </option>
                     ))}
                   </select>

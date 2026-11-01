@@ -1,7 +1,6 @@
-import { formatDisplayDate } from '../../services/api';
+import { formatDisplayDate, shiftLabel } from '../../services/api';
 import { formatDisplayPhone } from '../../utils/phoneUtils';
 import React from 'react';
-import { cleanSlotName } from '../../services/api';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { UserPlus, CheckCircle2, AlertCircle, X, QrCode, FileText } from 'lucide-react';
 import { ClinicQrStandeeModal } from '../../components/common/ClinicQrStandeeModal';
@@ -177,7 +176,7 @@ export const ReceptionistDashboard: React.FC = () => {
               #{bookedPass.queueNumber}
             </div>
             <div className="text-xs font-semibold text-[#1d1d1f]">
-              Shift: {cleanSlotName(bookedPass.checkingWindow) || 'General'}
+              Shift: {shiftLabel(bookedPass, 'General')}
             </div>
           </div>
 

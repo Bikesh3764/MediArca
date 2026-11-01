@@ -20,6 +20,16 @@ export const colors = {
   warning: '#b25000',
   warningSoft: '#fff6eb',
   white: '#ffffff',
+  tabInactive: '#8e8e93',
+  /** Status dot for "Stepped out" (Apple system orange). */
+  orange: '#ff9500',
+  inactive: '#6e6e73',
+} as const;
+
+/** Inter, loaded in app/_layout.tsx; components/AppText.tsx applies it to all text. */
+export const font = {
+  regular: 'Inter_400Regular',
+  semibold: 'Inter_600SemiBold',
 } as const;
 
 export const radius = {

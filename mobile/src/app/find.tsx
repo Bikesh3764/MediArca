@@ -1,5 +1,6 @@
 // Browse doctors and clinics without signing in (booking asks for sign-in).
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '@/components/AppText';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Discover } from '@/components/Discover';
 import { NavBar } from '@/components/kit';

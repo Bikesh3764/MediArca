@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { type ClinicDashboardData, api } from '@mediarca/shared/api';
 import { useAuth } from '@/context/AuthContext';
-import { usePolling } from '@/lib/usePolling';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
 
 interface ClinicContextType {
   data: ClinicDashboardData | null;
@@ -20,7 +20,7 @@ export function ClinicProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     try {
-      setData(await api.getMyClinic());
+      setData(keepIfSame(await api.getMyClinic()));
       setFailed(false);
     } catch (err: any) {
       if (err?.status === 401) logout();

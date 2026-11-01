@@ -123,6 +123,8 @@ export interface ClinicAppointment {
   date: string;
   queueNumber: number;
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   estimatedTime: string;
   status: string;
   fee: number;
@@ -133,6 +135,8 @@ export interface ClinicalReportAppointment {
   queueNumber: number;
   appointmentDate: string;
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   status: string;
   paymentStatus: string;
   patientName: string;
@@ -275,6 +279,8 @@ export interface ReceptionistQueueItem {
   gender?: string;
   bloodGroup?: string;
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   estimatedTime: string;
   slotId?: string;
   status: string;
@@ -395,6 +401,8 @@ export interface QueuePreview {
   selectedSlot?: SlotStatusResult;
   availableSlots?: SlotStatusResult[];
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   checkingStartTime: string;
   checkingEndTime: string;
   avgConsultationMinutes: number;
@@ -453,6 +461,8 @@ export interface Appointment {
   estimatedQueueNumber?: number;
   slotId?: string;
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   estimatedTime: string;
   status: 'PENDING_APPROVAL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED' | 'REJECTED' | 'EXPIRED';
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED' | string;
@@ -512,6 +522,8 @@ export interface WalkinTrackResult {
   status: string;
   appointmentDate: string;
   checkingWindow: string;
+  /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
+  shiftTime?: string | null;
   estimatedTime: string;
   doctor: {
     fullName: string | null;

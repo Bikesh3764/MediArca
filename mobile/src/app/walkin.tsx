@@ -33,7 +33,7 @@ export default function DoctorWalkin() {
           fixedDoctorId={doctorId}
           clinics={clinics.map((c) => ({ id: c.clinicId, label: c.clinicName }))}
           phoneRequired={false}
-          familyToggle={false}
+          forOther
           submit={async (v) => {
             const res: any = await api.bookAppointment({
               doctorId: v.doctorId,
@@ -52,6 +52,7 @@ export default function DoctorWalkin() {
               queueNumber: a?.queueNumber,
               estimatedTime: a?.estimatedTime,
               checkingWindow: a?.checkingWindow,
+              shiftTime: a?.shiftTime,
               walkInCode: v.patientPhone ? a?.walkInCode ?? null : null,
               patientName: v.patientName,
               patientPhone: v.patientPhone,

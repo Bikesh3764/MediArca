@@ -3,7 +3,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { homeFor, type Role, useAuth } from '@/context/AuthContext';
 import { getGoogleIdToken, googleAvailable } from '@/lib/google';
 import { ROLE_LABEL } from '@/lib/roles';

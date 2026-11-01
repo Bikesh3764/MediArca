@@ -2,17 +2,9 @@
 // Same server calls and rules as frontend/src/pages/Doctor/dashboard (state.tsx, QueueTab.tsx).
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import {
-  type Appointment,
-  type DoctorAffiliationsData,
-  type DoctorSlot,
-  api,
-  cleanSlotName,
-  formatDisplayDate,
-  getLocalDateString,
-  getTomorrowDateString,
-} from '@mediarca/shared/api';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
+import { type Appointment, type DoctorAffiliationsData, type DoctorSlot, api, formatDisplayDate, getLocalDateString, getTomorrowDateString, slotTimeLabel } from '@mediarca/shared/api';
 import { cleanVisitReason, visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
 import { CabinControl } from '@/components/CabinControl';
@@ -20,12 +12,13 @@ import { InCabinCard } from '@/components/InCabinCard';
 import { EmptyState, IconButton, PillButton, PlaceholderCard, SectionTitle } from '@/components/kit';
 import { type MoveTarget, MoveSheet } from '@/components/MoveSheet';
 import { QueueRow } from '@/components/QueueRow';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Button, Notice, Screen, Segmented, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { confirmAction } from '@/lib/confirm';
-import { yesterday } from '@/lib/dates';
+import { todayLong, yesterday } from '@/lib/dates';
 import { success } from '@/lib/haptics';
-import { usePolling } from '@/lib/usePolling';
+import { usePolling, keepIfSame } from '@/lib/usePolling';
 import { space, type } from '@/theme';
 
 type Queue = Awaited<ReturnType<typeof api.getDoctorQueue>>;
@@ -51,7 +44,7 @@ export default function DoctorQueue() {
     try {
       const data =
         day === 'upcoming' ? await api.getDoctorQueue(undefined, 'all-upcoming') : await api.getDoctorQueue(day === 'today' ? getLocalDateString() : getTomorrowDateString(), 'date');
-      setQueue(data);
+      setQueue(keepIfSame<Queue | null>(data));
       setFailed(false);
     } catch {
       setFailed(true);
@@ -99,7 +92,7 @@ export default function DoctorQueue() {
   const shiftLabel = (a: Appointment) => {
     if (slots.length < 2) return null;
     const i = slots.findIndex((s) => visitMatchesSlot(a, s));
-    return i >= 0 ? cleanSlotName(slots[i].name, `Shift ${i + 1}`) : null;
+    return i >= 0 ? slotTimeLabel(slots[i]) : null;
   };
   const metaOf = (a: Appointment) =>
     [
@@ -181,12 +174,15 @@ export default function DoctorQueue() {
   return (
     <Screen edges={['top']} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.header}>
-        <Title>Queue</Title>
-        <IconButton icon="person-add" label="Add walk-in" onPress={() => router.push('/walkin')} />
+        <Title eyebrow={todayLong()}>Queue</Title>
+        <View style={styles.actions}>
+          <NotificationBell />
+          <IconButton icon="person-add" label="Add walk-in" onPress={() => router.push('/walkin')} />
+        </View>
       </View>
 
-      {status === 'SUSPENDED' ? <Notice tone="error" message="Account suspended. Bookings are paused. Please contact MediArca support." /> : null}
-      {status === 'REJECTED' ? <Notice tone="error" message="Profile not approved. Please contact MediArca support." /> : null}
+      {status === 'SUSPENDED' ? <Notice tone="error" persist message="Account suspended. Bookings are paused. Please contact MediArca support." /> : null}
+      {status === 'REJECTED' ? <Notice tone="error" persist message="Profile not approved. Please contact MediArca support." /> : null}
       {!verified && status !== 'SUSPENDED' && status !== 'REJECTED' ? <Notice tone="info" message="Profile under review. Patients can find you once it’s approved." /> : null}
 
       <CabinControl
@@ -219,7 +215,7 @@ export default function DoctorQueue() {
         </ScrollView>
       ) : null}
 
-      <Notice tone={message?.tone || 'info'} message={message?.text} />
+      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
       {!queue ? (
         failed ? (
@@ -259,7 +255,8 @@ export default function DoctorQueue() {
             waiting.map((a) => (
               <QueueRow
                 key={a.id}
-                item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a), phone: phoneOf(a), arrived: a.isCheckedIn }}
+                item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a), phone: phoneOf(a), arrived: a.isCheckedIn, code: a.walkInCode }}
+                showArrival={day === 'today'}
                 onToggleArrived={() => toggleArrived(a)}
                 call={callable(a) ? (away ? 'away' : 'call') : null}
                 onCall={() => call(a)}
@@ -307,6 +304,7 @@ export default function DoctorQueue() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   center: { textAlign: 'center' },

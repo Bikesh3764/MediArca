@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Building2, CheckCircle2, Clock, Phone, Search, Users, Ticket } from 'lucide-react';
-import { api, WalkinTrackResult, formatDisplayDate, cleanSlotName, getFileUrl } from '../../services/api';
+import { api, WalkinTrackResult, formatDisplayDate, getFileUrl, shiftLabel } from '../../services/api';
 import { PageHero } from '../../components/layout/PageHero';
 import { AvatarImage } from '../../components/ui/AvatarImage';
 import { CabinStatusBadge } from '../../components/ui/DoctorCabinPresence';
@@ -242,7 +242,7 @@ export const TrackWalkin: React.FC = () => {
             </div>
 
             <p className="text-xs text-[#86868b] text-center">
-              {cleanSlotName(result.checkingWindow, 'Shift')}
+              {shiftLabel(result)}
               {isActiveVisit && live?.delayReason ? ` • ${DELAY_TEXT[live.delayReason] || ''}` : ''}
               {result.status === 'COMPLETED' ? ' • Visit complete' : ''}
             </p>

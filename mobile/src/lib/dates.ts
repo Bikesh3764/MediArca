@@ -18,3 +18,13 @@ export const yesterday = () => {
   const [y, m, d] = getLocalDateString().split('-').map(Number);
   return getLocalDateString(new Date(Date.UTC(y, m - 1, d - 1, 6, 30)));
 };
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** Today in IST as "Sunday, 1 November" (shown above the title on home screens). */
+export const todayLong = () => {
+  const [y, m, d] = getLocalDateString().split('-').map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `${WEEKDAYS[day]}, ${d} ${MONTHS[m - 1]}`;
+};
