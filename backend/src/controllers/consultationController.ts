@@ -4,7 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { getLocalDateString, timeToMinutes, getIndianTimeMinutes, minutesTo12Hour, parseDoctorSlots, cleanSlotName } from '../utils/scheduleUtils';
 import { canTransition } from '../utils/appointmentStateMachine';
 import { isDoctorEligibleForClinicalPractice } from '../utils/authGuards';
-import { createNotification, formatVisitDate, withDr } from '../services/notificationService';
+import { createNotification, formatVisitDate, notifyNextInLine, withDr } from '../services/notificationService';
 import { invalidateDoctorQueueCache } from '../utils/queueStateCache';
 
 export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -426,8 +426,19 @@ export const callPatient = async (req: AuthRequest, res: Response): Promise<void
         updated.patient.user.id || (updated.patient as any).userId,
         "It's your turn",
         `${doctorName} is ready for you. Please go in now. Token #${updated.queueNumber}.`,
-        'QUEUE'
+        'QUEUE',
+        { appointmentId: updated.id }
       ).catch(() => {});
+    }
+    if (updated) {
+      notifyNextInLine({
+        doctorId: updated.doctorId,
+        clinicId: updated.clinicId,
+        appointmentDate: updated.appointmentDate,
+        slotId: updated.slotId,
+        queueNumber: updated.queueNumber,
+        doctorName: (doctor as any)?.user?.fullName || req.user.fullName,
+      });
     }
 
     const patientDisplayName = updated.patientName || updated.patient?.user?.fullName || 'Patient';

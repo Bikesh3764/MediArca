@@ -31,6 +31,7 @@ model User {
   clinicProfile       ClinicProfile?
   receptionistProfile ReceptionistProfile?
   notifications       Notification[]
+  pushTokens          PushToken[]
 
   @@unique([email, role])
   @@index([email])
@@ -139,6 +140,19 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+}
+
+/// Phone app push addresses (Expo). One row per installed app; removed on sign-out or when Expo says it's gone.
+model PushToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model ClinicProfile {

@@ -8,3 +8,4 @@ export * from './utils/phoneUtils';
 export * from './utils/address';
 export * from './utils/indiaStates';
 export * from './utils/checkinQr';
+export * from './utils/queueDisplay';

@@ -59,19 +59,40 @@ MediArca/
 - [x] Track walk-in `track` (mobile number + slip code, view only), from Welcome
 - [x] Look refresh for all screens: borderless cards with soft shadows, filled fields, bigger buttons, new Welcome, filled tab icons
 
-### Phase 4 — Notifications and Google sign-in
-- [ ] "Your turn is near", called, confirmed alerts (Expo push; new table with RLS on)
-- [ ] Google sign-in
-- [ ] Switch from Expo Go to our own test build (APK)
+### Phase 4 — Notifications and Google sign-in (code done; needs the owner's account steps below)
+- [x] Phone alerts: every in-app notification is also pushed (Expo push). New "You're next" alert when the patient ahead is called. Table `PushToken` (RLS on); `POST/DELETE /api/notifications/push-token`; `backend/src/services/pushService.ts`; app `src/lib/push.ts`. Tapping an alert opens that visit.
+- [x] Google sign-in (Patient, Doctor, Clinic) on Sign in and Create account: `src/lib/google.ts`, `components/GoogleButton.tsx`. Same server check as the website.
+- [x] Test build setup: `mobile/eas.json` (profile `preview` = APK)
+- [ ] Owner steps (one time), then build the APK:
+  1. Make a free account at expo.dev. In `mobile/`: `npx eas-cli@latest login`, then `npx eas-cli@latest init` (adds the project ID to `app.json`).
+  2. Firebase console → new project → add Android app `in.mediarca.app` → download `google-services.json` into `mobile/`, and add `"googleServicesFile": "./google-services.json"` under `android` in `app.json`. Then `npx eas-cli@latest credentials` → Android → upload the FCM V1 service account key (Firebase → Project settings → Service accounts → Generate key).
+  3. Google Cloud console (project of the website's Google sign-in client) → Credentials → Create OAuth client → Android, package `in.mediarca.app`, SHA-1 from `npx eas-cli@latest credentials` (Android → Keystore).
+  4. Build: `npx eas-cli@latest build -p android --profile preview` → open the link on the phone and install the APK.
+- Push and Google sign-in don't run in Expo Go or the browser preview (the Google button is hidden there); everything else still does.
 
-### Phase 5 — Doctor
-- [ ] Queue console: call next, hold, complete; cabin toggle; shifts and leave
+### Phase 5 — Doctor ✅
+- [x] Queue (`app/doctor/index.tsx`): cabin switch (In cabin / Stepped out with 15m–1h / Away), Today / Tomorrow / Upcoming, clinic filter, patient in cabin with Complete and Hold, "Call #N" for the next arrived patient, Mark arrived, Call in, Move to another day, Cancel
+- [x] Walk-in (`app/walkin.tsx`) with next token, time and tracking code; Share slip
+- [x] Shifts (`app/doctor/shifts.tsx`): per clinic — on leave today, planned leave (add/remove), working days (M T W T F S S), shifts (times, max patients, mins per patient), fee in ₹
+- [x] Account: password, sign out, delete account
+- Website only for now: joining/leaving clinics, profile photo and details, clinic QR
 
-### Phase 6 — Receptionist
-- [ ] Walk-ins, arrival check-in, fee collection and token confirm, queue overview
+### Phase 6 — Receptionist ✅
+- [x] Queue (`app/receptionist/index.tsx`): doctor picker, the doctor's cabin switch, Today / Tomorrow, in cabin with Complete, Waiting / Done, Mark arrived, Call in, Move, Cancel, call the patient
+- [x] Walk-in (`app/receptionist/walkin.tsx`): doctor, day, shift with next token and time, Self / Family, name, +91 mobile, age, gender; token pass with tracking code and Share slip
+- [x] Requests (`app/receptionist/requests.tsx`, badge on the tab): fee in ₹, call the patient, Mark paid (confirms the token), Change date, Decline
+- [x] Account: password, sign out
+- Shared parts: `components/QueueRow`, `InCabinCard`, `CabinControl`, `MoveSheet`, `WalkinForm`, `ActionMenu`, `DayPills`, `tabs`; desk data in `context/DeskContext.tsx`; display rules in `shared/src/utils/queueDisplay.ts`
+- Website only for now: doctors' leave from the desk, notifications list, clinic QR
 
-### Phase 7 — Clinic
-- [ ] Doctor onboarding, receptionist accounts, QR code download/share, metrics, profile
+### Phase 7 — Clinic ✅
+- [x] Home (`app/clinic/index.tsx`): verification notices, "Add location", Doctors / Bookings / Revenue (₹), recent bookings
+- [x] Doctors (`app/clinic/doctors.tsx`, badge = join requests): Accept / Decline requests, invites sent with Cancel, doctor list (fee, bookings, revenue), Call, Remove; Invite by email or pick a verified doctor
+- [x] Staff (`app/clinic/staff.tsx`): add receptionist (+91 mobile, temporary password, doctors) then Share login; change their doctors; Remove; call
+- [x] QR Code (`app/clinic/qr.tsx`): Check-in and Booking QR drawn on the phone (`components/QrCode.tsx`, `qrcode` encoder only); Share image (`react-native-view-shot` + `expo-sharing`), Share link for booking. Links in `src/lib/site.ts`
+- [x] Account (`app/clinic/account.tsx`): clinic details (name, address, state, city, phone) via `components/ClinicDetailsSheet.tsx`, password, sign out, delete account
+- Clinic data in `context/ClinicContext.tsx` (refreshes every 30s)
+- Website only for now: Reports / PDF export, clinic photo upload, printing the QR
 
 ### Phase 8 — Admin (dropped)
 - Admin stays on the website only (owner's decision, 1 Nov 2026)
@@ -95,3 +116,6 @@ Checks for app changes: `npm run typecheck`, `npm run lint`, `npx expo-doctor`, 
 - 2026-11-01 — Phase 1 done. App type check, lint, expo-doctor 20/20, Android bundle build pass; screens checked in the browser preview. Website and backend checks still pass (2,208/2,208, builds, lint, 31/31).
 - 2026-11-01 — Phase 2 done. Find, doctor and clinic pages, booking with call-to-pay, Visits, Profile. App type check, lint, expo-doctor 20/20, Android bundle pass; every screen clicked through in the phone-size preview with sample data (live server blocks this computer). Website lint, build, tests 31/31 pass.
 - 2026-11-01 — Phase 3 done + UI refresh. Queue pass, camera QR check-in, Track walk-in; Admin removed from the app. App type check, lint, expo-doctor 20/20, Android bundle pass; screens checked at phone size with sample data. Website lint, build, tests 31/31 pass.
+- 2026-11-01 — Phase 4 code done. Push alerts (new `PushToken` table, RLS on), "You're next" alert, Google sign-in, APK build profile. Backend verify 2,217/2,217 (FIX-065), backend build; app type check, lint, expo-doctor 20/20, Android bundle; website lint, build, tests 31/31. Not tested on a phone yet (needs the owner steps).
+- 2026-11-01 — Phases 5 and 6 done. Doctor and front desk screens. App type check, lint, expo-doctor 20/20, Android bundle; every screen clicked through at phone size with sample data. Backend verify 2,217/2,217, backend build; website lint, build, tests 31/31.
+- 2026-11-01 — Phase 7 done. Clinic screens: Home, Doctors, Staff, QR Code, Account. App type check, lint, expo-doctor 20/20, Android bundle; every tab clicked through at phone size with sample data. Backend verify 2,217/2,217, backend build; website lint, build, tests 31/31.

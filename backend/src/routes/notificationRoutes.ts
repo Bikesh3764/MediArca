@@ -5,11 +5,15 @@ import {
   markRead,
   markSeenRead,
   markAllRead,
+  registerPushToken,
+  unregisterPushToken,
 } from '../controllers/notificationController';
 
 const router = Router();
 
 router.get('/', authenticate, getMyNotifications);
+router.post('/push-token', authenticate, registerPushToken);
+router.delete('/push-token', authenticate, unregisterPushToken);
 router.patch('/read-all', authenticate, markAllRead);
 router.patch('/read', authenticate, markSeenRead);
 router.patch('/:id/read', authenticate, markRead);

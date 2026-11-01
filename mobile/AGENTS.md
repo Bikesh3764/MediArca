@@ -8,6 +8,9 @@ The MediArca app for Patient, Doctor, Clinic and Receptionist (Admin is website-
 - Look: large titles, white rounded cards with soft shadows (`shadow` in `src/theme`, no borders), filled fields, 52pt pill buttons, soft blue tints, haptic tap on choices (`src/lib/haptics.ts`). Short copy, same words as the website.
 - Errors and "saved" messages go next to the button that caused them (or in the bottom bar), never off-screen.
 - Queue tickets use `components/QueuePass.tsx`; check-in is camera only (`app/scan.tsx`).
+- Push alerts: `src/lib/push.ts`; Google sign-in: `src/lib/google.ts` + `components/GoogleButton.tsx`. Both only run in our own build (`src/lib/nativeBuild.ts`), never in Expo Go or the browser, and load their native module lazily. Android Google sign-in needs no config plugin (no Firebase mode); don't add `@react-native-google-signin/google-signin` to `app.json` plugins without its options.
+- Doctor and front desk queues reuse `components/QueueRow`, `InCabinCard`, `CabinControl`, `MoveSheet`, `WalkinForm`, `ActionMenu`; tab bars use `components/tabs.tsx`. Pick-from-a-short-list actions use `ActionMenu`, not alerts.
+- Clinic tabs share `context/ClinicContext.tsx`; QR codes are drawn on the phone with `components/QrCode.tsx` (never an outside QR service — the check-in code is private). Website links live in `src/lib/site.ts`.
 - Background refresh uses `src/lib/usePolling.ts` and keeps the list on screen (no spinners after the first load).
 
 ---

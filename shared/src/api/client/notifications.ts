@@ -55,6 +55,26 @@ export const notificationsApi = {
     return handleResponse(res);
   },
 
+  /** Phone app: save this phone's push address (Expo push token) for the signed-in account. */
+  async registerPushToken(token: string, platform: string): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/notifications/push-token`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ token, platform }),
+    });
+    return handleResponse(res);
+  },
+
+  /** Phone app: stop alerts on this phone (call before the sign-in is cleared). */
+  async unregisterPushToken(token: string): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/notifications/push-token`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+      body: JSON.stringify({ token }),
+    });
+    return handleResponse(res);
+  },
+
   async markAllNotificationsRead(): Promise<any> {
     cachedNotificationsData = null;
     lastNotificationsFetchTime = 0;

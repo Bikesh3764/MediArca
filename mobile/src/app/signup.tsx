@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ALL_SPECIALTIES } from '@mediarca/shared/api';
 import { formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
 import { getCitiesForState, INDIAN_STATES } from '@mediarca/shared/utils/indiaStates';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Button, Card, Field, LinkText, Notice, Screen, Segmented, SelectField, Title } from '@/components/ui';
 import { homeFor, useAuth } from '@/context/AuthContext';
 import { parseRole } from '@/lib/roles';
@@ -194,6 +195,7 @@ export default function Signup() {
         />
         <Notice tone="error" message={error} />
         <Button label="Create account" onPress={submit} loading={submitting} />
+        <GoogleButton role={role} onError={setError} />
       </Card>
       <LinkText label="I have an account" onPress={() => router.replace(`/login?role=${role}`)} />
     </Screen>

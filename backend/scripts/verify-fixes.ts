@@ -10922,6 +10922,41 @@ Follow-up Date: 2026-10-15`;
     );
   }
 
+  // FIX-065: phone push notifications (Expo) for the app
+  {
+    const be = (f: string) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    const { isExpoPushToken } = await import('../src/services/pushService');
+    assert(isExpoPushToken('ExponentPushToken[abcDEF123456_-xyz]'), 'FIX-065: accepts a real Expo push token');
+    assert(
+      !isExpoPushToken('https://evil.example/hook') && !isExpoPushToken('ExponentPushToken[]') && !isExpoPushToken(42),
+      'FIX-065: rejects anything that is not an Expo push token'
+    );
+    const migration = be('prisma/migrations/20261101120000_add_push_tokens/migration.sql');
+    assert(
+      migration.includes('ALTER TABLE "PushToken" ENABLE ROW LEVEL SECURITY') && migration.includes('FROM anon'),
+      'FIX-065: PushToken table has RLS on and no public API access (FIX-030)'
+    );
+    const service = be('src/services/notificationService.ts');
+    assert(
+      service.includes('sendPushToUser(') && /sendPushToUser\([^;]*\)\.catch\(/s.test(service),
+      'FIX-065: every notification is also pushed, without waiting or failing the caller'
+    );
+    const push = be('src/services/pushService.ts');
+    assert(push.includes("'DeviceNotRegistered'") && push.includes('deleteMany'), 'FIX-065: tokens Expo reports as gone are removed');
+    assert(
+      push.includes('where: { userId, token: token.trim() }'),
+      'FIX-065: sign-out removes the token only for the signed-in person'
+    );
+    const routes = be('src/routes/notificationRoutes.ts');
+    assert(
+      routes.includes("router.post('/push-token', authenticate") && routes.includes("router.delete('/push-token', authenticate"),
+      'FIX-065: push-token routes need sign-in'
+    );
+    for (const f of ['src/controllers/consultationController.ts', 'src/controllers/receptionist/status.ts']) {
+      assert(be(f).includes('notifyNextInLine({'), `FIX-065: ${f} tells the next patient they are next`);
+    }
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);

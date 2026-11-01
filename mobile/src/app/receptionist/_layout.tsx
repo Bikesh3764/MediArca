@@ -1,11 +1,29 @@
-import { Stack } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { PortalGuard } from '@/components/PortalGuard';
-import { colors } from '@/theme';
+import { tabIcon, tabScreenOptions } from '@/components/tabs';
+import { DeskProvider, useDesk } from '@/context/DeskContext';
+
+function DeskTabs() {
+  const { pending } = useDesk();
+  return (
+    <Tabs screenOptions={tabScreenOptions}>
+      <Tabs.Screen name="index" options={{ title: 'Queue', tabBarIcon: tabIcon('people', 'people-outline') }} />
+      <Tabs.Screen name="walkin" options={{ title: 'Walk-in', tabBarIcon: tabIcon('person-add', 'person-add-outline') }} />
+      <Tabs.Screen
+        name="requests"
+        options={{ title: 'Requests', tabBarIcon: tabIcon('wallet', 'wallet-outline'), tabBarBadge: pending.length ? pending.length : undefined }}
+      />
+      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person-circle', 'person-circle-outline') }} />
+    </Tabs>
+  );
+}
 
 export default function ReceptionistLayout() {
   return (
     <PortalGuard role="RECEPTIONIST">
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
+      <DeskProvider>
+        <DeskTabs />
+      </DeskProvider>
     </PortalGuard>
   );
 }

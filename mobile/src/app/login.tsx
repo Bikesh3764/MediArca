@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Button, Card, Field, LinkText, Notice, Screen, Segmented, Title } from '@/components/ui';
 import { homeFor, type Role, useAuth } from '@/context/AuthContext';
 import { parseRole, ROLE_LABEL, SIGNUP_ROLES } from '@/lib/roles';
@@ -90,6 +91,7 @@ export default function Login() {
         />
         <Notice tone="error" message={error} />
         <Button label="Sign in" onPress={submit} loading={submitting} />
+        <GoogleButton role={role} next={params.next} onError={setError} />
         <LinkText
           label="Forgot password?"
           onPress={() => router.push({ pathname: '/forgot-password', params: { role, email: email.trim() } })}

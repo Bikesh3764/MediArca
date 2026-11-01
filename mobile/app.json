@@ -35,7 +35,15 @@
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0066cc",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-sharing"
     ],
     "scheme": "mediarca",
     "backgroundColor": "#f5f5f7",

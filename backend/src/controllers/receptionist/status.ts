@@ -4,7 +4,7 @@ import { AuthRequest } from '../../middleware/authMiddleware';
 import { getLocalDateString, getIndianTimeMinutes } from '../../utils/scheduleUtils';
 import { canTransition } from '../../utils/appointmentStateMachine';
 import { verifyReceptionistDoctorAccess } from '../../utils/authGuards';
-import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
+import { createNotification, formatVisitDate, notifyNextInLine, withDr } from '../../services/notificationService';
 
 export const executeReceptionistInConsultationTransaction = async (
   prismaClient: any,
@@ -284,8 +284,17 @@ export const updateAppointmentStatus = async (req: AuthRequest, res: Response): 
           patientUserId,
           "It's your turn",
           `${docName} is ready for you. Please go in now. Token #${updated.queueNumber}.`,
-          'QUEUE'
+          'QUEUE',
+          { appointmentId: updated.id }
         ).catch(() => {});
+        notifyNextInLine({
+          doctorId: updated.doctorId,
+          clinicId: updated.clinicId,
+          appointmentDate: updated.appointmentDate,
+          slotId: updated.slotId,
+          queueNumber: updated.queueNumber,
+          doctorName: updated.doctor?.user?.fullName,
+        });
       } else if (status === 'COMPLETED' && patientUserId) {
         createNotification(
           patientUserId,

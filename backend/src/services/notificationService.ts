@@ -1,5 +1,6 @@
 import prisma from '../config/database';
 import { publishNotification } from '../utils/liveEvents';
+import { type PushData, sendPushToUser } from './pushService';
 
 /*
  * What MediArca sends (keep it to things the person needs to know or act on):
@@ -33,7 +34,8 @@ export const createNotification = async (
   userId: string,
   title: string,
   message: string,
-  type = 'SYSTEM'
+  type = 'SYSTEM',
+  push: PushData = {}
 ): Promise<any> => {
   if (!userId || typeof userId !== 'string' || !userId.trim()) {
     return null;
@@ -48,6 +50,10 @@ export const createNotification = async (
       },
     });
     publishNotification(userId.trim());
+    // Also to the person's phones (never waits, never fails the caller)
+    sendPushToUser(userId.trim(), created.title, created.message, { type: created.type, ...push }).catch((err) =>
+      console.warn('Push send error:', err?.message || err)
+    );
     return created;
   } catch (error) {
     console.error('Failed to create notification:', error);
@@ -84,6 +90,46 @@ export const notifyDetachCancellations = (visits: Awaited<ReturnType<typeof find
       `${withDr(v.doctor?.user?.fullName)} no longer sees patients at ${v.clinic?.clinicName || 'this clinic'}, so your visit on ${formatVisitDate(v.appointmentDate)} was cancelled. Please book again.`,
       'APPOINTMENT'
     ).catch(() => {});
+  }
+};
+
+/**
+ * "You're next": after a patient is called in, tell the next person in the same queue
+ * (same doctor, clinic, day and shift). Sent once per visit.
+ */
+export const notifyNextInLine = async (called: {
+  doctorId: string;
+  clinicId: string | null;
+  appointmentDate: string;
+  slotId: string | null;
+  queueNumber: number;
+  doctorName?: string | null;
+}): Promise<void> => {
+  try {
+    const next = await prisma.appointment.findFirst({
+      where: {
+        doctorId: called.doctorId,
+        clinicId: called.clinicId,
+        appointmentDate: called.appointmentDate,
+        slotId: called.slotId,
+        status: 'WAITING',
+        queueNumber: { gt: called.queueNumber },
+      },
+      orderBy: { queueNumber: 'asc' },
+      select: { id: true, queueNumber: true, patient: { select: { userId: true } } },
+    });
+    const userId = next?.patient?.userId;
+    if (!next || !userId) return;
+    const title = 'You’re next';
+    const message = `${withDr(called.doctorName)} will call you soon. Token #${next.queueNumber}.`;
+    const already = await prisma.notification.findFirst({
+      where: { userId, title, message, createdAt: { gte: new Date(Date.now() - 18 * 60 * 60 * 1000) } },
+      select: { id: true },
+    });
+    if (already) return;
+    await createNotification(userId, title, message, 'QUEUE', { appointmentId: next.id });
+  } catch (error) {
+    console.error('notifyNextInLine failed:', error);
   }
 };
 

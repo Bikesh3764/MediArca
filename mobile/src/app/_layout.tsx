@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { onSlowChange, setupPlatform } from '@/lib/platform';
 import { BotCheckHost } from '@/lib/botCheck';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, homeFor, useAuth } from '@/context/AuthContext';
+import { setupPush } from '@/lib/push';
 import { Loading } from '@/components/ui';
 import { colors } from '@/theme';
 
@@ -22,6 +23,22 @@ function SlowBanner() {
   );
 }
 
+/** Tapping a phone alert opens the visit it is about (or the person's home). */
+function PushTaps() {
+  const { user } = useAuth();
+  const role = user?.role;
+  const mustChange = Boolean(user?.mustChangePassword);
+  useEffect(() => {
+    if (!role) return;
+    return setupPush((data) => {
+      if (role === 'PATIENT' && data.appointmentId) router.push({ pathname: '/visit/[id]', params: { id: data.appointmentId } });
+      else if (role === 'PATIENT') router.push('/patient/visits');
+      else router.replace(homeFor({ role, mustChangePassword: mustChange }));
+    });
+  }, [role, mustChange]);
+  return null;
+}
+
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
 
@@ -36,6 +53,7 @@ export default function RootLayout() {
         <AuthProvider>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }} />
           <BotCheckHost />
+          <PushTaps />
           <SlowBanner />
         </AuthProvider>
       ) : (

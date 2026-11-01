@@ -7,6 +7,7 @@ import {
   markNotificationsRead,
   markAllNotificationsRead,
 } from '../services/notificationService';
+import { isExpoPushToken, removePushToken, savePushToken } from '../services/pushService';
 
 export const getMyNotifications = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -89,6 +90,42 @@ export const markAllRead = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('markAllRead error:', error);
+    res.status(500).json({ success: false, message: 'Couldn’t update notifications. Try again.' });
+  }
+};
+
+/** The phone app saves its push address after sign-in (body: token, platform). */
+export const registerPushToken = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+    const { token, platform } = req.body || {};
+    if (!isExpoPushToken(token)) {
+      res.status(400).json({ success: false, message: 'Invalid push token' });
+      return;
+    }
+    await savePushToken(req.user.id, token, typeof platform === 'string' ? platform : 'android');
+    res.json({ success: true, message: 'Notifications on' });
+  } catch (error: any) {
+    console.error('registerPushToken error:', error);
+    res.status(500).json({ success: false, message: 'Couldn’t turn on notifications. Try again.' });
+  }
+};
+
+/** Called on sign-out so this phone stops getting the account's alerts. */
+export const unregisterPushToken = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+    const { token } = req.body || {};
+    if (typeof token === 'string' && token.trim()) await removePushToken(req.user.id, token);
+    res.json({ success: true, message: 'Notifications off' });
+  } catch (error: any) {
+    console.error('unregisterPushToken error:', error);
     res.status(500).json({ success: false, message: 'Couldn’t update notifications. Try again.' });
   }
 };

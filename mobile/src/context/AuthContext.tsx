@@ -1,6 +1,7 @@
 // Sign-in state for the app. Same behaviour as frontend/src/context/AuthContext.tsx.
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, type User } from '@mediarca/shared/api';
+import { registerPush, unregisterPush } from '@/lib/push';
 import { appStorage } from '@/lib/storage';
 
 export type Role = User['role'];
@@ -10,6 +11,8 @@ interface AuthContextType {
   /** True only on the first start without a saved session. */
   loading: boolean;
   login: (credentials: { email: string; password: string; role: Role }) => Promise<User>;
+  /** Google sign-in with the ID token from the Google account picker. */
+  loginWithGoogle: (idToken: string, role: Role) => Promise<User>;
   register: (data: Record<string, unknown>) => Promise<{ user?: User; requiresVerification?: boolean; email?: string }>;
   verifyOtp: (email: string, otp: string, role?: Role) => Promise<User>;
   saveSession: (token: string | undefined, user: User) => void;
@@ -43,6 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Sent while the sign-in is still saved, so the server knows whose phone this is
+    unregisterPush();
     appStorage.removeItem('mediarca_token');
     appStorage.removeItem('mediarca_user');
     setUser(null);
@@ -65,6 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout]);
 
+  // Phone alerts for whoever is signed in (asks for permission once)
+  const userId = user?.id;
+  const needsNewPassword = Boolean(user?.mustChangePassword);
+  useEffect(() => {
+    if (userId && !needsNewPassword) registerPush();
+  }, [userId, needsNewPassword]);
+
   useEffect(() => {
     // Re-check the saved session once the first screen is up
     queueMicrotask(() => {
@@ -86,6 +98,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       login: async (credentials) => {
         const data = await api.login(credentials);
+        saveSession(data.token, data.user);
+        return data.user;
+      },
+      loginWithGoogle: async (idToken, role) => {
+        const data = await api.googleAuth(idToken, role);
         saveSession(data.token, data.user);
         return data.user;
       },
