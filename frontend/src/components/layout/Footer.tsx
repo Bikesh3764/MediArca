@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
-import { Mail, Search, Ticket, User, Stethoscope, Building2, Headset, ChevronRight, Phone } from 'lucide-react';
+import { ANDROID_APK_URL } from '../../config/app';
+import { Mail, Search, Ticket, Download, User, Stethoscope, Building2, Headset, ChevronRight, Phone } from 'lucide-react';
 
 type FooterLink = { label: string; to: string };
 
@@ -81,6 +82,14 @@ export const Footer: React.FC = () => {
                 <Ticket className="w-4 h-4 text-primary" />
                 Track walk-in
               </Link>
+              <a
+                href={ANDROID_APK_URL}
+                rel="noopener"
+                className="h-10 px-5 rounded-full bg-[#1d1d1f] hover:bg-black text-white text-sm inline-flex items-center gap-2 transition-all active:scale-[0.98]"
+              >
+                <Download className="w-4 h-4" />
+                Get the app
+              </a>
             </div>
             <a
               href="mailto:contact@mediarca.in"

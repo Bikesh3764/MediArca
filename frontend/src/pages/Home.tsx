@@ -9,6 +9,7 @@ import { DoctorsSection } from './home/DoctorsSection';
 import { HeroQueuePreview } from './home/HeroQueuePreview';
 import { HowItWorksSection, ForClinicsSection } from './home/HomeMarketing';
 import { BenefitsStrip, SpecialtySection } from './home/HomeHighlights';
+import { GetAppSection, AndroidAppBar } from './home/GetAppSection';
 import heroPhoto from '../assets/healthcare-hero-bg.webp';
 export const Home: React.FC = () => {
   const state = useHomeState();
@@ -25,6 +26,7 @@ export const Home: React.FC = () => {
   return (
     <HomeContext.Provider value={state}>
 <div className="flex flex-col min-h-screen bg-[#f5f5f7]">
+      <AndroidAppBar />
       {/* 1. Hero: headline + search on the left, sample live token on the right */}
       <section className="relative overflow-hidden bg-[#eaf2fb]">
         {/* Full-width clinic photo; white wash keeps the text readable */}
@@ -184,6 +186,7 @@ export const Home: React.FC = () => {
       </section>
 
       <HowItWorksSection />
+      <GetAppSection />
       <ForClinicsSection />
     </div>
     </HomeContext.Provider>
