@@ -14,7 +14,7 @@ import {
   Smile,
   Eye,
   Brain,
-  ArrowRight,
+  ChevronRight,
 } from 'lucide-react';
 import { useHome } from './state';
 
@@ -28,21 +28,17 @@ const BENEFITS = [
 /** Four benefits on a frosted card that overlaps the bottom of the hero. */
 export const BenefitsStrip: React.FC = () => (
   <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 -mt-10 sm:-mt-12">
-    <ul className="grid grid-cols-2 lg:grid-cols-4 rounded-2xl bg-white/90 backdrop-blur-xl border border-[#e5e5ea] overflow-hidden">
+    <ul className="grid grid-cols-2 lg:grid-cols-4 gap-y-5 rounded-2xl bg-white/90 backdrop-blur-xl border border-[#e5e5ea] px-5 py-5 sm:px-8 sm:py-6">
       {BENEFITS.map(({ icon: Icon, title, text }, i) => (
         <li
           key={title}
-          className={`flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-4 sm:p-6 ${i % 2 === 1 ? 'border-l' : ''} ${
-            i >= 2 ? 'border-t lg:border-t-0' : ''
-          } ${i === 2 ? 'lg:border-l' : ''} border-[#f0f0f2]`}
+          className={`min-w-0 pr-3 ${i > 0 ? 'lg:pl-8 lg:border-l lg:border-[#f0f0f2]' : ''} ${i % 2 === 1 ? 'pl-4 border-l border-[#f0f0f2] lg:pl-8' : ''}`}
         >
-          <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary-soft text-primary inline-flex items-center justify-center shrink-0">
-            <Icon className="w-5 h-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm sm:text-[15px] font-semibold text-[#1d1d1f] leading-tight">{title}</p>
-            <p className="mt-0.5 text-xs text-[#86868b] leading-snug">{text}</p>
-          </div>
+          <p className="flex items-center gap-2 text-sm sm:text-[15px] font-semibold text-[#1d1d1f] leading-tight">
+            <Icon className="w-4 h-4 text-primary shrink-0" strokeWidth={2.25} />
+            <span className="truncate">{title}</span>
+          </p>
+          <p className="mt-1 text-xs text-[#86868b] leading-snug">{text}</p>
         </li>
       ))}
     </ul>
@@ -50,16 +46,16 @@ export const BenefitsStrip: React.FC = () => (
 );
 
 const SPECIALTIES = [
-  { label: 'General', value: 'General Medicine', icon: Stethoscope },
-  { label: 'Children', value: 'Pediatrics', icon: Baby },
-  { label: 'Women', value: 'Gynecology & Obstetrics', icon: Venus },
-  { label: 'Skin', value: 'Dermatology', icon: Sparkles },
-  { label: 'Bones', value: 'Orthopedics', icon: Bone },
-  { label: 'Heart', value: 'Cardiology', icon: HeartPulse },
-  { label: 'ENT', value: 'ENT / Otorhinolaryngology', icon: Ear },
-  { label: 'Dental', value: 'Dentistry', icon: Smile },
-  { label: 'Eyes', value: 'Ophthalmology', icon: Eye },
-  { label: 'Brain', value: 'Neurology', icon: Brain },
+  { label: 'General', hint: 'Fever, cough, BP', value: 'General Medicine', icon: Stethoscope },
+  { label: 'Children', hint: 'Kids & newborns', value: 'Pediatrics', icon: Baby },
+  { label: 'Women', hint: 'Pregnancy, PCOD', value: 'Gynecology & Obstetrics', icon: Venus },
+  { label: 'Skin', hint: 'Acne, hair, rashes', value: 'Dermatology', icon: Sparkles },
+  { label: 'Bones', hint: 'Joints, back pain', value: 'Orthopedics', icon: Bone },
+  { label: 'Heart', hint: 'Chest pain, BP', value: 'Cardiology', icon: HeartPulse },
+  { label: 'ENT', hint: 'Ear, nose, throat', value: 'ENT / Otorhinolaryngology', icon: Ear },
+  { label: 'Dental', hint: 'Teeth, gums', value: 'Dentistry', icon: Smile },
+  { label: 'Eyes', hint: 'Vision, glasses', value: 'Ophthalmology', icon: Eye },
+  { label: 'Brain', hint: 'Headache, nerves', value: 'Neurology', icon: Brain },
 ];
 
 /** Quick specialty picker: opens the Doctors tab filtered to that specialty. */
@@ -75,39 +71,35 @@ export const SpecialtySection: React.FC = () => {
   return (
     <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-10 pt-14 sm:pt-20">
       <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1d1d1f]">Browse by specialty</h2>
-        </div>
+        <h2 className="text-2xl sm:text-[32px] font-semibold tracking-tight text-[#1d1d1f]">Browse by specialty</h2>
         <button
           type="button"
           onClick={() => pick('All')}
-          className="hidden sm:inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover cursor-pointer shrink-0"
+          className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary-hover cursor-pointer shrink-0"
         >
           All doctors
-          <ArrowRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="mt-7 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar">
-        <ul className="flex sm:grid sm:grid-cols-5 gap-3 sm:gap-4 w-max sm:w-full">
-          {SPECIALTIES.map(({ label, value, icon: Icon }) => {
-            return (
-              <li key={value} className="w-[112px] sm:w-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={() => pick(value)}
-                  className="group w-full h-full rounded-2xl bg-white border border-[#e5e5ea] hover:border-primary-line p-4 sm:p-5 flex flex-col items-start gap-4 sm:gap-5 text-left transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer"
-                >
-                  <span className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-primary-soft text-primary group-hover:bg-primary group-hover:text-white inline-flex items-center justify-center transition-colors duration-200">
-                    <Icon className="w-5 h-5 sm:w-[22px] sm:h-[22px]" />
-                  </span>
-                  <span className="block w-full text-sm sm:text-[15px] font-semibold text-[#1d1d1f]">{label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <ul className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+        {SPECIALTIES.map(({ label, hint, value, icon: Icon }) => (
+          <li key={value} className="min-w-0">
+            <button
+              type="button"
+              onClick={() => pick(value)}
+              className="group w-full min-h-[64px] rounded-2xl bg-white border border-[#e5e5ea] hover:border-[#d2d2d7] px-3.5 sm:px-4 py-3 flex items-center gap-3 text-left transition-colors duration-200 active:scale-[0.98] cursor-pointer"
+            >
+              <Icon className="w-5 h-5 text-primary shrink-0" strokeWidth={1.75} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm sm:text-[15px] font-semibold text-[#1d1d1f] leading-tight truncate">{label}</span>
+                <span className="block mt-0.5 text-xs text-[#86868b] leading-snug truncate">{hint}</span>
+              </span>
+              <ChevronRight className="hidden sm:block w-4 h-4 text-[#c7c7cc] group-hover:text-[#86868b] shrink-0 transition-colors" />
+            </button>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 };
