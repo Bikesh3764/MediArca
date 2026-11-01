@@ -6,6 +6,7 @@ import { Clock, CheckCircle2, X, Printer, Stethoscope, Search, ChevronDown, Cale
 import { EmptyState } from '../../../components/common/EmptyState';
 import { cleanDoctorName, cleanShiftDisplayName, getCleanReason } from './helpers';
 import { useReceptionistDashboard } from './state';
+import MoreLine from '../../../components/common/MoreLine';
 export const QueueTab: React.FC = () => {
   const {
     data,
@@ -547,7 +548,7 @@ export const QueueTab: React.FC = () => {
                                   return (
                                     <>
                                       <span aria-hidden="true" className="hidden sm:inline">•</span>
-                                      <span className="basis-full sm:basis-auto truncate sm:max-w-[220px]">{cleanReason}</span>
+                                      <div className="basis-full sm:basis-auto min-w-0 sm:max-w-[220px]"><MoreLine text={cleanReason} /></div>
                                     </>
                                   );
                                 })()}

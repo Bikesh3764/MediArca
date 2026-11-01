@@ -5,6 +5,7 @@ import { Clock, CheckCircle2, AlertTriangle, Play, RefreshCw, Building2, AlertCi
 import { AppleFilterSelect } from '../../../components/ui/AppleFilterSelect';
 import { getCleanReason, getSlotShortLabel, getYesterdayDateString } from './helpers';
 import { useDoctorDashboard } from './state';
+import MoreLine from '../../../components/common/MoreLine';
 export const QueueTab: React.FC = () => {
   const {
     user,
@@ -684,8 +685,9 @@ export const QueueTab: React.FC = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[13px] text-[#86868b] mt-0.5 truncate">
-                                {[
+                              <MoreLine
+                                className="text-[13px] text-[#86868b] mt-0.5"
+                                text={[
                                   appt.appointmentDate && appt.appointmentDate !== getLocalDateString() && queueScope !== 'all-upcoming'
                                     ? (appt.appointmentDate === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : appt.appointmentDate)
                                     : null,
@@ -695,7 +697,7 @@ export const QueueTab: React.FC = () => {
                                 ]
                                   .filter(Boolean)
                                   .join(' · ')}
-                              </p>
+                              />
                             </div>
                           </div>
 
