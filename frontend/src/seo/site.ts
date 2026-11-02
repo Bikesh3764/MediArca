@@ -5,6 +5,22 @@
 export const SITE_URL = 'https://mediarca.in';
 export const SITE_NAME = 'MediArca';
 export const SITE_IMAGE = `${SITE_URL}/brand/mediarca-icon.png`;
+/** Other ways people type the name. Google uses these to match "medi arca" etc. to this site. */
+export const SITE_ALT_NAMES = ['Medi Arca', 'Mediarca', 'MediArca India', 'mediarca.in'];
+export const SITE_DESCRIPTION =
+  'MediArca is an Indian clinic booking and live queue app. Book a doctor, get a token and wait at home until your turn.';
+/**
+ * MediArca's own profiles on other sites (Google Business Profile, LinkedIn, Instagram,
+ * Facebook, YouTube...). Add each full URL here once it exists: it tells Google they
+ * are the same company, which helps the name show up in search.
+ */
+export const SITE_SAME_AS: string[] = [];
+/**
+ * IndexNow key (Bing, Yandex, Seznam). The same text sits in public/<key>.txt so those search
+ * engines can check that pings for mediarca.in come from us. Ping after a deploy:
+ * https://api.indexnow.org/indexnow?url=https://mediarca.in/&key=<key>
+ */
+export const INDEXNOW_KEY = '6ab8e270f4b9d94dc5359cf21fce1796';
 
 export interface SeoPage {
   path: string;
@@ -23,7 +39,7 @@ export const SEO_PAGES: SeoPage[] = [
     file: 'index.html',
     title: 'MediArca — Book a Doctor, Skip the Wait',
     description:
-      'Book a clinic visit in India, get a queue token and see your live place in line. ₹0 platform fee, pay the receptionist.',
+      'MediArca: book a clinic visit in India, get a queue token and see your live place in line. ₹0 platform fee, pay the receptionist.',
     changefreq: 'weekly',
     priority: '1.0',
   },
@@ -59,7 +75,7 @@ export const SEO_PAGES: SeoPage[] = [
     file: 'about.html',
     title: 'About Us — MediArca',
     description:
-      'MediArca helps Indian clinics run a live outpatient queue so patients wait at home, not in the waiting room.',
+      'MediArca (mediarca.in) helps Indian clinics run a live outpatient queue so patients wait at home, not in the waiting room.',
     changefreq: 'monthly',
     priority: '0.6',
   },

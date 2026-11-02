@@ -13,8 +13,11 @@ import {
   ROBOTS_DISALLOW,
   SEO_PAGES,
   SEO_REDIRECTS,
+  SITE_ALT_NAMES,
+  SITE_DESCRIPTION,
   SITE_IMAGE,
   SITE_NAME,
+  SITE_SAME_AS,
   SITE_URL,
   type SeoPage,
 } from './src/seo/site.ts';
@@ -33,28 +36,45 @@ const removeTag = (html: string, pattern: RegExp) => html.replace(pattern, '');
 const jsonLd = (data: unknown) =>
   `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
 
+// Brand facts for Google, so a search for "mediarca" is read as this site's name
+// and not as a misspelling of a similar word.
 const organization = {
   '@type': 'Organization',
   '@id': `${SITE_URL}/#organization`,
   name: SITE_NAME,
+  alternateName: SITE_ALT_NAMES,
   url: `${SITE_URL}/`,
-  logo: SITE_IMAGE,
+  logo: { '@type': 'ImageObject', url: SITE_IMAGE, width: 512, height: 512 },
+  image: SITE_IMAGE,
+  description: SITE_DESCRIPTION,
   email: 'contact@mediarca.in',
-  areaServed: 'IN',
+  areaServed: { '@type': 'Country', name: 'India' },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    email: 'contact@mediarca.in',
+    areaServed: 'IN',
+    availableLanguage: ['en', 'hi'],
+  },
+  ...(SITE_SAME_AS.length ? { sameAs: SITE_SAME_AS } : {}),
+};
+
+const website = {
+  '@type': 'WebSite',
+  '@id': `${SITE_URL}/#website`,
+  url: `${SITE_URL}/`,
+  name: SITE_NAME,
+  alternateName: SITE_ALT_NAMES,
+  description: SITE_DESCRIPTION,
+  inLanguage: 'en-IN',
+  publisher: { '@id': `${SITE_URL}/#organization` },
 };
 
 const structuredData = (page: SeoPage): string => {
   const url = `${SITE_URL}${page.path}`;
   const graph: unknown[] = [];
   if (page.path === '/') {
-    graph.push(organization, {
-      '@type': 'WebSite',
-      '@id': `${SITE_URL}/#website`,
-      url: `${SITE_URL}/`,
-      name: SITE_NAME,
-      inLanguage: 'en-IN',
-      publisher: { '@id': `${SITE_URL}/#organization` },
-    });
+    graph.push(organization, website);
   } else {
     graph.push({
       '@type': 'WebPage',
@@ -63,7 +83,8 @@ const structuredData = (page: SeoPage): string => {
       name: page.title,
       description: page.description,
       inLanguage: 'en-IN',
-      isPartOf: { '@id': `${SITE_URL}/#website` },
+      isPartOf: website,
+      publisher: { '@id': `${SITE_URL}/#organization` },
     });
     graph.push({
       '@type': 'BreadcrumbList',

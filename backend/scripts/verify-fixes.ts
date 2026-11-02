@@ -10974,6 +10974,24 @@ Follow-up Date: 2026-10-15`;
     assert(plain.ok === true && Object.keys(plain).length === 1, 'FIX-066: replies without visits are sent untouched');
   }
 
+  // FIX-067: brand facts for Google (name variants) and the IndexNow key file
+  {
+    const feRoot = path.join(__dirname, '../../frontend');
+    const seoSite = fs.readFileSync(path.join(feRoot, 'src/seo/site.ts'), 'utf8');
+    const seoPlugin = fs.readFileSync(path.join(feRoot, 'seo-plugin.ts'), 'utf8');
+    assert(
+      /SITE_ALT_NAMES = \[[^\]]*'Medi Arca'/.test(seoSite) && seoPlugin.includes('alternateName: SITE_ALT_NAMES'),
+      'FIX-067: Organization and WebSite data list other spellings of the name ("Medi Arca")'
+    );
+    assert(seoPlugin.includes('sameAs: SITE_SAME_AS'), 'FIX-067: profiles on other sites go into sameAs');
+    const keyMatch = /INDEXNOW_KEY = '([0-9a-f]{32})'/.exec(seoSite);
+    const keyFile = keyMatch ? path.join(feRoot, 'public', `${keyMatch[1]}.txt`) : '';
+    assert(
+      Boolean(keyMatch) && fs.existsSync(keyFile) && fs.readFileSync(keyFile, 'utf8').trim() === keyMatch![1],
+      'FIX-067: IndexNow key file is published and matches INDEXNOW_KEY'
+    );
+  }
+
   console.log(`\n========================================`);
   console.log(`Passed: ${passed}`);
   console.log(`Failed: ${failed}`);
