@@ -63,7 +63,7 @@ MediArca/
 - [x] Phone alerts: every in-app notification is also pushed (Expo push). New "You're next" alert when the patient ahead is called. Table `PushToken` (RLS on); `POST/DELETE /api/notifications/push-token`; `backend/src/services/pushService.ts`; app `src/lib/push.ts`. Tapping an alert opens that visit.
 - [x] Google sign-in (Patient, Doctor, Clinic) on Sign in and Create account: `src/lib/google.ts`, `components/GoogleButton.tsx`. Same server check as the website.
 - [x] Test build setup: `mobile/eas.json` (profile `preview` = APK)
-- [ ] Owner steps (one time), then build the APK:
+- [x] Owner steps (one time), then build the APK — all done; the APK works on the owner's phone (Expo project `bikesh_1435`, Firebase project `mediarca-3`, `google-services.json` committed so the cloud build can see it):
   1. Make a free account at expo.dev. In `mobile/`: `npx eas-cli@latest login`, then `npx eas-cli@latest init` (adds the project ID to `app.json`).
   2. Firebase console → new project → add Android app `in.mediarca.app` → download `google-services.json` into `mobile/`, and add `"googleServicesFile": "./google-services.json"` under `android` in `app.json`. Then `npx eas-cli@latest credentials` → Android → upload the FCM V1 service account key (Firebase → Project settings → Service accounts → Generate key).
   3. Google Cloud console (project of the website's Google sign-in client) → Credentials → Create OAuth client → Android, package `in.mediarca.app`, SHA-1 from `npx eas-cli@latest credentials` (Android → Keystore).

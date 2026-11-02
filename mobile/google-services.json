@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "868507235434",
+    "project_id": "mediarca-3",
+    "storage_bucket": "mediarca-3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:868507235434:android:2a9f31a8f7cf9c9c2f8613",
+        "android_client_info": {
+          "package_name": "in.mediarca.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "868507235434-76q4g3c560hklhploh8p3dihp9q0ugs0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWjFNyxuX9qzUI9A-kVq95rXPd_7V53sw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "868507235434-76q4g3c560hklhploh8p3dihp9q0ugs0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
