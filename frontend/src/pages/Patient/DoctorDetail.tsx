@@ -157,7 +157,7 @@ export const DoctorDetail: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Doctor Bio & Credentials (2 Columns) */}
       <div className="lg:col-span-2 space-y-6">
-        <UtilityCard>
+        <UtilityCard className="bg-gradient-to-b from-[#e3effc] via-[#f0f6fd] to-white">
           {/* 1. Doctor Identity, over a soft blue cover */}
           <div className="relative -mx-5 -mt-5 sm:-mx-6 sm:-mt-6 h-24 sm:h-32 rounded-t-2xl overflow-hidden bg-gradient-to-br from-[#d6e8fb] via-[#e9f2fc] to-[#f5f9ff]">
             <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[radial-gradient(closest-side,rgba(0,102,204,0.18),transparent)]" />
