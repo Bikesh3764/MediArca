@@ -1,14 +1,10 @@
 /**
- * Live wait-time estimate for a patient's token.
+ * Live wait-time estimate for a patient's token. Kept deliberately simple:
  *
- * "Patients ahead × average minutes" alone is wrong whenever the day doesn't go to plan,
- * so the estimate also looks at:
- *  - shift not started yet → the queue starts moving at the shift start, not now
- *  - doctor stepped out → nothing moves until the expected return time
- *  - doctor not in the cabin during the shift (late) → nothing moves until they arrive
- *  - the patient already inside → only the rest of their visit counts
- *  - the doctor's real pace today (from finished visits), blended with the planned pace
- *  - patients ahead who haven't reached the clinic yet → they are often skipped, so they count half
+ *   wait = (shift start, if not started yet)
+ *        + (doctor's expected arrival, if the doctor is out of the cabin and gave a time)
+ *        + patients ahead × average minutes per patient
+ *
  * All times are minutes since midnight in IST.
  */
 
@@ -17,19 +13,12 @@ export type CabinStatus = 'IN_CABIN' | 'STEPPED_OUT' | 'NOT_IN_CABIN' | string |
 export interface QueueEtaInput {
   nowMins: number;
   slotStartMins: number;
-  slotEndMins: number;
-  /** Minutes per patient the doctor set for this shift. */
-  plannedPace: number;
-  /** Waiting patients with a smaller token who have checked in at the clinic. */
-  aheadArrived: number;
-  /** Waiting patients with a smaller token who haven't checked in yet. */
-  aheadNotArrived: number;
-  /** Minutes the current patient has been inside, or null when the cabin is free. */
-  inConsultationElapsedMins: number | null;
-  /** Lengths in minutes of visits finished today in this shift. */
-  recentDurations: number[];
+  /** Average minutes per patient set for this shift. */
+  avgMinutes: number;
+  /** Tokens before this one that are not done yet (waiting, plus the one in the cabin). */
+  patientsAhead: number;
   cabinStatus: CabinStatus;
-  /** Expected return (minutes since midnight) when the doctor stepped out, if known. */
+  /** Doctor's expected arrival (minutes since midnight), if they gave one. */
   returnAtMins: number | null;
 }
 
@@ -38,73 +27,39 @@ export type QueueDelayReason = 'BEFORE_SHIFT' | 'STEPPED_OUT' | 'DOCTOR_NOT_IN' 
 export interface QueueEtaResult {
   /** Minutes from now until this patient is likely called. */
   waitMinutes: number;
-  /** Minutes per patient actually used for the estimate. */
-  pace: number;
   /** Why the queue isn't moving yet, if it isn't. */
   delayReason: QueueDelayReason;
 }
 
-/** Assumed wait when a doctor is late or stepped out with no return time. */
-export const DOCTOR_LATE_GRACE_MINS = 10;
-export const STEPPED_OUT_DEFAULT_MINS = 10;
-/** Weight of the planned pace against real visits: after 3 visits it's 50/50. */
-const PLANNED_PACE_WEIGHT = 3;
-/** Share of a not-yet-arrived patient ahead that is counted (some get skipped). */
-const NOT_ARRIVED_WEIGHT = 0.5;
-
-const median = (values: number[]): number => {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-};
-
-/** Planned pace blended with today's real visit lengths (median, so one long visit doesn't skew it). */
-export const learnPace = (plannedPace: number, recentDurations: number[]): number => {
-  const planned = Number.isFinite(plannedPace) && plannedPace > 0 ? plannedPace : 3;
-  const samples = recentDurations.filter((d) => Number.isFinite(d) && d > 0 && d <= 180);
-  if (samples.length === 0) return planned;
-  const n = samples.length;
-  const blended = (median(samples) * n + planned * PLANNED_PACE_WEIGHT) / (n + PLANNED_PACE_WEIGHT);
-  return Math.min(Math.max(blended, 1), 180);
-};
-
 export const estimateQueueWait = (input: QueueEtaInput): QueueEtaResult => {
-  const pace = learnPace(input.plannedPace, input.recentDurations);
+  const avg = Number.isFinite(input.avgMinutes) && input.avgMinutes > 0 ? input.avgMinutes : 3;
   const now = input.nowMins;
-  const beforeShift = now < input.slotStartMins;
 
-  // When does the queue start moving again?
-  let moveFrom = now;
-  let delayReason: QueueDelayReason = null;
-  if (beforeShift) {
-    moveFrom = input.slotStartMins;
-    delayReason = 'BEFORE_SHIFT';
-  } else if (input.cabinStatus === 'STEPPED_OUT') {
-    moveFrom =
-      input.returnAtMins !== null && input.returnAtMins > now
-        ? input.returnAtMins
-        : now + STEPPED_OUT_DEFAULT_MINS;
-    delayReason = 'STEPPED_OUT';
-  } else if (input.cabinStatus === 'NOT_IN_CABIN' && input.inConsultationElapsedMins === null) {
-    // Doctor late or not arrived. (Someone inside the cabin means the status was just never switched.)
-    moveFrom = now + DOCTOR_LATE_GRACE_MINS;
-    delayReason = 'DOCTOR_NOT_IN';
+  // The queue starts at the shift start, or now if the shift is on
+  let moveFrom = Math.max(now, input.slotStartMins);
+  let delayReason: QueueDelayReason = now < input.slotStartMins ? 'BEFORE_SHIFT' : null;
+
+  // Doctor out of the cabin: add the time until their expected arrival, only if they gave one
+  const out = input.cabinStatus === 'STEPPED_OUT' || input.cabinStatus === 'NOT_IN_CABIN';
+  if (out) {
+    if (input.returnAtMins !== null && input.returnAtMins > moveFrom) moveFrom = input.returnAtMins;
+    if (!delayReason) delayReason = input.cabinStatus === 'STEPPED_OUT' ? 'STEPPED_OUT' : 'DOCTOR_NOT_IN';
   }
 
-  // Rest of the visit already in progress. A long-running visit still needs a little time.
-  let currentRemaining = 0;
-  if (input.inConsultationElapsedMins !== null) {
-    const elapsed = Math.max(0, input.inConsultationElapsedMins);
-    currentRemaining = Math.max(pace - elapsed, Math.max(1, pace * 0.25));
-  }
+  const waitMinutes = Math.max(0, Math.round(moveFrom - now + Math.max(0, input.patientsAhead) * avg));
+  return { waitMinutes, delayReason };
+};
 
-  // Before the shift nobody has checked in yet, so everyone ahead counts fully.
-  const notArrivedWeight = beforeShift ? 1 : NOT_ARRIVED_WEIGHT;
-  const aheadWork =
-    (Math.max(0, input.aheadArrived) + Math.max(0, input.aheadNotArrived) * notArrivedWeight) * pace;
-
-  const waitMinutes = Math.max(0, Math.round(moveFrom - now + currentRemaining + aheadWork));
-  return { waitMinutes, pace: Math.round(pace * 10) / 10, delayReason };
+/** "10:30 AM", "~ 10:30 AM" or "10:30" → minutes since midnight; null when no time is given. */
+export const parseReturnTime = (value?: string | null): number | null => {
+  const m = value?.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const ap = m[3]?.toUpperCase();
+  if (ap === 'PM' && h < 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + min;
 };
 
 /** Minutes before a shift starts when patients start caring about the doctor's cabin status. */

@@ -10,7 +10,7 @@ import {
 } from '../../utils/scheduleUtils';
 import { isValidIndianPhone, sanitizeIndianPhone } from '../../utils/phoneUtils';
 import { normalizeWalkinCode } from '../../utils/walkinCode';
-import { estimateQueueWait, minutesBetween } from '../../utils/queueEta';
+import { estimateQueueWait, parseReturnTime } from '../../utils/queueEta';
 import { resolveReceptionistContact } from './helpers';
 
 const NOT_FOUND_MESSAGE = 'No walk-in found. Check the number and code.';
@@ -122,21 +122,14 @@ export const trackWalkin = async (req: Request, res: Response): Promise<void> =>
       const isShiftActive = isToday && nowMins >= slotStartMins && nowMins < slotEndMins;
 
       const returnAt = appt.doctor?.expectedReturnTime;
+      const servingAhead = serving && serving.queueNumber !== appt.queueNumber ? 1 : 0;
       const eta = estimateQueueWait({
         nowMins,
         slotStartMins,
-        slotEndMins,
-        plannedPace: slot?.avgConsultationMinutes || 3.0,
-        aheadArrived: waitingAhead.filter((a) => a.isCheckedIn).length,
-        aheadNotArrived: waitingAhead.filter((a) => !a.isCheckedIn).length,
-        inConsultationElapsedMins:
-          serving && serving.queueNumber !== appt.queueNumber ? minutesBetween(serving.calledAt, now) ?? 0 : null,
-        recentDurations: sameShift
-          .filter((a) => a.status === 'COMPLETED')
-          .map((a) => minutesBetween(a.calledAt, a.completedAt))
-          .filter((d): d is number => d !== null),
+        avgMinutes: slot?.avgConsultationMinutes || 3.0,
+        patientsAhead: appt.status === 'IN_CONSULTATION' ? 0 : waitingAhead.length + servingAhead,
         cabinStatus: appt.doctor?.cabinStatus,
-        returnAtMins: returnAt && /\d{1,2}:\d{2}/.test(returnAt) ? timeToMinutes(returnAt) : null,
+        returnAtMins: parseReturnTime(returnAt),
       });
       const waitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : eta.waitMinutes;
 

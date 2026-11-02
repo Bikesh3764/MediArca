@@ -7,7 +7,7 @@ import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice, is
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 import { resolveReceptionistContact, estimateNextToken } from './helpers';
-import { estimateQueueWait, minutesBetween } from '../../utils/queueEta';
+import { estimateQueueWait, parseReturnTime } from '../../utils/queueEta';
 
 export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -375,28 +375,17 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
         const isShiftPassed = isToday && currentMinutes >= slotEndMins;
         const isShiftActive = isToday && currentMinutes >= slotStartMins && currentMinutes < slotEndMins;
 
-        // Live estimate: shift start, doctor away or late, visit in progress and today's real pace
-        const servingElapsed =
-          currentServingAppt && currentServingAppt.queueNumber !== appt.queueNumber
-            ? minutesBetween(currentServingAppt.calledAt, now) ?? 0
-            : null;
-        const finishedDurations = sameShift
-          .filter((a) => a.status === 'COMPLETED')
-          .map((a) => minutesBetween(a.calledAt, a.completedAt))
-          .filter((d): d is number => d !== null);
+        // Live estimate: shift start + doctor's expected arrival (if out) + patients ahead × average
+        const servingAhead = currentServingAppt && currentServingAppt.queueNumber !== appt.queueNumber ? 1 : 0;
         const doctorCabin = (appt.doctor as any)?.cabinStatus as string | undefined;
         const returnAt = (appt.doctor as any)?.expectedReturnTime as string | null | undefined;
         const eta = estimateQueueWait({
           nowMins: currentMinutes,
           slotStartMins,
-          slotEndMins,
-          plannedPace: pace,
-          aheadArrived: waitingAhead.filter((a) => a.isCheckedIn).length,
-          aheadNotArrived: waitingAhead.filter((a) => !a.isCheckedIn).length,
-          inConsultationElapsedMins: servingElapsed,
-          recentDurations: finishedDurations,
+          avgMinutes: pace,
+          patientsAhead: appt.status === 'IN_CONSULTATION' ? 0 : patientsAhead + servingAhead,
           cabinStatus: doctorCabin,
-          returnAtMins: returnAt && /\d{1,2}:\d{2}/.test(returnAt) ? timeToMinutes(returnAt) : null,
+          returnAtMins: parseReturnTime(returnAt),
         });
         const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : eta.waitMinutes;
         const isYourTurn =
