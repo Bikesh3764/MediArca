@@ -8,6 +8,7 @@ import { createNotification, formatVisitDate, withDr } from '../../services/noti
 import { getCachedActiveBatch, invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 import { resolveReceptionistContact, estimateNextToken } from './helpers';
 import { estimateQueueWait, parseReturnTime } from '../../utils/queueEta';
+import { isReturnTimeOver } from '../../middleware/returnTime';
 
 export const getAppointmentById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -385,7 +386,7 @@ export const getPatientAppointments = async (req: AuthRequest, res: Response): P
           avgMinutes: pace,
           patientsAhead: appt.status === 'IN_CONSULTATION' ? 0 : patientsAhead + servingAhead,
           cabinStatus: doctorCabin,
-          returnAtMins: parseReturnTime(returnAt),
+          returnAtMins: isReturnTimeOver((appt.doctor ?? {}) as Parameters<typeof isReturnTimeOver>[0]) ? null : parseReturnTime(returnAt),
         });
         const estWaitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : eta.waitMinutes;
         const isYourTurn =

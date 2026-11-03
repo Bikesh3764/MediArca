@@ -10976,6 +10976,40 @@ Follow-up Date: 2026-10-15`;
     assert(plain.ok === true && Object.keys(plain).length === 1, 'FIX-066: replies without visits are sent untouched');
   }
 
+  // FIX-069: a doctor's "back at" time disappears once it has passed
+  {
+    const { isReturnTimeOver, staleReturnTimes } = await import('../src/middleware/returnTime');
+    // Stepped out 2 Nov 11:30 PM IST (18:00 UTC), "back 12:41 AM" = 3 Nov 12:41 AM IST
+    const outAt = new Date('2026-11-02T18:00:00Z');
+    const doc = { cabinStatus: 'STEPPED_OUT', expectedReturnTime: '12:41 AM', cabinStatusUpdatedAt: outAt };
+    assert(!isReturnTimeOver(doc, new Date('2026-11-02T19:00:00Z')), 'FIX-069: 12:41 AM still shows at 12:30 AM');
+    assert(isReturnTimeOver(doc, new Date('2026-11-03T12:40:00Z')), 'FIX-069: 12:41 AM is gone by 6:10 PM next day');
+    const rel = { cabinStatus: 'STEPPED_OUT', expectedReturnTime: 'in 15 mins', cabinStatusUpdatedAt: outAt };
+    assert(!isReturnTimeOver(rel, new Date(outAt.getTime() + 10 * 60_000)), 'FIX-069: "in 15 mins" shows for 15 minutes');
+    assert(isReturnTimeOver(rel, new Date(outAt.getTime() + 20 * 60_000)), 'FIX-069: "in 15 mins" is gone after 20 minutes');
+    assert(isReturnTimeOver({ ...doc, cabinStatus: 'IN_CABIN' }), 'FIX-069: no "back at" time once the doctor is in cabin');
+    const body: any = {
+      data: [
+        { id: 'x1', cabinStatus: 'STEPPED_OUT', expectedReturnTime: '12:41 AM', cabinStatusUpdatedAt: new Date(Date.now() - 26 * 3600_000).toISOString() },
+        { id: 'x2', cabinStatus: 'STEPPED_OUT', expectedReturnTime: 'in 30 mins', cabinStatusUpdatedAt: new Date().toISOString() },
+      ],
+    };
+    await new Promise<void>((resolve) => {
+      const res: any = { statusCode: 200, json: () => resolve() };
+      staleReturnTimes({} as any, res, () => res.json(body));
+    });
+    assert(body.data[0].expectedReturnTime === null, 'FIX-069: replies drop a "back at" time from yesterday');
+    assert(body.data[1].expectedReturnTime === 'in 30 mins', 'FIX-069: replies keep a "back at" time still ahead');
+    const be = (f: string) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+    assert(be('src/server.ts').includes("app.use('/api', staleReturnTimes)"), 'FIX-069: every API reply is checked');
+    assert(
+      ['src/controllers/appointment/patient.ts', 'src/controllers/appointment/walkinTrack.ts'].every((f) =>
+        be(f).includes('isReturnTimeOver(')
+      ),
+      'FIX-069: wait estimates ignore a "back at" time that has passed'
+    );
+  }
+
   // FIX-067: brand facts for Google (name variants) and the IndexNow key file
   {
     const feRoot = path.join(__dirname, '../../frontend');

@@ -71,6 +71,7 @@ import receptionistRoutes from './routes/receptionistRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import prisma from './config/database';
 import { shiftTimes } from './middleware/shiftTime';
+import { staleReturnTimes } from './middleware/returnTime';
 import { authenticate, getJwtSecret } from './middleware/authMiddleware';
 import { updateProfile } from './controllers/authController';
 import { submitContactMessage } from './controllers/adminController';
@@ -504,6 +505,8 @@ app.post(
 );
 // Shift timings on every visit in a reply (after the caches, so cached replies have them too)
 app.use('/api', shiftTimes);
+// A doctor's "back at" time disappears once it has passed (FIX-069)
+app.use('/api', staleReturnTimes);
 app.use('/api/auth', authRoutes);
 // Hidden "website" field: people never fill it, simple bots do. Pretend it worked and drop it.
 const contactHoneypot = (req: Request, res: Response, next: NextFunction): void => {

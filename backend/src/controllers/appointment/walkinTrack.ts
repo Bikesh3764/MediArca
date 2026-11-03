@@ -11,6 +11,7 @@ import {
 import { isValidIndianPhone, sanitizeIndianPhone } from '../../utils/phoneUtils';
 import { normalizeWalkinCode } from '../../utils/walkinCode';
 import { estimateQueueWait, parseReturnTime } from '../../utils/queueEta';
+import { isReturnTimeOver } from '../../middleware/returnTime';
 import { resolveReceptionistContact } from './helpers';
 
 const NOT_FOUND_MESSAGE = 'No walk-in found. Check the number and code.';
@@ -129,7 +130,7 @@ export const trackWalkin = async (req: Request, res: Response): Promise<void> =>
         avgMinutes: slot?.avgConsultationMinutes || 3.0,
         patientsAhead: appt.status === 'IN_CONSULTATION' ? 0 : waitingAhead.length + servingAhead,
         cabinStatus: appt.doctor?.cabinStatus,
-        returnAtMins: parseReturnTime(returnAt),
+        returnAtMins: isReturnTimeOver((appt.doctor ?? {}) as Parameters<typeof isReturnTimeOver>[0]) ? null : parseReturnTime(returnAt),
       });
       const waitMinutes = appt.status === 'IN_CONSULTATION' ? 0 : eta.waitMinutes;
 
@@ -165,6 +166,7 @@ export const trackWalkin = async (req: Request, res: Response): Promise<void> =>
           specialty: appt.doctor?.specialty || null,
           cabinStatus: appt.doctor?.cabinStatus || null,
           expectedReturnTime: appt.doctor?.expectedReturnTime || null,
+          cabinStatusUpdatedAt: appt.doctor?.cabinStatusUpdatedAt || null,
         },
         clinic: appt.clinic
           ? {
