@@ -18,6 +18,8 @@ export const SITE_SOCIAL: Array<{ label: string; url: string }> = [
   { label: 'LinkedIn', url: 'https://www.linkedin.com/company/mediarca' },
   { label: 'Instagram', url: 'https://www.instagram.com/mediarca.in/' },
   { label: 'YouTube', url: 'https://www.youtube.com/@MediArca' },
+  // Google Business Profile (Maps place, added 3 Nov 2026)
+  { label: 'Google', url: 'https://maps.google.com/?cid=5852882822855328174' },
 ];
 export const SITE_SAME_AS: string[] = SITE_SOCIAL.map((s) => s.url);
 /**

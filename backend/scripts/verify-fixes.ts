@@ -11025,6 +11025,10 @@ Follow-up Date: 2026-10-15`;
         fs.readFileSync(path.join(feRoot, 'src/components/layout/Footer.tsx'), 'utf8').includes('SITE_SOCIAL.map('),
       'FIX-067: LinkedIn, Instagram and YouTube are in sameAs and linked from the footer'
     );
+    assert(
+      /url: 'https:\/\/maps\.google\.com\/\?cid=\d+'/.test(seoSite),
+      'FIX-070: Google Business Profile (Maps cid link) is in sameAs and the footer'
+    );
     const keyMatch = /INDEXNOW_KEY = '([0-9a-f]{32})'/.exec(seoSite);
     const keyFile = keyMatch ? path.join(feRoot, 'public', `${keyMatch[1]}.txt`) : '';
     assert(
