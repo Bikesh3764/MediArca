@@ -6,13 +6,16 @@ import App from './App.tsx';
 
 import { GOOGLE_CLIENT_ID } from './config/auth';
 import { installGlobalErrorReporting } from './utils/errorReporter';
-import { redirectWwwToApex, upgradeLegacyHashUrl } from './utils/siteUrl';
+import { noindexMirrors, redirectWwwToApex, upgradeLegacyHashUrl } from './utils/siteUrl';
 
 // Old #/page links (printed QR posters, bookmarks) -> /page
 upgradeLegacyHashUrl();
 
 // www.mediarca.in -> mediarca.in, so sign-in isn't split across two addresses
 redirectWwwToApex();
+
+// GitHub Pages / pages.dev copies stay out of Google
+noindexMirrors();
 
 // Send uncaught browser errors to the backend log
 installGlobalErrorReporting();

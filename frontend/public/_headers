@@ -13,3 +13,7 @@
 
 /index.html
   Cache-Control: no-cache, no-store, must-revalidate
+
+# Copy of the site on Cloudflare's own address: keep it out of search (FIX-070)
+https://mediarca.pages.dev/*
+  X-Robots-Tag: noindex

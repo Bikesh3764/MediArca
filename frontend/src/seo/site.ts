@@ -35,6 +35,13 @@ export interface SeoPage {
   description: string;
   changefreq: 'daily' | 'weekly' | 'monthly' | 'yearly';
   priority: string;
+  /**
+   * Page text written into the built HTML (FIX-070), so search engines and link previews read it
+   * without running JavaScript. The app replaces it as soon as it starts. Keep it in line with the page.
+   */
+  heading: string;
+  intro: string;
+  points?: Array<{ title: string; text: string }>;
 }
 
 /** Public pages Google should index. Everything else is private (noindex) or a 404. */
@@ -47,6 +54,15 @@ export const SEO_PAGES: SeoPage[] = [
       'MediArca: book a clinic visit in India, get a queue token and see your live place in line. ₹0 platform fee, pay the receptionist.',
     changefreq: 'weekly',
     priority: '1.0',
+    heading: 'Book your token. Skip the waiting room.',
+    intro:
+      'MediArca is a clinic booking and live queue app for India. Book a doctor, get a token number and wait at home until your turn is close. ₹0 platform fee: you pay the doctor’s fee to the receptionist.',
+    points: [
+      { title: 'Book a token', text: 'Pick a doctor and shift. Pay the receptionist by UPI or at the desk.' },
+      { title: 'Track it live', text: 'See how many are ahead and leave home on time.' },
+      { title: 'Scan and walk in', text: 'Scan the clinic QR when you arrive. Go in on your turn.' },
+      { title: 'Browse by specialty', text: 'General Medicine, Pediatrics, Gynecology, Dermatology, Orthopedics, Cardiology, ENT, Ophthalmology and Neurology.' },
+    ],
   },
   {
     path: '/doctors',
@@ -56,6 +72,13 @@ export const SEO_PAGES: SeoPage[] = [
       'Find doctors and clinics, check fees in ₹ and today’s timings, and book a token for an in-person visit.',
     changefreq: 'daily',
     priority: '0.9',
+    heading: 'Find a doctor near you',
+    intro:
+      'Search doctors and clinics by name, specialty or city. See fees in ₹, today’s shifts and the doctor’s status, then book a token for an in-person visit.',
+    points: [
+      { title: 'Verified doctors', text: 'Doctors and clinics are checked by the MediArca team before they are listed.' },
+      { title: 'Shifts, not slots', text: 'Doctors work in shifts such as Morning 9 AM – 1 PM. You get a token and an estimated time.' },
+    ],
   },
   {
     path: '/how-it-works',
@@ -65,6 +88,19 @@ export const SEO_PAGES: SeoPage[] = [
       'Book online, track your token live, scan the clinic QR code on arrival and see the doctor without a long wait.',
     changefreq: 'monthly',
     priority: '0.8',
+    heading: 'How MediArca works',
+    intro:
+      'Book online, track your token live, scan the clinic QR code when you arrive and see the doctor without a long wait.',
+    points: [
+      { title: 'Find a doctor', text: 'Search by name, specialty or clinic. Pick a date and a shift. You get a token and an estimated time.' },
+      { title: 'Pay the receptionist', text: 'Call the desk and pay by UPI, or pay at the desk. Your token is confirmed once you pay.' },
+      { title: 'Track your turn', text: 'See how many people are ahead of you. Leave home when your turn is close.' },
+      { title: 'Scan and walk in', text: 'Scan the clinic QR at the front desk when you arrive. Go in on your turn.' },
+      { title: '₹0 platform fee', text: 'You only pay the doctor’s fee to the receptionist.' },
+      { title: 'Free cancellation', text: 'Cancel any time before your visit.' },
+      { title: 'Book for family', text: 'Book for parents or children in their name.' },
+      { title: 'Doctor status', text: 'See if the doctor is in or has stepped out.' },
+    ],
   },
   {
     path: '/faq',
@@ -74,6 +110,9 @@ export const SEO_PAGES: SeoPage[] = [
       'Answers about live queue tokens, paying the receptionist, booking for family, cancelling and checking in.',
     changefreq: 'monthly',
     priority: '0.7',
+    heading: 'Frequently asked questions',
+    intro:
+      'Answers about live queue tokens, paying the receptionist, booking for family, cancelling and checking in at the clinic.',
   },
   {
     path: '/about',
@@ -83,6 +122,14 @@ export const SEO_PAGES: SeoPage[] = [
       'MediArca (mediarca.in) helps Indian clinics run a live outpatient queue so patients wait at home, not in the waiting room.',
     changefreq: 'monthly',
     priority: '0.6',
+    heading: 'About MediArca',
+    intro:
+      'MediArca (mediarca.in) helps Indian clinics run a live outpatient queue, so patients wait at home and not in a crowded waiting room.',
+    points: [
+      { title: 'For patients', text: 'Find verified doctors, book a token and reach the clinic when your turn is close.' },
+      { title: 'For clinics and doctors', text: 'Walk-ins and online bookings in one queue. Fewer crowds, smoother OPD.' },
+      { title: 'Built for real clinics', text: 'Simple tools that fit how Indian OPDs work: ₹0 platform fee, pay the receptionist, doctor status and QR check-in.' },
+    ],
   },
   {
     path: '/contact',
@@ -91,6 +138,12 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Contact the MediArca team for help with bookings, clinics and doctor accounts.',
     changefreq: 'yearly',
     priority: '0.5',
+    heading: 'Contact us',
+    intro:
+      'Need help with a booking, a clinic or a doctor account? Email contact@mediarca.in or send us a message. For a medical emergency, call 112 or 108.',
+    points: [
+      { title: 'For doctors and clinics', text: 'List your clinic and add your doctors.' },
+    ],
   },
   {
     path: '/track',
@@ -99,6 +152,9 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Walked in at the clinic? Enter your mobile number and slip code to see your live place in line.',
     changefreq: 'yearly',
     priority: '0.5',
+    heading: 'Track your walk-in',
+    intro:
+      'Walked in at the clinic? Enter your mobile number and the code on your slip to see your token, the token being served and your estimated time.',
   },
   {
     path: '/terms',
@@ -107,6 +163,9 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Terms for using MediArca to book clinic visits and manage outpatient queues.',
     changefreq: 'yearly',
     priority: '0.3',
+    heading: 'Terms of Service',
+    intro:
+      'The terms for using MediArca to book in-person clinic visits and manage outpatient queues.',
   },
   {
     path: '/privacy',
@@ -115,6 +174,9 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'How MediArca collects, uses and protects your personal information.',
     changefreq: 'yearly',
     priority: '0.3',
+    heading: 'Privacy Policy',
+    intro:
+      'How MediArca collects, uses and protects your personal information.',
   },
   {
     path: '/refund-policy',
@@ -123,6 +185,9 @@ export const SEO_PAGES: SeoPage[] = [
     description: 'Cancel any time before your visit with no fee. Fees are paid at the clinic, not online.',
     changefreq: 'yearly',
     priority: '0.3',
+    heading: 'Cancellation Policy',
+    intro:
+      'Cancel any time before your visit with no fee. MediArca takes no payment online: fees are paid to the receptionist.',
   },
 ];
 

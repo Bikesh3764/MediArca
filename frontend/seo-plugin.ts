@@ -18,6 +18,7 @@ import {
   SITE_IMAGE,
   SITE_NAME,
   SITE_SAME_AS,
+  SITE_SOCIAL,
   SITE_URL,
   type SeoPage,
 } from './src/seo/site.ts';
@@ -107,6 +108,39 @@ const structuredData = (page: SeoPage): string => {
   return jsonLd({ '@context': 'https://schema.org', '@graph': graph });
 };
 
+const escapeText = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const NAV_LINKS: Array<[path: string, label: string]> = [
+  ['/doctors', 'Find a doctor'],
+  ['/how-it-works', 'How it works'],
+  ['/faq', 'FAQ'],
+  ['/about', 'About'],
+  ['/contact', 'Contact'],
+];
+
+// The page's text as plain HTML inside #root (FIX-070). Crawlers that don't run JavaScript
+// (Bing, link previews) read it; the app replaces it when it starts. Inline styles only,
+// because Tailwind doesn't scan this file.
+const pageBody = (page: SeoPage) => {
+  const link = (path: string, label: string) =>
+    `<a href="${path}" style="color:#0066cc;text-decoration:none">${escapeText(label)}</a>`;
+  const block = (title: string, text: string, tag = 'h2') =>
+    `<section style="margin-top:20px"><${tag} style="font-size:19px;font-weight:600;margin:0">${escapeText(title)}</${tag}><p style="margin:6px 0 0;color:#424245">${escapeText(text)}</p></section>`;
+  const points = (page.points ?? []).map((p) => block(p.title, p.text));
+  const faqs = page.path === '/faq' ? FAQS.map((f) => block(f.question, f.answer, 'h3')) : [];
+  const footerLinks = SEO_PAGES.filter((p) => p.path !== '/')
+    .map((p) => link(p.path, p.title.replace(/ — MediArca$/, '')))
+    .concat(SITE_SOCIAL.map((s) => `<a href="${s.url}" rel="me noopener" style="color:#0066cc;text-decoration:none">${s.label}</a>`))
+    .join(' · ');
+  return [
+    '<div style="max-width:960px;margin:0 auto;padding:16px;color:#1d1d1f;line-height:1.5">',
+    `<header style="display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center"><a href="/" style="font-weight:600;font-size:19px;color:#1d1d1f;text-decoration:none">${SITE_NAME}</a><nav style="display:flex;flex-wrap:wrap;gap:16px;font-size:14px">${NAV_LINKS.map(([p, l]) => link(p, l)).join('')}</nav></header>`,
+    `<main style="padding:40px 0"><h1 style="font-size:34px;line-height:1.15;font-weight:600;margin:0">${escapeText(page.heading)}</h1><p style="margin:12px 0 0;font-size:17px;color:#424245">${escapeText(page.intro)}</p>${points.join('')}${faqs.join('')}<p style="margin-top:28px">${link('/doctors', 'Find a doctor and book a token')}</p></main>`,
+    `<footer style="border-top:1px solid #e5e5ea;padding-top:16px;font-size:13px;color:#86868b">${footerLinks}<p style="margin:8px 0 0">© ${SITE_NAME} · ${SITE_URL.replace('https://', '')}</p></footer>`,
+    '</div>',
+  ].join('');
+};
+
 const renderPage = (template: string, page: SeoPage) => {
   const url = `${SITE_URL}${page.path}`;
   const title = escapeAttr(page.title);
@@ -118,6 +152,7 @@ const renderPage = (template: string, page: SeoPage) => {
   html = setTag(html, /<meta property="og:description" content="[^"]*" \/>/, `<meta property="og:description" content="${description}" />`);
   html = setTag(html, /<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${url}" />`);
   html = setTag(html, /<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${url}" />`);
+  html = setTag(html, /<div id="root"><\/div>/, `<div id="root">${pageBody(page)}</div>`);
   return html.replace('</head>', `    ${structuredData(page)}\n  </head>`);
 };
 

@@ -11031,6 +11031,40 @@ Follow-up Date: 2026-10-15`;
       Boolean(keyMatch) && fs.existsSync(keyFile) && fs.readFileSync(keyFile, 'utf8').trim() === keyMatch![1],
       'FIX-067: IndexNow key file is published and matches INDEXNOW_KEY'
     );
+
+    // FIX-070: page text in the built HTML, one address for the site, mirrors kept out of search
+    const pageBlocks = seoSite.split(/\n  \{\n    path: '/).slice(1);
+    assert(
+      pageBlocks.length >= 10 && pageBlocks.every((b) => /heading: '[^']+'/.test(b) && /intro:\s*'[^']{40,}'/.test(b)),
+      'FIX-070: every public page has a heading and intro for the built HTML'
+    );
+    assert(
+      seoPlugin.includes('<div id="root">${pageBody(page)}</div>') && /FAQS\.map\(\(f\) => block\(f\.question, f\.answer/.test(seoPlugin),
+      'FIX-070: per-page HTML carries the page text (and FAQ answers) inside #root'
+    );
+    assert(
+      seoPlugin.includes("renderWithoutCanonical(template, SITE_NAME)") && !/renderWithoutCanonical[^\n]*pageBody/.test(seoPlugin),
+      'FIX-070: app.html and 404.html stay empty (no page text on app screens)'
+    );
+    const indexHtml = fs.readFileSync(path.join(feRoot, 'index.html'), 'utf8');
+    assert(indexHtml.includes('<html lang="en-IN">'), 'FIX-070: pages declare Indian English');
+    const headers = fs.readFileSync(path.join(feRoot, 'public/_headers'), 'utf8');
+    assert(
+      /https:\/\/mediarca\.pages\.dev\/\*\s*\n\s*X-Robots-Tag: noindex/.test(headers),
+      'FIX-070: mediarca.pages.dev copy answers with X-Robots-Tag: noindex'
+    );
+    const siteUrlSrc = fs.readFileSync(path.join(feRoot, 'src/utils/siteUrl.ts'), 'utf8');
+    const mirrorMatch = /MIRROR_HOST = \/(.+)\/;/.exec(siteUrlSrc);
+    const mirror = mirrorMatch ? new RegExp(mirrorMatch[1]) : null;
+    assert(
+      Boolean(mirror) &&
+        mirror!.test('bikesh3764.github.io') &&
+        mirror!.test('mediarca.pages.dev') &&
+        !mirror!.test('mediarca.in') &&
+        !mirror!.test('localhost') &&
+        fs.readFileSync(path.join(feRoot, 'src/main.tsx'), 'utf8').includes('noindexMirrors();'),
+      'FIX-070: GitHub Pages / pages.dev copies add robots noindex; mediarca.in does not'
+    );
   }
 
   console.log(`\n========================================`);
