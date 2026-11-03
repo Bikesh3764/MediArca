@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BrandLogo } from '../ui/BrandLogo';
 import { useAuth } from '../../context/AuthContext';
 import { ANDROID_APK_URL } from '../../config/app';
+import { SITE_SOCIAL } from '../../seo/site';
 import { Mail, Search, Ticket, Download, User, Stethoscope, Building2, Headset, ChevronRight, Phone } from 'lucide-react';
 
 type FooterLink = { label: string; to: string };
@@ -157,6 +158,17 @@ export const Footer: React.FC = () => {
             <Link to="/refund-policy" className="hover:text-primary transition-colors py-1.5 inline-block">
               Cancellation Policy
             </Link>
+            {SITE_SOCIAL.map((s) => (
+              <a
+                key={s.label}
+                href={s.url}
+                target="_blank"
+                rel="me noopener noreferrer"
+                className="hover:text-primary transition-colors py-1.5 inline-block"
+              >
+                {s.label}
+              </a>
+            ))}
           </div>
         </div>
 

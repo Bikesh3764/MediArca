@@ -10986,6 +10986,11 @@ Follow-up Date: 2026-10-15`;
       'FIX-067: Organization and WebSite data list other spellings of the name ("Medi Arca")'
     );
     assert(seoPlugin.includes('sameAs: SITE_SAME_AS'), 'FIX-067: profiles on other sites go into sameAs');
+    assert(
+      ['linkedin.com/company/mediarca', 'instagram.com/mediarca.in', 'youtube.com/@MediArca'].every((u) => seoSite.includes(u)) &&
+        fs.readFileSync(path.join(feRoot, 'src/components/layout/Footer.tsx'), 'utf8').includes('SITE_SOCIAL.map('),
+      'FIX-067: LinkedIn, Instagram and YouTube are in sameAs and linked from the footer'
+    );
     const keyMatch = /INDEXNOW_KEY = '([0-9a-f]{32})'/.exec(seoSite);
     const keyFile = keyMatch ? path.join(feRoot, 'public', `${keyMatch[1]}.txt`) : '';
     assert(

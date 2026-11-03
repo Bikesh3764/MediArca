@@ -10,11 +10,16 @@ export const SITE_ALT_NAMES = ['Medi Arca', 'Mediarca', 'MediArca India', 'media
 export const SITE_DESCRIPTION =
   'MediArca is an Indian clinic booking and live queue app. Book a doctor, get a token and wait at home until your turn.';
 /**
- * MediArca's own profiles on other sites (Google Business Profile, LinkedIn, Instagram,
- * Facebook, YouTube...). Add each full URL here once it exists: it tells Google they
- * are the same company, which helps the name show up in search.
+ * MediArca's own profiles on other sites. Google already ranks these for "mediarca";
+ * listing them (JSON-LD sameAs + footer links) tells Google they and mediarca.in are
+ * the same company. Add new ones here (e.g. Google Business Profile).
  */
-export const SITE_SAME_AS: string[] = [];
+export const SITE_SOCIAL: Array<{ label: string; url: string }> = [
+  { label: 'LinkedIn', url: 'https://www.linkedin.com/company/mediarca' },
+  { label: 'Instagram', url: 'https://www.instagram.com/mediarca.in/' },
+  { label: 'YouTube', url: 'https://www.youtube.com/@MediArca' },
+];
+export const SITE_SAME_AS: string[] = SITE_SOCIAL.map((s) => s.url);
 /**
  * IndexNow key (Bing, Yandex, Seznam). The same text sits in public/<key>.txt so those search
  * engines can check that pings for mediarca.in come from us. Ping after a deploy:
