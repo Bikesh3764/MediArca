@@ -11033,7 +11033,7 @@ Follow-up Date: 2026-10-15`;
     );
 
     // FIX-070: page text in the built HTML, one address for the site, mirrors kept out of search
-    const pageBlocks = seoSite.split(/\n  \{\n    path: '/).slice(1);
+    const pageBlocks = seoSite.replace(/\r\n/g, '\n').split(/\n  \{\n    path: '/).slice(1);
     assert(
       pageBlocks.length >= 10 && pageBlocks.every((b) => /heading: '[^']+'/.test(b) && /intro:\s*'[^']{40,}'/.test(b)),
       'FIX-070: every public page has a heading and intro for the built HTML'
