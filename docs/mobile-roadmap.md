@@ -71,18 +71,18 @@ MediArca/
 - Push and Google sign-in don't run in Expo Go or the browser preview (the Google button is hidden there); everything else still does.
 
 ### Phase 5 — Doctor ✅
-- [x] Queue (`app/doctor/index.tsx`): cabin switch (In cabin / Stepped out with 15m–1h / Away), Today / Tomorrow / Upcoming, clinic filter, patient in cabin with Complete and Hold, "Call #N" for the next arrived patient, Mark arrived, Call in, Move to another day, Cancel
+- [x] Queue (`app/doctor/index.tsx`): cabin switch (In cabin / Stepped out with 15m–1h / Away), Today / Tomorrow / Upcoming, clinic filter, patient in cabin with Complete and Hold, Mark arrived, Start consultation (arrived patients only), Move to another day, Cancel
 - [x] Walk-in (`app/walkin.tsx`) with next token, time and tracking code; Share slip
 - [x] Shifts (`app/doctor/shifts.tsx`): per clinic — on leave today, planned leave (add/remove), working days (M T W T F S S), shifts (times, max patients, mins per patient), fee in ₹
 - [x] Account: password, sign out, delete account
 - Website only for now: joining/leaving clinics, profile photo and details, clinic QR
 
 ### Phase 6 — Receptionist ✅
-- [x] Queue (`app/receptionist/index.tsx`): doctor picker, the doctor's cabin switch, Today / Tomorrow, in cabin with Complete, Waiting / Done, Mark arrived, Call in, Move, Cancel, call the patient
+- [x] Queue (`app/receptionist/index.tsx`): Doctor card with cabin pill (switch doctor always offered), Today / Tomorrow, in cabin with Complete and Hold, Waiting and Done lists, Mark arrived, Start consultation, Move, Cancel, call the patient
 - [x] Walk-in (`app/receptionist/walkin.tsx`): doctor, day, shift with next token and time, Self / Family, name, +91 mobile, age, gender; token pass with tracking code and Share slip
 - [x] Requests (`app/receptionist/requests.tsx`, badge on the tab): fee in ₹, call the patient, Mark paid (confirms the token), Change date, Decline
 - [x] Account: password, sign out
-- Shared parts: `components/QueueRow`, `InCabinCard`, `CabinControl`, `MoveSheet`, `WalkinForm`, `ActionMenu`, `DayPills`, `tabs`; desk data in `context/DeskContext.tsx`; display rules in `shared/src/utils/queueDisplay.ts`
+- Shared parts: `components/QueueRow`, `InCabinCard`, `CabinControl`, `ShiftChips`, `CodeCard`, `DoctorBar`, `MoveSheet`, `WalkinForm`, `ActionMenu`, `DayPills`, `tabs`; desk data in `context/DeskContext.tsx`; display rules in `shared/src/utils/queueDisplay.ts`
 - Doctors tab, notifications and QR print were added later (see Extras)
 
 ### Phase 7 — Clinic ✅
@@ -131,3 +131,10 @@ Checks for app changes: `npm run typecheck`, `npm run lint`, `npx expo-doctor`, 
 - 2026-11-01 — UI polish: Apple-style slide between screens on Android, soft shift between tabs with a tap feel, screens ease in on first open, pulsing Live dot on the queue pass, same-size round header buttons, code boxes match other fields, stray colours moved to `src/theme`. Font: Apple system font on iPhone, Inter (400 and 600) on Android and web, through `components/AppText.tsx`; Account pages use settings rows (`ListGroup`/`ListRow` in kit), today's date above home titles, status dots on the cabin switch, clinic Home with stat icons, tidier walk-in shift list, visit cards without repeated status, birth-date pickers fit — import `Text`/`TextInput` from there, not from react-native. App type check, lint, Android bundle pass.
 - 2026-11-01 — Phone feedback fixes: camera permission added to `app.json` (Android never showed the Allow popup) and the scanner asks on open; "See more" on clinic addresses (`components/MoreText.tsx`); symptoms box sized right; new Stepped out card; doctors edit their profile in the app (`components/DoctorProfileSheet.tsx`); reports get Today, shift and status filters and Excel export (`src/lib/excel.ts`, real .xlsx, no extra library; uses `expo-file-system`). App type check, lint, Android bundle pass; checked at phone size in the browser preview.
 - 2026-11-01 — Report custom From–To dates (`components/RangeCalendar.tsx`, up to 90 days back), centred staff chips on Welcome, animations (`src/lib/motion.tsx`: sliding Segmented thumb, spring press, fade-ins), polls skip redraws when nothing changed (`keepIfSame`). Then FIX-066: shift timings instead of "Shift 1" everywhere (server adds `shiftTime`), walk-in code on queue rows, errors hide on their own, no Self/Family on walk-in.
+- 2026-11-05 — FIX-071: "Call in" replaced by Start consultation on arrived patients (doctor and front desk, website and app); app doctor's big "Call #N" button removed. App type check and lint pass; checked at 375 and 360 px in the browser preview. App not built (owner asked to wait). Backend verify 2,240/2,240, backend build; website lint, build, tests 31/31.
+- 2026-11-05 — Front desk gets Hold on the In cabin card (website and app), same as the doctor. Website tested locally; app type check and lint pass. Backend verify 2,240/2,240.
+- 2026-11-05 — FIX-072: booking has no Reason/Symptoms and Age is optional; blood group removed from the profile. Booking screen checked at phone size; app type check and lint pass.
+- 2026-11-05 — FIX-073: profile has no date of birth; walk-in form has no Reason and Age is optional. Profile checked at phone size; app type check and lint pass.
+- 2026-11-05 — FIX-074: emergency contact removed. Checked by page text and size at 375 px (pane was hidden, no screenshot). App type check and lint pass.
+- 2026-11-05 — FIX-075 app clean-up: `DoctorBar` + `CabinPill` on queues and walk-in, rows without reason/shift/code (code in ⋯), shift headings only when needed, Shifts screen with one-line shifts, visit pass shows the live queue. Every portal clicked through at 375 px with screenshots. App type check and lint pass.
+- 2026-11-05 — FIX-076: cabin slider back (`CabinControl`), shift chips on doctor and desk queues, ⋯ → Show code instead of print slips, no "Family" label. Checked at 375 px.

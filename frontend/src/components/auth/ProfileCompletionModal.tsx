@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { api, User, DEFAULT_PHONE_PREFIX, getLocalDateString } from '../../services/api';
+import { api, User, DEFAULT_PHONE_PREFIX } from '../../services/api';
 import { BrandLogo } from '../ui/BrandLogo';
 import { SearchableSpecialtySelect } from '../ui/SearchableSpecialtySelect';
 import { INDIAN_STATES, getCitiesForState } from '../../utils/indiaStates';
@@ -23,8 +23,7 @@ export const isUserProfileIncomplete = (user: User | null): boolean => {
   if (user.role === 'PATIENT') {
     return (
       !user.phone ||
-      !user.patientProfile?.gender ||
-      !user.patientProfile?.dateOfBirth
+      !user.patientProfile?.gender
     );
   }
   if (user.role === 'DOCTOR') {
@@ -60,8 +59,6 @@ export const ProfileCompletionModal: React.FC = () => {
 
   // Patient Fields
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [bloodGroup, setBloodGroup] = useState('O+');
 
   // Doctor Fields
   const [qualifications, setQualifications] = useState('');
@@ -95,12 +92,6 @@ export const ProfileCompletionModal: React.FC = () => {
         if (user.role === 'PATIENT') {
           if (user.patientProfile?.gender) {
             setGender((user.patientProfile.gender as any) || 'Male');
-          }
-          if (user.patientProfile?.dateOfBirth) {
-            setDateOfBirth(user.patientProfile.dateOfBirth.split('T')[0]);
-          }
-          if (user.patientProfile?.bloodGroup) {
-            setBloodGroup(user.patientProfile.bloodGroup);
           }
         } else if (user.role === 'DOCTOR') {
           if (user.doctorProfile?.qualifications && user.doctorProfile.qualifications !== 'Medical Practitioner') {
@@ -185,13 +176,7 @@ export const ProfileCompletionModal: React.FC = () => {
         setError('Choose your gender.');
         return;
       }
-      if (!dateOfBirth) {
-        setError('Enter your date of birth.');
-        return;
-      }
       payload.gender = gender;
-      payload.dateOfBirth = dateOfBirth;
-      payload.bloodGroup = bloodGroup;
     } else if (user.role === 'DOCTOR') {
       if (!qualifications.trim()) {
         setError('Enter your qualifications, e.g. MBBS, MD.');
@@ -343,42 +328,6 @@ export const ProfileCompletionModal: React.FC = () => {
                       {g}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={dateOfBirth}
-                    onChange={(e) => setDateOfBirth(e.target.value)}
-                    max={getLocalDateString()}
-                    className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Blood Group <span className="text-[#86868b] font-normal">(Optional)</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={bloodGroup}
-                      onChange={(e) => setBloodGroup(e.target.value)}
-                      className="w-full h-11 pl-3.5 pr-8 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer"
-                    >
-                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
-                        <option key={bg} value={bg}>
-                          {bg}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
                 </div>
               </div>
             </>

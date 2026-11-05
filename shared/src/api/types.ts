@@ -10,10 +10,8 @@ export interface User {
   mustChangePassword?: boolean;
   patientProfile?: {
     id: string;
-    bloodGroup?: string;
     allergies?: string;
     existingConditions?: string;
-    emergencyContact?: string;
     dateOfBirth?: string;
     gender?: string;
     currentMedications?: string;
@@ -277,7 +275,6 @@ export interface ReceptionistQueueItem {
   patientPhone: string;
   walkInCode?: string | null;
   gender?: string;
-  bloodGroup?: string;
   checkingWindow: string;
   /** Shift timing, e.g. "9:00 AM – 1:00 PM" (added by the server). */
   shiftTime?: string | null;
@@ -493,11 +490,9 @@ export interface Appointment {
     userId: string;
     gender?: string;
     dateOfBirth?: string;
-    bloodGroup?: string;
     allergies?: string;
     existingConditions?: string;
     currentMedications?: string;
-    emergencyContact?: string;
     user: { fullName: string; email: string; phone?: string; avatarUrl?: string };
   };
   liveQueue?: {

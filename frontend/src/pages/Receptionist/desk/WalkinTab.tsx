@@ -25,8 +25,6 @@ export const WalkinTab: React.FC = () => {
     setPatientPhone,
     gender,
     setGender,
-    reasonForVisit,
-    setReasonForVisit,
     bookingLoading,
     walkinPreview,
     previewLoading,
@@ -182,9 +180,7 @@ export const WalkinTab: React.FC = () => {
                               Doctor is on leave today
                             </span>
                             <span className="text-danger mt-0.5 block leading-relaxed">
-                              {activeSelectedDoctor.todayLeave?.reason
-                                ? `Reason: ${activeSelectedDoctor.todayLeave.reason}`
-                                : `${cleanDoctorName(activeSelectedDoctor.fullName)} is not taking consultations today.`}
+                              {cleanDoctorName(activeSelectedDoctor.fullName)} is not taking consultations today.
                             </span>
                           </div>
                         </div>
@@ -297,10 +293,10 @@ export const WalkinTab: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                      <div className="grid grid-cols-2 gap-3.5 sm:max-w-md">
                         <div>
                           <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Age
+                            Age <span className="text-[#86868b]">(optional)</span>
                           </label>
                           <input
                             type="text"
@@ -330,18 +326,6 @@ export const WalkinTab: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="col-span-2">
-                          <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                            Reason (optional)
-                          </label>
-                          <input
-                            type="text"
-                            value={reasonForVisit}
-                            onChange={(e) => setReasonForVisit(e.target.value)}
-                            placeholder="e.g. Fever, general checkup"
-                            className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all"
-                          />
-                        </div>
                       </div>
                     </div>
 

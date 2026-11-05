@@ -213,7 +213,6 @@ export const useDoctorDashboardState = () => {
   const [walkinGender, setWalkinGender] = useState('Not Specified');
   const [walkinPhone, setWalkinPhone] = useState('');
   const [walkinDate, setWalkinDate] = useState(() => getLocalDateString());
-  const [walkinReason, setWalkinReason] = useState('');
   const [walkinSlotId, setWalkinSlotId] = useState('');
   const [walkinClinicId, setWalkinClinicId] = useState('');
   const [walkinSubmitting, setWalkinSubmitting] = useState(false);
@@ -264,7 +263,7 @@ export const useDoctorDashboardState = () => {
         doctorId: targetDoctorId,
         appointmentDate: walkinDate || getLocalDateString(),
         slotId: walkinSlotId || undefined,
-        reasonForVisit: walkinReason || 'Clinic Walk-in Consultation',
+        reasonForVisit: 'Clinic Walk-in Consultation',
         isForOther: true,
         patientName: walkinName.trim(),
         patientAge: walkinAge.trim() || undefined,
@@ -278,7 +277,6 @@ export const useDoctorDashboardState = () => {
       setWalkinAge('');
       setWalkinPhone('');
       setWalkinDate(getLocalDateString());
-      setWalkinReason('');
       setWalkinClinicId('');
       refreshQueueQuietly();
       if (code) {
@@ -397,7 +395,7 @@ export const useDoctorDashboardState = () => {
       const yesterdayStr = getYesterdayDateString();
       const isValidDate = target.appointmentDate === todayStr || (target.appointmentDate === yesterdayStr && target.isCheckedIn);
       if (!isValidDate) {
-        toast.warning(`This patient is booked for ${formatDisplayDate(target.appointmentDate)}. You can only call today’s patients.`);
+        toast.warning(`This patient is booked for ${formatDisplayDate(target.appointmentDate)}. You can only start today’s patients.`);
         return;
       }
       if (!target.isCheckedIn) {
@@ -419,7 +417,7 @@ export const useDoctorDashboardState = () => {
       }
       refreshQueueQuietly();
     } catch (err: any) {
-      toast.error(err.message || 'Couldn’t call patient. Try again.');
+      toast.error(err.message || 'Couldn’t start the consultation. Try again.');
     } finally {
       setCallingId(null);
     }
@@ -767,8 +765,6 @@ export const useDoctorDashboardState = () => {
     setWalkinPhone,
     walkinDate,
     setWalkinDate,
-    walkinReason,
-    setWalkinReason,
     walkinSlotId,
     setWalkinSlotId,
     walkinClinicId,

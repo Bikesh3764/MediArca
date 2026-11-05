@@ -9474,11 +9474,13 @@ Follow-up Date: 2026-10-15`;
   const patientProfileContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/pages/Patient/PatientProfile.tsx'), 'utf8');
   const errorBoundaryContent = fs.readFileSync(path.join(__dirname, '../../frontend/src/components/ui/ErrorBoundary.tsx'), 'utf8');
   assert(
-    patientProfileContent.includes("user.patientProfile.dateOfBirth).split('T')[0]") &&
-    patientProfileContent.includes('max={getLocalDateString()}') &&
+    // FIX-073 (owner, 5 Nov 2026): date of birth and blood group are no longer asked on the profile
+    !patientProfileContent.includes('dateOfBirth') &&
+    !patientProfileContent.includes('bloodGroup') &&
+    patientProfileContent.includes("(['Male', 'Female', 'Other'] as const)") &&
     !patientProfileContent.includes('🇮🇳') &&
     !errorBoundaryContent.includes('font-mono'),
-    'Fix 17: PatientProfile syncs ISO dateOfBirth and uses clean +91 badge + segmented gender control; ErrorBoundary eliminates font-mono'
+    'Fix 17: PatientProfile asks no date of birth or blood group (FIX-073), uses clean +91 badge + segmented gender control; ErrorBoundary eliminates font-mono'
   );
 
   // 17. Fix 18: Doctor Portal Logical Workflow & Hold Consultation Verification

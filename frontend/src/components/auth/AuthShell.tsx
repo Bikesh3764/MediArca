@@ -26,7 +26,7 @@ const PANELS: Record<
     photo: lobbyPhoto,
     eyebrow: 'For doctors',
     title: 'Run a calmer OPD.',
-    points: ['Live queue console', 'Call the next patient in one tap', 'Shifts across clinics'],
+    points: ['Live queue console', 'Start consultations in one tap', 'Shifts across clinics'],
     card: { icon: Stethoscope, label: 'Next patient', value: '#16', note: 'Arrived · Fee paid' },
   },
   clinic: {

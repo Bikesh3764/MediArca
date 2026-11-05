@@ -349,11 +349,6 @@ export const AppointmentsTab: React.FC = () => {
                                     <span className="font-normal text-[#1d1d1f]">
                                       {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                     </span>
-                                    {appt.isForOther && appt.patientName && (
-                                      <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                                        Family
-                                      </span>
-                                    )}
                                     <span className="text-[11px] text-[#86868b] block mt-0.5">
                                       {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                     </span>
@@ -455,11 +450,6 @@ export const AppointmentsTab: React.FC = () => {
                                             <span className="font-normal text-[#1d1d1f]">
                                               {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                             </span>
-                                            {appt.isForOther && appt.patientName && (
-                                              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                                                Family
-                                              </span>
-                                            )}
                                             <span className="text-[11px] text-[#86868b] block mt-0.5">
                                               {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                             </span>
@@ -578,11 +568,6 @@ export const AppointmentsTab: React.FC = () => {
                                           <span className="font-normal text-[#1d1d1f]">
                                             {appt.patient?.user?.fullName || appt.patientName || 'Unknown Patient'}
                                           </span>
-                                          {appt.isForOther && appt.patientName && (
-                                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                                              Family
-                                            </span>
-                                          )}
                                           <span className="text-[11px] text-[#86868b] block mt-0.5">
                                             {appt.patientPhone || appt.patient?.user?.phone || appt.patient?.user?.email || 'Walk-in'}
                                           </span>

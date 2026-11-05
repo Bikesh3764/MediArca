@@ -11,33 +11,31 @@ export interface QueueRowData {
   id: string;
   token: number;
   name: string;
-  /** "Walk-in · 34y", "Family · 8y" */
+  /** "Walk-in · 34y" */
   tag?: string | null;
   /** "Morning · Reason" */
   meta?: string;
   phone?: string | null;
   arrived?: boolean;
-  /** Walk-in tracking code, shown so staff can read it out again. */
-  code?: string | null;
 }
 
 export function QueueRow({
   item,
   showArrival = true,
   onToggleArrived,
-  call,
-  onCall,
-  calling = false,
+  start,
+  onStart,
+  starting = false,
   onMore,
   muted = false,
 }: {
   item: QueueRowData;
   showArrival?: boolean;
   onToggleArrived?: () => void;
-  /** 'call' shows the Call button; 'away' says the doctor is away. */
-  call?: 'call' | 'away' | null;
-  onCall?: () => void;
-  calling?: boolean;
+  /** 'start' shows Start consultation; 'away' says the doctor is away. */
+  start?: 'start' | 'away' | null;
+  onStart?: () => void;
+  starting?: boolean;
   onMore?: () => void;
   /** Done or cancelled rows: no actions, softer look. */
   muted?: boolean;
@@ -56,14 +54,6 @@ export function QueueRow({
             <Text style={type.footnote} numberOfLines={1}>
               {[item.tag, item.meta].filter(Boolean).join(' · ')}
             </Text>
-          ) : null}
-          {item.code && !muted ? (
-            <View style={styles.code} accessibilityLabel={`Tracking code ${item.code}`}>
-              <Ionicons name="key-outline" size={12} color={colors.primary} />
-              <Text style={styles.codeText} selectable>
-                {item.code}
-              </Text>
-            </View>
           ) : null}
         </View>
         {item.phone ? (
@@ -90,7 +80,7 @@ export function QueueRow({
         ) : null}
       </View>
 
-      {!muted && (showArrival || call) ? (
+      {!muted && (showArrival || start) ? (
         <View style={styles.actions}>
           {showArrival && onToggleArrived ? (
             <Pressable
@@ -108,17 +98,19 @@ export function QueueRow({
           ) : (
             <View />
           )}
-          {call === 'call' && onCall ? (
+          {start === 'start' && onStart ? (
             <Pressable
               accessibilityRole="button"
-              disabled={calling}
-              onPress={onCall}
+              disabled={starting}
+              onPress={onStart}
               style={({ pressed }) => [styles.call, pressed && { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.98 }] }]}
             >
-              {calling ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="play" size={13} color={colors.white} />}
-              <Text style={styles.callText}>Call in</Text>
+              {starting ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="play" size={13} color={colors.white} />}
+              <Text style={styles.callText} numberOfLines={1}>
+                Start consultation
+              </Text>
             </Pressable>
-          ) : call === 'away' ? (
+          ) : start === 'away' ? (
             <Text style={type.footnote}>Doctor away</Text>
           ) : null}
         </View>
@@ -137,11 +129,9 @@ const styles = StyleSheet.create({
   tokenText: { fontSize: 16, fontWeight: '600', color: colors.ink },
   round: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
-  code: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, marginTop: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.primarySoft },
-  codeText: { fontSize: 12, fontWeight: '600', letterSpacing: 1.5, color: colors.primary },
-  arrived: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: radius.pill, backgroundColor: colors.canvas },
+  arrived: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: colors.canvas },
   arrivedOn: { backgroundColor: colors.primaryTint },
   arrivedText: { fontSize: 14, color: colors.ink },
-  call: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.primary },
-  callText: { fontSize: 15, fontWeight: '600', color: colors.white },
+  call: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.primary, flexShrink: 1 },
+  callText: { fontSize: 14, fontWeight: '600', color: colors.white },
 });

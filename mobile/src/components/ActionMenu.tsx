@@ -1,4 +1,5 @@
 // iOS-style action sheet: a short list of choices sliding up from the bottom, with Cancel.
+import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,8 @@ export interface MenuAction {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  /** Shows a check mark (the current choice). */
+  selected?: boolean;
 }
 
 export function ActionMenu({ title, actions, onClose }: { title?: string | null; actions: MenuAction[] | null; onClose: () => void }) {
@@ -28,7 +31,12 @@ export function ActionMenu({ title, actions, onClose }: { title?: string | null;
                 }}
                 style={({ pressed }) => [styles.row, (i > 0 || title) && styles.divider, pressed && styles.pressed]}
               >
-                <Text style={[styles.label, a.destructive && { color: colors.danger }]}>{a.label}</Text>
+                <View style={styles.labelRow}>
+                  <Text style={[styles.label, a.destructive && { color: colors.danger }, a.selected && styles.selected]} numberOfLines={1}>
+                    {a.label}
+                  </Text>
+                  {a.selected ? <Ionicons name="checkmark" size={20} color={colors.primary} /> : null}
+                </View>
               </Pressable>
             ))}
           </View>
@@ -51,4 +59,6 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: colors.canvas },
   label: { fontSize: 19, color: colors.primary },
   cancel: { fontWeight: '600' },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.lg },
+  selected: { fontWeight: '600' },
 });

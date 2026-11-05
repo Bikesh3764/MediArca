@@ -1,7 +1,7 @@
 import { formatDisplayDate, shiftLabel } from '../../../services/api';
 import { formatDisplayPhone } from '../../../utils/phoneUtils';
 import React from 'react';
-import { X, Printer } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cleanDoctorName } from './helpers';
 import { useReceptionistDashboard } from './state';
 export const BookedPassModal: React.FC = () => {
@@ -12,7 +12,7 @@ export const BookedPassModal: React.FC = () => {
   if (!bookedPass) return null;
   return (
 <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn print:hidden"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setBookedPass(null);
           }}
@@ -81,23 +81,13 @@ export const BookedPassModal: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2.5">
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="flex-1 h-11 rounded-full bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal inline-flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Slip</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setBookedPass(null)}
-                className="flex-1 h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setBookedPass(null)}
+              className="w-full h-11 rounded-full bg-[#0066cc] hover:bg-[#0071e3] active:scale-[0.98] text-white text-xs font-semibold transition-all cursor-pointer"
+            >
+              Done
+            </button>
           </div>
         </div>
   );

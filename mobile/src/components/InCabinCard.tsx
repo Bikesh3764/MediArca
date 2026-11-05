@@ -1,4 +1,4 @@
-// The patient with the doctor right now, with Complete (and Hold for the doctor).
+// The patient with the doctor right now, with Complete and Hold.
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
@@ -10,8 +10,6 @@ export function InCabinCard({
   name,
   tag,
   meta,
-  reason,
-  symptoms,
   onComplete,
   onHold,
   completing = false,
@@ -21,8 +19,6 @@ export function InCabinCard({
   name?: string | null;
   tag?: string | null;
   meta?: string | null;
-  reason?: string | null;
-  symptoms?: string | null;
   onComplete?: () => void;
   onHold?: () => void;
   completing?: boolean;
@@ -36,7 +32,7 @@ export function InCabinCard({
         </View>
         <View style={styles.flex}>
           <Text style={type.headline}>No one in cabin</Text>
-          <Text style={type.caption}>Call the next patient who has arrived.</Text>
+          <Text style={type.caption}>Tap Start consultation on an arrived patient.</Text>
         </View>
       </View>
     );
@@ -53,12 +49,6 @@ export function InCabinCard({
         </View>
         <Text style={styles.token}>#{token}</Text>
       </View>
-      {reason || symptoms ? (
-        <View style={styles.notes}>
-          {reason ? <Text style={type.body}>{reason}</Text> : null}
-          {symptoms ? <Text style={type.caption}>{symptoms}</Text> : null}
-        </View>
-      ) : null}
       <View style={styles.buttons}>
         {onComplete ? (
           <View style={styles.flex}>

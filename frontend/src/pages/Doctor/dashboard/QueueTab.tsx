@@ -1,12 +1,15 @@
 import React from 'react';
-import { api, Appointment, getLocalDateString, getTomorrowDateString } from '../../../services/api';
+import { api, Appointment, formatDisplayDate, getLocalDateString, getTomorrowDateString } from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
 import { Clock, CheckCircle2, AlertTriangle, Play, RefreshCw, Building2, AlertCircle, X, CalendarX, PauseCircle, SlidersHorizontal, Hourglass, Users } from 'lucide-react';
 import { AppleFilterSelect } from '../../../components/ui/AppleFilterSelect';
-import { getCleanReason, getSlotShortLabel, getYesterdayDateString } from './helpers';
+import { getSlotShortLabel, getYesterdayDateString } from './helpers';
 import { useDoctorDashboard } from './state';
 import MoreLine from '../../../components/common/MoreLine';
+import { RowMenu } from '../../../components/ui/RowMenu';
+import { WalkinCodeModal, type WalkinCodeTarget } from '../../../components/ui/WalkinCodeModal';
 export const QueueTab: React.FC = () => {
+  const [codeFor, setCodeFor] = React.useState<WalkinCodeTarget | null>(null);
   const {
     user,
     updateUser,
@@ -61,6 +64,21 @@ export const QueueTab: React.FC = () => {
   const showShiftFilter = availableShifts.length > 1 || selectedSlotId !== 'all';
   const showShiftLabel = availableShifts.length > 1 && selectedSlotId === 'all';
   const showClinicLabel = (affiliations?.clinics?.length || 0) > 1 && selectedClinicId === 'all';
+  const openMove = (appt: Appointment) => {
+    setRescheduleTarget({
+      appointmentId: appt.id,
+      patientName: appt.patientName || appt.patient?.user?.fullName || 'Patient',
+      doctorName: user?.fullName || 'Doctor',
+      currentDate: appt.appointmentDate || date,
+      currentQueueNumber: appt.queueNumber,
+      doctorId: user?.doctorProfile?.id || '',
+      slotId: appt.slotId,
+    });
+    const [y, m, day] = (appt.appointmentDate || date || getLocalDateString()).split('-').map(Number);
+    setRescheduleDate(getLocalDateString(new Date(y, m - 1, day + 1)));
+    setRescheduleSlotId(appt.slotId || '');
+    setRescheduleError(null);
+  };
   return (
 <div className="space-y-6">
             {/* Verification Warning if Doctor is unverified or suspended/rejected */}
@@ -132,7 +150,7 @@ export const QueueTab: React.FC = () => {
                         You’re on leave today
                       </h4>
                       <p className="text-[#86868b] mt-0.5 leading-relaxed">
-                        {leaveInfo?.reason ? leaveInfo.reason : 'Bookings and walk-ins are paused.'}
+                        Bookings and walk-ins are paused.
                       </p>
                     </div>
                   </div>
@@ -439,14 +457,8 @@ export const QueueTab: React.FC = () => {
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
               {[
                 { label: 'Waiting', value: displayedWaitingQueue.length, icon: Hourglass, tone: 'bg-warning-soft text-warning', num: 'text-[#1d1d1f]' },
-                { label: 'Completed', value: displayedCompletedQueue.length, icon: CheckCircle2, tone: 'bg-success-soft text-success', num: 'text-success' },
-                {
-                  label: 'Total',
-                  value: (displayedActiveInConsultation ? 1 : 0) + displayedWaitingQueue.length + displayedCompletedQueue.length,
-                  icon: Users,
-                  tone: 'bg-primary-soft text-primary',
-                  num: 'text-[#1d1d1f]',
-                },
+                { label: 'Arrived', value: displayedWaitingQueue.filter((a) => a.isCheckedIn).length, icon: Users, tone: 'bg-primary-soft text-primary', num: 'text-primary' },
+                { label: 'Done', value: displayedCompletedQueue.length, icon: CheckCircle2, tone: 'bg-success-soft text-success', num: 'text-success' },
               ].map(({ label, value, icon: StatIcon, tone, num }) => (
                 <div key={label} className="bg-white rounded-2xl border border-[#e5e5ea] p-3 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <span className={`w-8 h-8 sm:w-11 sm:h-11 rounded-xl inline-flex items-center justify-center shrink-0 ${tone}`}>
@@ -486,11 +498,9 @@ export const QueueTab: React.FC = () => {
                         <h4 className="text-[18px] font-semibold text-[#1d1d1f] tracking-tight">
                           {displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName || 'Patient'}
                         </h4>
-                        {displayedActiveInConsultation.isForOther && (
+                        {displayedActiveInConsultation.reasonForVisit?.toLowerCase().includes('walk-in') && (
                           <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#48484a]">
-                            {displayedActiveInConsultation.reasonForVisit?.toLowerCase().includes('walk-in')
-                              ? `Walk-in${displayedActiveInConsultation.patientAge ? ` · ${displayedActiveInConsultation.patientAge}y` : ''}`
-                              : `Family${displayedActiveInConsultation.patientAge ? ` · ${displayedActiveInConsultation.patientAge}y` : ''}`}
+                            {`Walk-in${displayedActiveInConsultation.patientAge ? ` · ${displayedActiveInConsultation.patientAge}y` : ''}`}
                           </span>
                         )}
                       </div>
@@ -500,30 +510,6 @@ export const QueueTab: React.FC = () => {
                           showClinicLabel ? displayedActiveInConsultation.clinic?.clinicName : null,
                         ].filter(Boolean).join(' · ');
                         return line ? <p className="text-[13px] text-[#86868b] mt-0.5">{line}</p> : null;
-                      })()}
-
-                      {(() => {
-                        const cleanReason = getCleanReason(
-                          displayedActiveInConsultation.reasonForVisit,
-                          displayedActiveInConsultation.patientName || displayedActiveInConsultation.patient?.user?.fullName
-                        );
-                        if (!cleanReason && !displayedActiveInConsultation.symptoms) return null;
-                        return (
-                          <div className="mt-3 p-3.5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] text-[13px] text-[#1d1d1f] space-y-1.5">
-                            {cleanReason && (
-                              <div className="whitespace-pre-wrap break-words">
-                                <span className="text-[#86868b] font-normal">Reason: </span>
-                                {cleanReason}
-                              </div>
-                            )}
-                            {displayedActiveInConsultation.symptoms && (
-                              <div className="whitespace-pre-wrap break-words">
-                                <span className="text-[#86868b] font-normal">Symptoms: </span>
-                                {displayedActiveInConsultation.symptoms}
-                              </div>
-                            )}
-                          </div>
-                        );
                       })()}
 
                       <div className="mt-4 flex flex-col sm:flex-row items-center gap-2.5">
@@ -552,7 +538,7 @@ export const QueueTab: React.FC = () => {
                     <div className="py-6 text-center">
                       <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">No one in cabin</h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-xs mx-auto leading-relaxed">
-                        Call the next patient who has arrived.
+                        Tap Start consultation on an arrived patient.
                       </p>
                     </div>
                   )}
@@ -572,47 +558,13 @@ export const QueueTab: React.FC = () => {
                       </span>
                     </div>
 
-                    {(() => {
-                      const filteredWaiting = displayedWaitingQueue.filter((appt) => {
-                        if (!queueSearch.trim()) return true;
-                        const q = queueSearch.toLowerCase().trim();
-                        const name = (appt.patientName || appt.patient?.user?.fullName || '').toLowerCase();
-                        const phone = (appt.patient?.user?.phone || '').toLowerCase();
-                        const token = String(appt.queueNumber || '');
-                        return name.includes(q) || phone.includes(q) || token.includes(q);
-                      });
-                      const nextPresentTarget = filteredWaiting.find(
-                        (appt) =>
-                          appt.isCheckedIn &&
-                          (appt.appointmentDate === getLocalDateString() ||
-                            appt.appointmentDate === getYesterdayDateString())
-                      );
-
-                      return (
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                          <input
-                            type="text"
-                            value={queueSearch}
-                            onChange={(e) => setQueueSearch(e.target.value)}
-                            placeholder="Search name, phone or token"
-                            className="h-10 sm:h-9 px-3.5 rounded-full border border-[#d2d2d7] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:border-[#0066cc] w-full sm:w-48"
-                          />
-                          {!isDoctorAway && nextPresentTarget && (
-                            <button
-                              type="button"
-                              disabled={callingId !== null}
-                              onClick={() => handleCallPatient(nextPresentTarget.id)}
-                              className="h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap w-full sm:w-auto cursor-pointer transition-all"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-current" />
-                              {callingId === nextPresentTarget.id
-                                ? 'Calling...'
-                                : `Call #${nextPresentTarget.queueNumber}${showShiftLabel ? ` (${getSlotShortLabel(nextPresentTarget, availableShifts)})` : ''}`}
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    <input
+                      type="text"
+                      value={queueSearch}
+                      onChange={(e) => setQueueSearch(e.target.value)}
+                      placeholder="Search name, phone or token"
+                      className="h-10 sm:h-9 px-3.5 rounded-full border border-[#d2d2d7] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#a1a1a6] transition-all focus:outline-none focus:border-[#0066cc] w-full sm:w-56"
+                    />
                   </div>
 
                   {loading && !queueData ? (
@@ -627,10 +579,10 @@ export const QueueTab: React.FC = () => {
                         <CheckCircle2 className="w-5 h-5 stroke-[2]" />
                       </div>
                       <h4 className="text-[14px] font-semibold text-[#1d1d1f] tracking-tight">
-                        Queue is Clear for {queueScope === 'all-upcoming' ? 'All Upcoming Dates' : date === getLocalDateString() ? 'Today' : date === queueData?.upcomingSummary?.tomorrowDate ? 'Tomorrow' : date}
+                        No one waiting
                       </h4>
                       <p className="text-xs text-[#86868b] mt-1 max-w-md mx-auto leading-relaxed">
-                        No one is waiting.
+                        {queueScope === 'all-upcoming' ? 'No upcoming bookings.' : `${formatDisplayDate(date)} is clear.`}
                       </p>
                     </div>
                   ) : (() => {
@@ -663,13 +615,22 @@ export const QueueTab: React.FC = () => {
                     const renderApptCard = (appt: Appointment) => {
                       const shiftLabel = getSlotShortLabel(appt, availableShifts);
                       const clinicDisplay = appt.clinic?.clinicName || (user?.doctorProfile as any)?.primaryClinicAddress || '';
+                      // Today's arrived patients, plus last night's arrived patients carried past midnight
+                      const canStart =
+                        (appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn)) &&
+                        appt.isCheckedIn;
                       return (
                         <div
                           key={appt.id}
-                          className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-[#d2d2d7] transition-colors duration-150 bg-white"
+                          className="rounded-2xl border border-[#e5e5ea] p-4 flex flex-col sm:flex-row lg:flex-col xl:flex-row justify-between items-start sm:items-center lg:items-start xl:items-center gap-3 hover:border-[#d2d2d7] transition-colors duration-150 bg-white"
                         >
-                          <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto sm:flex-1">
-                            <div className="w-11 h-11 rounded-full bg-[#f5f5f7] flex items-center justify-center font-semibold text-[15px] text-[#1d1d1f] shrink-0">
+                          <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto sm:flex-1 lg:w-full xl:w-auto">
+                            <div
+                              className={`w-11 h-11 rounded-full flex items-center justify-center font-semibold text-[15px] shrink-0 ${
+                                appt.isCheckedIn ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
+                              }`}
+                              title={appt.isCheckedIn ? 'Arrived' : 'Not arrived yet'}
+                            >
                               #{appt.queueNumber}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -677,11 +638,9 @@ export const QueueTab: React.FC = () => {
                                 <h4 className="text-[15px] font-semibold text-[#1d1d1f] tracking-tight">
                                   {appt.patientName || appt.patient?.user?.fullName || 'Patient'}
                                 </h4>
-                                {appt.isForOther && (
+                                {appt.reasonForVisit?.toLowerCase().includes('walk-in') && (
                                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#f5f5f7] text-[#48484a]">
-                                    {appt.reasonForVisit?.toLowerCase().includes('walk-in')
-                                      ? `Walk-in${appt.patientAge ? ` · ${appt.patientAge}y` : ''}`
-                                      : `Family${appt.patientAge ? ` · ${appt.patientAge}y` : ''}`}
+                                    {`Walk-in${appt.patientAge ? ` · ${appt.patientAge}y` : ''}`}
                                   </span>
                                 )}
                               </div>
@@ -693,7 +652,6 @@ export const QueueTab: React.FC = () => {
                                     : null,
                                   showShiftLabel ? shiftLabel : null,
                                   showClinicLabel ? clinicDisplay : null,
-                                  getCleanReason(appt.reasonForVisit, appt.patientName || appt.patient?.user?.fullName),
                                 ]
                                   .filter(Boolean)
                                   .join(' · ')}
@@ -701,79 +659,56 @@ export const QueueTab: React.FC = () => {
                             </div>
                           </div>
 
-                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-start sm:justify-end shrink-0 flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-[#e5e5ea]/60">
-                          {/* Arrival toggle */}
-                          <button
-                            type="button"
-                            disabled={togglingCheckinId === appt.id}
-                            onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                            className={`h-8 px-3 rounded-full text-xs font-normal border transition-all flex items-center gap-1.5 cursor-pointer ${
-                              appt.isCheckedIn
-                                ? 'bg-[#0066cc]/10 border-[#0066cc]/30 text-[#0066cc]'
-                                : 'bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7]'
-                            }`}
-                            title={appt.isCheckedIn ? 'Undo arrival' : 'Mark as arrived'}
-                          >
-                            <CheckCircle2
-                              className={`w-3.5 h-3.5 ${appt.isCheckedIn ? 'text-[#0066cc]' : 'text-[#86868b]'}`}
-                            />
-                            <span>{appt.isCheckedIn ? 'Arrived' : 'Mark arrived'}</span>
-                          </button>
-
-                          {/* Call Patient (if arrived and today) */}
-                          {(appt.appointmentDate === getLocalDateString() || (appt.appointmentDate === getYesterdayDateString() && appt.isCheckedIn)) && appt.isCheckedIn && (
-                            isDoctorAway ? (
-                              <span className="h-8 px-3 rounded-full text-xs font-normal text-[#86868b] bg-white border border-[#e5e5ea] flex items-center">
-                                You’re away
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                disabled={callingId !== null}
-                                onClick={() => handleCallPatient(appt.id)}
-                                className="h-8 px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-all active:scale-[0.98]"
-                              >
-                                <Play className="w-3.5 h-3.5 fill-current" />
-                                {callingId === appt.id ? 'Calling…' : 'Call in'}
-                              </button>
-                            )
+                        <div className="flex items-center gap-2 w-full sm:w-auto lg:w-full xl:w-auto justify-end shrink-0 pt-2 sm:pt-0 lg:pt-2 xl:pt-0 border-t sm:border-t-0 lg:border-t xl:border-t-0 border-[#e5e5ea]/60">
+                          {!appt.isCheckedIn ? (
+                            <button
+                              type="button"
+                              disabled={togglingCheckinId === appt.id}
+                              onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                              className="flex-1 sm:flex-none lg:flex-1 xl:flex-none h-9 px-4 rounded-full text-xs font-normal border bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-[#86868b]" />
+                              <span>Mark arrived</span>
+                            </button>
+                          ) : !canStart ? (
+                            <span className="h-9 px-3.5 rounded-full text-xs font-normal bg-[#0066cc]/10 text-[#0066cc] flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Arrived
+                            </span>
+                          ) : isDoctorAway ? (
+                            <span className="h-9 px-3.5 rounded-full text-xs font-normal text-[#86868b] bg-[#f5f5f7] flex items-center">
+                              You’re away
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={callingId !== null}
+                              onClick={() => handleCallPatient(appt.id)}
+                              className="flex-1 sm:flex-none lg:flex-1 xl:flex-none h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap transition-all active:scale-[0.98] disabled:opacity-60"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-current" />
+                              {callingId === appt.id ? 'Starting…' : 'Start consultation'}
+                            </button>
                           )}
 
-                          {/* Shift appointment to another shift or date */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRescheduleTarget({
-                                appointmentId: appt.id,
-                                patientName: appt.patientName || appt.patient?.user?.fullName || 'Patient',
-                                doctorName: user?.fullName || 'Practitioner',
-                                currentDate: appt.appointmentDate || date,
-                                currentQueueNumber: appt.queueNumber,
-                                doctorId: user?.doctorProfile?.id || '',
-                                slotId: appt.slotId,
-                              });
-                              const [y, m, day] = (appt.appointmentDate || date || getLocalDateString()).split('-').map(Number);
-                              const d = new Date(y, m - 1, day + 1);
-                              setRescheduleDate(getLocalDateString(d));
-                              setRescheduleSlotId(appt.slotId || '');
-                              setRescheduleError(null);
-                            }}
-                            className="h-8 px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
-                            title="Move to another shift or date"
-                          >
-                            Move
-                          </button>
-
-                          {/* Cancel appointment */}
-                          <button
-                            type="button"
-                            disabled={cancellingId === appt.id}
-                            onClick={() => handleCancelAppointment(appt.id, appt.patientName || appt.patient?.user?.fullName || 'Patient')}
-                            className="h-8 px-3 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer disabled:opacity-50"
-                            title="Cancel appointment"
-                          >
-                            {cancellingId === appt.id ? 'Cancelling…' : 'Cancel'}
-                          </button>
+                          <RowMenu
+                            label={`More for ${appt.patientName || appt.patient?.user?.fullName || 'patient'}`}
+                            items={[
+                              ...(appt.isCheckedIn
+                                ? [{ label: 'Undo arrival', disabled: togglingCheckinId === appt.id, onSelect: () => handleToggleCheckIn(appt.id, appt.isCheckedIn) }]
+                                : []),
+                              { label: 'Move to another day', onSelect: () => openMove(appt) },
+                              ...(appt.walkInCode
+                                ? [{ label: 'Show code', onSelect: () => setCodeFor({ token: appt.queueNumber, name: appt.patientName || appt.patient?.user?.fullName || 'Patient', code: appt.walkInCode as string }) }]
+                                : []),
+                              {
+                                label: cancellingId === appt.id ? 'Cancelling…' : 'Cancel appointment',
+                                destructive: true,
+                                disabled: cancellingId === appt.id,
+                                onSelect: () => handleCancelAppointment(appt.id, appt.patientName || appt.patient?.user?.fullName || 'Patient'),
+                              },
+                            ]}
+                          />
                         </div>
                       </div>
                     );
@@ -843,6 +778,7 @@ export const QueueTab: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
+      <WalkinCodeModal target={codeFor} onClose={() => setCodeFor(null)} />
+    </div>
   );
 };

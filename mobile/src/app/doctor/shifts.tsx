@@ -56,6 +56,8 @@ export default function DoctorShifts() {
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [leaveMessage, setLeaveMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [addingLeave, setAddingLeave] = useState(false);
+  // Shift being edited; the others show as one-line rows
+  const [editing, setEditing] = useState<string | null>(null);
 
   const fill = useCallback((c: DoctorAffiliationClinic) => {
     setSlots(toEdit(c.slots || []));
@@ -109,12 +111,14 @@ export default function DoctorShifts() {
 
   const addSlot = () =>
     setSlots((prev) => {
+      const id = `slot_${Date.now()}`;
+      setEditing(id);
       const lastEnd = prev.reduce((m, s) => Math.max(m, timeToMinutes(s.endTime)), 0);
       let start = prev.length ? lastEnd + 60 : 9 * 60;
       if (start >= 22 * 60) start = Math.min(lastEnd + 15, 23 * 60);
       const end = Math.min(23 * 60 + 45, start + 180);
       const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-      return [...prev, { id: `slot_${Date.now()}`, name: `Shift ${prev.length + 1}`, startTime: hhmm(start), endTime: hhmm(end), maxPatients: '25', avgConsultationMinutes: '20' }];
+      return [...prev, { id, name: `Shift ${prev.length + 1}`, startTime: hhmm(start), endTime: hhmm(end), maxPatients: '25', avgConsultationMinutes: '20' }];
     });
 
   const removeSlot = (i: number) => {
@@ -250,6 +254,7 @@ export default function DoctorShifts() {
         <Text style={type.caption}>{clinic?.clinicName}</Text>
       )}
 
+      <SectionTitle title="Leave" right={<PillButton label="Add" icon="add" onPress={() => setAddingLeave(true)} />} />
       <View style={styles.group}>
         <View style={styles.switchRow}>
           <View style={styles.flex}>
@@ -259,48 +264,74 @@ export default function DoctorShifts() {
           <Switch value={Boolean(todayLeave)} onValueChange={toggleToday} disabled={leaveBusy} trackColor={{ true: colors.primary, false: undefined }} />
         </View>
       </View>
-
-      <SectionTitle title="Leave" right={<PillButton label="Add" icon="add" onPress={() => setAddingLeave(true)} />} />
-      <LeaveList leaves={upcoming} onRemove={cancelLeave} />
+      {upcoming.length > 0 ? <LeaveList leaves={upcoming} onRemove={cancelLeave} /> : null}
       <Notice tone={leaveMessage?.tone || 'info'} message={leaveMessage?.text} />
 
-      <SectionTitle title="Days" />
+      <SectionTitle title="Schedule" />
       <WeekdayDiscs days={days} onToggle={toggleDay} />
 
-      <SectionTitle title="Shifts" right={<PillButton label="Add" icon="add" onPress={addSlot} />} />
-      {slots.map((s, i) => (
-        <Card key={s.id}>
-          <View style={styles.slotHead}>
-            <View style={styles.flex}>
-              <Field label="Name" value={s.name} onChangeText={(t) => setSlot(i, { name: t })} maxLength={40} />
+      <View style={styles.group}>
+        {slots.map((s, i) => {
+          const open = editing === s.id;
+          return (
+            <View key={s.id} style={i > 0 && styles.divider}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: open }}
+                onPress={() => {
+                  tap();
+                  setEditing(open ? null : s.id);
+                }}
+                style={({ pressed }) => [styles.slotRow, pressed && { backgroundColor: colors.canvas }]}
+              >
+                <View style={styles.flex}>
+                  <Text style={type.headline} numberOfLines={1}>
+                    {s.name.trim() || 'Shift'}
+                  </Text>
+                  <Text style={type.footnote}>
+                    {timeLabel(s.startTime)} – {timeLabel(s.endTime)} · {s.maxPatients || 0} patients
+                  </Text>
+                </View>
+                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
+              </Pressable>
+              {open ? (
+                <View style={styles.slotEdit}>
+                  <Field label="Name" value={s.name} onChangeText={(t) => setSlot(i, { name: t })} maxLength={40} />
+                  <View style={styles.row}>
+                    <View style={styles.flex}>
+                      <SelectField label="Start" value={timeLabel(s.startTime)} options={TIMES.map((t) => t.label)} onChange={(l) => setSlot(i, { startTime: timeValue(l) })} />
+                    </View>
+                    <View style={styles.flex}>
+                      <SelectField label="End" value={timeLabel(s.endTime)} options={TIMES.map((t) => t.label)} onChange={(l) => setSlot(i, { endTime: timeValue(l) })} />
+                    </View>
+                  </View>
+                  <View style={styles.row}>
+                    <View style={styles.flex}>
+                      <Field label="Max patients" value={s.maxPatients} onChangeText={(t) => setSlot(i, { maxPatients: t.replace(/\D/g, '').slice(0, 3) })} keyboardType="number-pad" />
+                    </View>
+                    <View style={styles.flex}>
+                      <Field
+                        label="Mins per patient"
+                        value={s.avgConsultationMinutes}
+                        onChangeText={(t) => setSlot(i, { avgConsultationMinutes: t.replace(/\D/g, '').slice(0, 3) })}
+                        keyboardType="number-pad"
+                      />
+                    </View>
+                  </View>
+                  <Pressable accessibilityRole="button" onPress={() => removeSlot(i)} hitSlop={6} style={styles.remove}>
+                    <Ionicons name="trash-outline" size={17} color={colors.danger} />
+                    <Text style={styles.removeText}>Remove shift</Text>
+                  </Pressable>
+                </View>
+              ) : null}
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Remove shift" hitSlop={8} onPress={() => removeSlot(i)} style={styles.trash}>
-              <Ionicons name="trash-outline" size={20} color={colors.danger} />
-            </Pressable>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <SelectField label="Start" value={timeLabel(s.startTime)} options={TIMES.map((t) => t.label)} onChange={(l) => setSlot(i, { startTime: timeValue(l) })} />
-            </View>
-            <View style={styles.flex}>
-              <SelectField label="End" value={timeLabel(s.endTime)} options={TIMES.map((t) => t.label)} onChange={(l) => setSlot(i, { endTime: timeValue(l) })} />
-            </View>
-          </View>
-          <View style={styles.row}>
-            <View style={styles.flex}>
-              <Field label="Max patients" value={s.maxPatients} onChangeText={(t) => setSlot(i, { maxPatients: t.replace(/\D/g, '').slice(0, 3) })} keyboardType="number-pad" />
-            </View>
-            <View style={styles.flex}>
-              <Field
-                label="Mins per patient"
-                value={s.avgConsultationMinutes}
-                onChangeText={(t) => setSlot(i, { avgConsultationMinutes: t.replace(/\D/g, '').slice(0, 3) })}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-        </Card>
-      ))}
+          );
+        })}
+        <Pressable accessibilityRole="button" onPress={addSlot} style={({ pressed }) => [styles.slotRow, slots.length > 0 && styles.divider, pressed && { backgroundColor: colors.canvas }]}>
+          <Ionicons name="add-circle" size={22} color={colors.primary} />
+          <Text style={styles.addText}>Add shift</Text>
+        </Pressable>
+      </View>
 
       <Card>
         <Field label="Consultation fee" prefix="₹" value={fee} onChangeText={(t) => setFee(t.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad" />
@@ -312,8 +343,8 @@ export default function DoctorShifts() {
       <LeaveSheet
         visible={addingLeave}
         onClose={() => setAddingLeave(false)}
-        onSave={async (startDate, endDate, reason) => {
-          await api.addDoctorLeave(doctorId, { type: 'DATE_RANGE', startDate, endDate, reason: reason || undefined, clinicId: clinic?.clinicId });
+        onSave={async (startDate, endDate) => {
+          await api.addDoctorLeave(doctorId, { type: 'DATE_RANGE', startDate, endDate, clinicId: clinic?.clinicId });
           success();
           setLeaveMessage({ tone: 'success', text: 'Leave added.' });
           load(true);
@@ -329,7 +360,11 @@ const styles = StyleSheet.create({
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   group: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden', ...shadow.card },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg },
-  slotHead: { flexDirection: 'row', alignItems: 'flex-end', gap: space.md },
-  trash: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  slotRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.md, paddingHorizontal: space.lg, minHeight: 60 },
+  slotEdit: { gap: space.md, paddingHorizontal: space.lg, paddingBottom: space.lg },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+  remove: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 4 },
+  removeText: { fontSize: 15, color: colors.danger },
+  addText: { fontSize: 16, fontWeight: '600', color: colors.primary },
   row: { flexDirection: 'row', gap: space.md },
 });

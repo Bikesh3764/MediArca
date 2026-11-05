@@ -29,8 +29,6 @@ export default function Book() {
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [patientGender, setPatientGender] = useState('Male');
-  const [reason, setReason] = useState('');
-  const [symptoms, setSymptoms] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [booked, setBooked] = useState<Appointment | null>(null);
@@ -90,9 +88,8 @@ export default function Book() {
     const isForOther = bookingFor === 'other';
     if (isForOther) {
       if (!patientName.trim()) return setError('Enter the patient’s name.');
-      if (!patientAge.trim()) return setError('Enter the patient’s age.');
       const age = parseInt(patientAge.trim(), 10);
-      if (!Number.isFinite(age) || age < 0 || age > 125) return setError('Enter an age between 0 and 125.');
+      if (patientAge.trim() && (!Number.isFinite(age) || age < 0 || age > 125)) return setError('Enter an age between 0 and 125.');
     }
     setSubmitting(true);
     try {
@@ -101,11 +98,10 @@ export default function Book() {
         clinicId: clinicId || undefined,
         appointmentDate: date,
         slotId: slotId || undefined,
-        reasonForVisit: reason.trim() || 'General Medical Consultation',
-        symptoms: symptoms.trim() || undefined,
+        reasonForVisit: 'General Medical Consultation',
         isForOther,
         patientName: isForOther ? patientName.trim() : undefined,
-        patientAge: isForOther ? patientAge.trim() : undefined,
+        patientAge: isForOther && patientAge.trim() ? patientAge.trim() : undefined,
         patientGender: isForOther ? patientGender : undefined,
       });
       success();
@@ -218,7 +214,7 @@ export default function Book() {
           <View style={styles.card}>
             <Field label="Name" value={patientName} onChangeText={setPatientName} maxLength={100} placeholder="e.g. Rahul Ray" autoCapitalize="words" />
             <Field
-              label="Age"
+              label="Age (optional)"
               value={patientAge}
               onChangeText={(t) => setPatientAge(t.replace(/\D/g, '').slice(0, 3))}
               keyboardType="number-pad"
@@ -239,19 +235,6 @@ export default function Book() {
             />
           </View>
         ) : null}
-
-        <View style={styles.card}>
-          <Field label="Reason" value={reason} onChangeText={setReason} placeholder="e.g. Checkup, follow-up" />
-          <Field
-            label="Symptoms (optional)"
-            value={symptoms}
-            onChangeText={setSymptoms}
-            placeholder="e.g. Fever since 2 days"
-            maxLength={500}
-            multiline
-            style={styles.multiline}
-          />
-        </View>
 
         <View style={styles.feeCard}>
           <View style={styles.feeRow}>
@@ -287,7 +270,6 @@ const styles = StyleSheet.create({
   rows: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
   tokenValue: { fontSize: 16, fontWeight: '600', color: colors.primary },
   groupLabel: { ...type.caption, marginLeft: space.xs, marginTop: space.sm },
-  multiline: { minHeight: 72, textAlignVertical: 'top' },
   feeCard: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, gap: space.sm, ...shadow.card },
   barNotice: { marginBottom: space.md },
   feeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

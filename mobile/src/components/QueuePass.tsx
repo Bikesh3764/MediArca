@@ -45,7 +45,7 @@ export const passFromAppointment = (a: Appointment): PassData => {
     estimated: pending,
     date: a.appointmentDate,
     slot: shiftLabel(a),
-    estimatedTime: a.estimatedTime,
+    estimatedTime: (a.status === 'WAITING' && a.liveQueue?.liveEstimatedTime) || a.estimatedTime,
     isToday: a.appointmentDate === getLocalDateString(),
     doctor: {
       name: a.doctor?.user?.fullName,
@@ -202,9 +202,9 @@ export function QueuePass({ pass }: { pass: PassData }) {
 
 function Meta({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
   return (
-    <View style={[styles.meta, wide && { flex: 1.6 }]}>
+    <View style={[styles.meta, wide && { flex: 2.2 }]}>
       <Text style={styles.topLabel}>{label}</Text>
-      <Text style={styles.metaValue} numberOfLines={1}>
+      <Text style={styles.metaValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {value}
       </Text>
     </View>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   token: { fontSize: 64, lineHeight: 70, fontWeight: '600', color: colors.white, letterSpacing: -2 },
   statusPill: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: radius.pill, paddingHorizontal: 12, height: 28, justifyContent: 'center', marginBottom: 12 },
   statusText: { color: colors.white, fontSize: 13, fontWeight: '600' },
-  metaRow: { flexDirection: 'row', gap: space.md },
+  metaRow: { flexDirection: 'row', gap: space.sm },
   meta: { flex: 1, minWidth: 0, gap: 2 },
   metaValue: { fontSize: 15, fontWeight: '600', color: colors.white },
   forName: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },

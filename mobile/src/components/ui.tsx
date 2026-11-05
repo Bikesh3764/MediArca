@@ -223,11 +223,14 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  compact = false,
 }: {
   /** `dot` shows a small coloured dot on the chosen option (e.g. green for In cabin). */
   options: { value: T; label: string; dot?: string }[];
   value: T;
   onChange: (value: T) => void;
+  /** Slightly smaller text so longer labels ("Stepped out") fit three across on small phones. */
+  compact?: boolean;
 }) {
   // White thumb slides to the chosen option
   const index = Math.max(0, options.findIndex((o) => o.value === value));
@@ -256,10 +259,10 @@ export function Segmented<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             onPress={() => onChange(o.value)}
-            style={[styles.segItem, active && !itemWidth && styles.segActive]}
+            style={[styles.segItem, compact && styles.segItemCompact, active && !itemWidth && styles.segActive]}
           >
             {active && o.dot ? <View style={[styles.segDot, { backgroundColor: o.dot }]} /> : null}
-            <Text style={[styles.segText, active && styles.segTextActive]} numberOfLines={1}>
+            <Text style={[styles.segText, compact && styles.segTextCompact, active && styles.segTextActive]} numberOfLines={1}>
               {o.label}
             </Text>
           </Pressable>
@@ -388,10 +391,12 @@ export const styles = StyleSheet.create({
   noticeText: { flex: 1, fontSize: 15, lineHeight: 20 },
   segTrack: { flexDirection: 'row', backgroundColor: colors.fill, borderRadius: radius.pill, padding: 3 },
   segItem: { flex: 1, flexDirection: 'row', gap: 6, height: 34, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  segItemCompact: { gap: 4, paddingHorizontal: 2 },
   segDot: { width: 7, height: 7, borderRadius: 4 },
   segThumb: { position: 'absolute', top: 3, bottom: 3, left: 3, borderRadius: radius.pill, backgroundColor: colors.card, boxShadow: '0px 1px 4px rgba(0,0,0,0.12)' },
   segActive: { backgroundColor: colors.card, boxShadow: '0px 1px 4px rgba(0,0,0,0.12)' },
   segText: { fontSize: 15, color: colors.secondaryInk },
+  segTextCompact: { fontSize: 14 },
   segTextActive: { color: colors.ink, fontWeight: '600' },
   sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space.lg + 4, paddingTop: space.lg },
   done: { color: colors.primary, fontSize: 17, fontWeight: '600' },

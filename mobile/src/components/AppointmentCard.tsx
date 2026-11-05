@@ -99,7 +99,9 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
               ? 'View queue pass'
               : live!.isYourTurn
                 ? 'It’s your turn'
-                : `Now serving #${live!.currentServingQueueNumber || '—'} · ${live!.patientsAway} ahead`}
+                : live!.currentServingQueueNumber > 0
+                  ? `Now serving #${live!.currentServingQueueNumber} · ${live!.patientsAway} ahead`
+                  : `${live!.patientsAway} ahead of you`}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </View>

@@ -40,8 +40,6 @@ export const BookAppointment: React.FC = () => {
   const [appointmentDate, setAppointmentDate] = useState<string>(initialDate);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(initialSlot);
   const [selectedClinicId, setSelectedClinicId] = useState<string>('');
-  const [reasonForVisit, setReasonForVisit] = useState('');
-  const [symptoms, setSymptoms] = useState('');
   const [queuePreview, setQueuePreview] = useState<QueuePreview | null>(null);
   const [loading, setLoading] = useState(true);
   // Server down or offline (not a missing doctor): offer a retry instead of "Not Found".
@@ -259,13 +257,8 @@ export const BookAppointment: React.FC = () => {
         setSubmitting(false);
         return;
       }
-      if (!patientAge.trim()) {
-        setError('Enter the patient’s age.');
-        setSubmitting(false);
-        return;
-      }
       const parsedAge = parseInt(patientAge.trim(), 10);
-      if (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125) {
+      if (patientAge.trim() && (!Number.isFinite(parsedAge) || parsedAge < 0 || parsedAge > 125)) {
         setError('Enter an age between 0 and 125.');
         setSubmitting(false);
         return;
@@ -278,11 +271,10 @@ export const BookAppointment: React.FC = () => {
         clinicId: selectedClinicId || undefined,
         appointmentDate,
         slotId: selectedSlotId || undefined,
-        reasonForVisit: reasonForVisit.trim() || 'General Medical Consultation',
-        symptoms: symptoms.trim() || undefined,
+        reasonForVisit: 'General Medical Consultation',
         isForOther,
         patientName: isForOther ? patientName.trim() : undefined,
-        patientAge: isForOther ? patientAge.trim() : undefined,
+        patientAge: isForOther && patientAge.trim() ? patientAge.trim() : undefined,
         patientGender: isForOther ? patientGender : undefined,
       });
 
@@ -813,13 +805,12 @@ export const BookAppointment: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                        Age <span className="text-danger">*</span>
+                        Age <span className="text-[#86868b] font-normal">(Optional)</span>
                       </label>
                       <input
                         type="tel"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        required={bookingFor === 'other'}
                         value={patientAge}
                         onChange={(e) => {
                           const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 3);
@@ -851,33 +842,6 @@ export const BookAppointment: React.FC = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Reason
-              </label>
-              <input
-                type="text"
-                value={reasonForVisit}
-                onChange={(e) => setReasonForVisit(e.target.value)}
-                placeholder="e.g. Checkup, follow-up"
-                className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                Symptoms <span className="text-[#86868b] font-normal">(Optional)</span>
-              </label>
-              <textarea
-                maxLength={500}
-                rows={2}
-                value={symptoms}
-                onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="e.g. Fever since 2 days"
-                className="w-full p-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 resize-none"
-              ></textarea>
-            </div>
-
             {/* Fee & Confirmation Notice */}
             <div className="p-4 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -903,7 +867,7 @@ export const BookAppointment: React.FC = () => {
 
             {isSelectedSlotOnLeave && (
               <div className="p-3 rounded-xl bg-warning-soft/80 border border-warning-line/80 text-warning text-xs">
-                The doctor is on leave this day{queuePreview?.leaveReason ? ` (${queuePreview.leaveReason})` : ''}. Pick another date.
+                The doctor is on leave this day. Pick another date.
               </div>
             )}
 

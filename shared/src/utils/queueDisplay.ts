@@ -46,9 +46,8 @@ export const visitMatchesSlot = (
   return false;
 };
 
-/** "Walk-in · 34y" or "Family · 8y" for visits booked for someone else; null otherwise. */
+/** "Walk-in · 34y" for walk-ins; null otherwise (bookings for someone else get no label). */
 export const visitTag = (visit: { isForOther?: boolean; reasonForVisit?: string | null; patientAge?: string | null }): string | null => {
-  if (!visit.isForOther) return null;
-  const kind = (visit.reasonForVisit || '').toLowerCase().includes('walk-in') ? 'Walk-in' : 'Family';
-  return visit.patientAge ? `${kind} · ${visit.patientAge}y` : kind;
+  if (!(visit.reasonForVisit || '').toLowerCase().includes('walk-in')) return null;
+  return visit.patientAge ? `Walk-in · ${visit.patientAge}y` : 'Walk-in';
 };

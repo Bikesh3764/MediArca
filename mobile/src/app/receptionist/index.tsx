@@ -1,16 +1,19 @@
-// Front desk queue for one doctor: cabin status, arrivals, call in, complete, move, cancel.
+// Front desk queue for one doctor: cabin status, arrivals, start consultation, complete, move, cancel.
 // Same server calls and rules as frontend/src/pages/Receptionist/desk (state.tsx, QueueTab.tsx).
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/AppText';
 import { type ReceptionistQueueItem, api, formatDisplayDate, getLocalDateString, getTomorrowDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
-import { cleanVisitReason, visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
+import { visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
 import { CabinControl } from '@/components/CabinControl';
+import { CodeCard, type CodeTarget } from '@/components/CodeCard';
 import { InCabinCard } from '@/components/InCabinCard';
-import { EmptyState, PillButton, PlaceholderCard } from '@/components/kit';
+import { EmptyState, PlaceholderCard, SectionTitle } from '@/components/kit';
 import { type MoveTarget, MoveSheet } from '@/components/MoveSheet';
 import { QueueRow } from '@/components/QueueRow';
+import { ShiftChips } from '@/components/ShiftChips';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Notice, Screen, Segmented, Title } from '@/components/ui';
 import { useDesk } from '@/context/DeskContext';
@@ -19,9 +22,8 @@ import { confirmAction } from '@/lib/confirm';
 import { todayLong } from '@/lib/dates';
 import { success } from '@/lib/haptics';
 import { usePolling, keepIfSame } from '@/lib/usePolling';
-import { space } from '@/theme';
-
-type Showing = 'waiting' | 'done';
+import { groupByShift, rowMenuTitle, slotKey } from '@/lib/queueGroups';
+import { space, type } from '@/theme';
 
 export default function DeskQueue() {
   const { desk, failed: deskFailed, reload, setDoctorCabin } = useDesk();
@@ -32,12 +34,13 @@ export default function DeskQueue() {
   const [date, setDate] = useState(getLocalDateString());
   const [list, setList] = useState<ReceptionistQueueItem[] | null>(null);
   const [failed, setFailed] = useState(false);
-  const [show, setShow] = useState<Showing>('waiting');
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [menu, setMenu] = useState<{ title: string; actions: MenuAction[] } | null>(null);
   const [moving, setMoving] = useState<MoveTarget | null>(null);
+  const [chosenShift, setShift] = useState('all');
+  const [code, setCode] = useState<CodeTarget | null>(null);
 
   const doctor = doctors.find((d) => d.doctorId === doctorId);
   const isTodayQueue = date === getLocalDateString();
@@ -62,19 +65,22 @@ export default function DeskQueue() {
   usePolling(load, 15000, Boolean(doctorId));
 
   const items = list || [];
-  const inCabin = items.find((a) => a.status === 'IN_CONSULTATION');
-  const waiting = items.filter((a) => a.status === 'WAITING');
-  const done = items.filter((a) => a.status === 'COMPLETED' || a.status === 'CANCELLED');
   const away = Boolean(doctor?.cabinStatus && doctor.cabinStatus !== 'IN_CABIN');
   const slots = doctor?.slots || [];
+  // Chosen shift; falls back to all shifts when it no longer exists
+  const shift = slots.some((s) => slotKey(s) === chosenShift) ? chosenShift : 'all';
+  const inShift = (a: ReceptionistQueueItem) => shift === 'all' || slots.some((s) => slotKey(s) === shift && visitMatchesSlot(a, s));
+  const inCabin = items.find((a) => a.status === 'IN_CONSULTATION');
+  const waiting = items.filter((a) => a.status === 'WAITING' && inShift(a));
+  const done = items.filter((a) => (a.status === 'COMPLETED' || a.status === 'CANCELLED') && inShift(a));
 
   const shiftOf = (a: ReceptionistQueueItem) => {
     if (slots.length < 2) return null;
     const i = slots.findIndex((s) => visitMatchesSlot(a, s));
     return i >= 0 ? slotTimeLabel(slots[i]) : shiftLabel(a);
   };
-  const metaOf = (a: ReceptionistQueueItem) =>
-    [shiftOf(a), a.status === 'CANCELLED' ? 'Cancelled' : null, cleanVisitReason(a.reasonForVisit, a.patientName)].filter(Boolean).join(' · ');
+  const metaOf = (a: ReceptionistQueueItem) => (a.status === 'CANCELLED' ? 'Cancelled' : undefined);
+  const waitingGroups = groupByShift(waiting, shift === 'all' ? shiftOf : () => null);
 
   const patchItem = (id: string, change: Partial<ReceptionistQueueItem>) => setList((l) => (l ? l.map((a) => (a.id === id ? { ...a, ...change } : a)) : l));
 
@@ -127,9 +133,10 @@ export default function DeskQueue() {
 
   const more = (a: ReceptionistQueueItem) =>
     setMenu({
-      title: `#${a.queueNumber} · ${a.patientName}`,
+      title: rowMenuTitle(a.queueNumber, a.patientName),
       actions: [
         { label: 'Move to another day', onPress: () => setMoving({ id: a.id, name: a.patientName, date: a.appointmentDate || date, slotId: a.slotId }) },
+        ...(a.walkInCode ? [{ label: 'Show code', onPress: () => setCode({ token: a.queueNumber, name: a.patientName, code: a.walkInCode! }) }] : []),
         { label: 'Cancel appointment', destructive: true, onPress: () => cancel(a) },
       ],
     });
@@ -175,31 +182,27 @@ export default function DeskQueue() {
         <NotificationBell />
       </View>
 
-      {doctors.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
-          {doctors.map((d) => (
-            <PillButton
-              key={d.doctorId}
-              label={doctorName(d.fullName)}
-              active={d.doctorId === doctorId}
-              onPress={() => {
-                setDoctorId(d.doctorId);
-                setList(null);
-                setMessage(null);
-              }}
-            />
-          ))}
-        </ScrollView>
-      ) : null}
-
       {doctor ? (
         <CabinControl
           key={doctor.doctorId}
           doctorId={doctor.doctorId}
           status={doctor.cabinStatus}
           expectedReturnTime={doctor.expectedReturnTime}
-          onChange={(s, back) => setDoctorCabin(doctor.doctorId, s, back)}
-          doctor={{ name: doctorName(doctor.fullName), specialty: doctor.specialty, avatarUrl: doctor.avatarUrl }}
+          onChange={(st, back) => setDoctorCabin(doctor.doctorId, st, back)}
+          doctors={doctors.map((d) => ({
+            id: d.doctorId,
+            name: doctorName(d.fullName),
+            specialty: d.specialty,
+            avatarUrl: d.avatarUrl,
+            hint: d.todayWaitingPatients ? `${d.todayWaitingPatients} waiting` : null,
+          }))}
+          onDoctorChange={(id) => {
+            if (id === doctorId) return;
+            setDoctorId(id);
+            setShift('all');
+            setList(null);
+            setMessage(null);
+          }}
         />
       ) : null}
 
@@ -214,6 +217,8 @@ export default function DeskQueue() {
           setList(null);
         }}
       />
+
+      <ShiftChips slots={slots} value={shift} onChange={setShift} />
 
       <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
@@ -234,48 +239,52 @@ export default function DeskQueue() {
               name={inCabin?.patientName}
               tag={inCabin ? visitTag(inCabin) : null}
               meta={inCabin ? shiftOf(inCabin) : null}
-              reason={inCabin ? cleanVisitReason(inCabin.reasonForVisit, inCabin.patientName) : null}
-              symptoms={inCabin?.symptoms}
               onComplete={inCabin ? () => setStatus(inCabin, 'COMPLETED', 'Consultation done') : undefined}
               completing={busy === `COMPLETED-${inCabin?.id}`}
+              onHold={inCabin ? () => setStatus(inCabin, 'WAITING', 'Sent back to waiting') : undefined}
+              holding={busy === `WAITING-${inCabin?.id}`}
             />
           ) : null}
 
-          <Segmented
-            options={[
-              { value: 'waiting', label: `Waiting · ${waiting.length}` },
-              { value: 'done', label: `Done · ${done.length}` },
-            ]}
-            value={show}
-            onChange={setShow}
+          <SectionTitle
+            title={`Waiting · ${waiting.length}`}
+            right={waiting.length > 0 && isTodayQueue ? <Text style={type.footnote}>{waiting.filter((a) => a.isCheckedIn).length} arrived</Text> : null}
           />
-
-          {show === 'waiting' ? (
-            waiting.length === 0 ? (
-              <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={`${formatDisplayDate(date)} is clear.`} />
-            ) : (
-              waiting.map((a) => (
-                <QueueRow
-                  key={a.id}
-                  item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), meta: metaOf(a), phone: a.patientPhone, arrived: a.isCheckedIn, code: a.walkInCode }}
-                  showArrival={isTodayQueue}
-                  onToggleArrived={() => toggleArrived(a)}
-                  call={isTodayQueue && a.isCheckedIn ? (away ? 'away' : 'call') : null}
-                  onCall={() => setStatus(a, 'IN_CONSULTATION')}
-                  calling={busy === `IN_CONSULTATION-${a.id}`}
-                  onMore={() => more(a)}
-                />
-              ))
-            )
-          ) : done.length === 0 ? (
-            <EmptyState icon="time-outline" title="None done yet" />
+          {waiting.length === 0 ? (
+            <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={shift === 'all' ? `${formatDisplayDate(date)} is clear.` : 'No one in this shift.'} />
           ) : (
-            done.map((a) => <QueueRow key={a.id} muted item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), meta: metaOf(a) }} />)
+            waitingGroups.map((g) => (
+              <View key={g.shift || 'all'} style={styles.group}>
+                {g.shift ? <Text style={styles.shift}>{g.shift}</Text> : null}
+                {g.items.map((a) => (
+                  <QueueRow
+                    key={a.id}
+                    item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), phone: a.patientPhone, arrived: a.isCheckedIn }}
+                    showArrival={isTodayQueue}
+                    onToggleArrived={() => toggleArrived(a)}
+                    start={isTodayQueue && a.isCheckedIn ? (away ? 'away' : 'start') : null}
+                    onStart={() => setStatus(a, 'IN_CONSULTATION', 'Consultation started')}
+                    starting={busy === `IN_CONSULTATION-${a.id}`}
+                    onMore={() => more(a)}
+                  />
+                ))}
+              </View>
+            ))
           )}
+
+          {done.length > 0 ? (
+            <>
+              <SectionTitle title={`Done · ${done.length}`} />
+              {done.map((a) => (
+                <QueueRow key={a.id} muted item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), meta: metaOf(a) }} />
+              ))}
+            </>
+          ) : null}
         </>
       )}
 
       <ActionMenu title={menu?.title} actions={menu?.actions || null} onClose={() => setMenu(null)} />
+      <CodeCard target={code} onClose={() => setCode(null)} />
       <MoveSheet
         target={moving}
         slots={slots}
@@ -299,6 +308,6 @@ export default function DeskQueue() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.md },
-  bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
-  pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
+  group: { gap: space.md },
+  shift: { ...type.footnote, fontWeight: '600', marginLeft: 4 },
 });

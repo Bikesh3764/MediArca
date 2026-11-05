@@ -60,7 +60,6 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
   const [leaveType, setLeaveType] = useState<'TODAY' | 'DATE_RANGE'>('TODAY');
   const [startDate, setStartDate] = useState(todayStr);
   const [endDate, setEndDate] = useState(todayStr);
-  const [reason, setReason] = useState('');
   const [savingLeave, setSavingLeave] = useState(false);
   const [cancellingLeaveId, setCancellingLeaveId] = useState<string | null>(null);
 
@@ -89,7 +88,6 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
         setLoading(true);
         setStartDate(todayStr);
         setEndDate(todayStr);
-        setReason('');
         setShowRangeForm(false);
         setSuccessMsg(null);
         setError(null);
@@ -208,12 +206,10 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
         type: leaveType,
         startDate,
         endDate,
-        reason: reason.trim() || undefined,
         clinicId: clinicId || undefined,
       });
       setSuccessMsg(`Leave scheduled from ${startDate} to ${endDate}.`);
       setShowRangeForm(false);
-      setReason('');
       await loadConfig();
       if (onUpdated) onUpdated();
       if (onSuccess) onSuccess();
@@ -322,7 +318,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                   </div>
                   <p className="text-xs text-[#86868b]">
                     {config?.isOnLeaveToday
-                      ? `On leave today${config.todayLeave?.reason ? ` (${config.todayLeave.reason})` : ''}.`
+                      ? 'On leave today.'
                       : 'Available today.'}
                   </p>
                 </div>
@@ -529,18 +525,6 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                       </div>
                     )}
 
-                    <div>
-                      <label className="block text-[11px] font-normal text-[#86868b] mb-1">
-                        Reason (optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Conference, Personal, Illness"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        className="w-full h-9 px-3 text-base sm:text-xs rounded-xl border border-[#d2d2d7] bg-white focus:outline-none focus:border-[#0066cc] focus:ring-2 focus:ring-[#0066cc]/10"
-                      />
-                    </div>
 
                     <div className="flex justify-end pt-1">
                       <button
@@ -595,8 +579,7 @@ export const DoctorScheduleLeaveModal: React.FC<DoctorScheduleLeaveModalProps> =
                                 )}
                               </div>
                               <p className="text-[#86868b] text-[11px]">
-                                {leave.reason ? `Reason: ${leave.reason}` : 'Leave period'}{' '}
-                                • Set by {leave.createdByName || leave.createdByRole}
+                                Set by {leave.createdByName || leave.createdByRole}
                               </p>
                             </div>
 

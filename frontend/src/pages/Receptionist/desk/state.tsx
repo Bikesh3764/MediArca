@@ -83,7 +83,6 @@ export const useReceptionistDashboardState = () => {
   const [patientAge, setPatientAge] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [gender, setGender] = useState('Not Specified');
-  const [reasonForVisit, setReasonForVisit] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
   // Live Token & Queue calculation preview for walk-in entry
   const [walkinPreview, setWalkinPreview] = useState<QueuePreview | null>(null);
@@ -96,7 +95,7 @@ export const useReceptionistDashboardState = () => {
   const [queueAppointments, setQueueAppointments] = useState<ReceptionistQueueItem[]>([]);
   const [queueLoading, setQueueLoading] = useState(false);
   const [queueSearch, setQueueSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'WAITING' | 'IN_CONSULTATION' | 'COMPLETED' | 'CANCELLED'>('WAITING');
+  const [statusFilter, setStatusFilter] = useState<'WAITING' | 'DONE'>('WAITING');
   const [queueShiftFilter, setQueueShiftFilter] = useState<string>('ALL');
   // Track latest selections via refs to avoid stale closures in desk callbacks (ARCH-011)
   const selectedDoctorIdRef = useRef(selectedDoctorId);
@@ -537,7 +536,7 @@ export const useReceptionistDashboardState = () => {
         appointmentDate,
         slotId: slotId || undefined,
         clinicId: effectiveClinicId || undefined,
-        reasonForVisit: reasonForVisit.trim() || 'Walk-in Consultation',
+        reasonForVisit: 'Walk-in Consultation',
       });
 
       const queuedDoctor = linkedDoctors.find((d) => d.doctorId === selectedDoctorId);
@@ -568,7 +567,6 @@ export const useReceptionistDashboardState = () => {
       setPatientName('');
       setPatientAge('');
       setPatientPhone('');
-      setReasonForVisit('');
 
       // Refresh data
       fetchDeskData();
@@ -602,8 +600,8 @@ export const useReceptionistDashboardState = () => {
     if (status === 'IN_CONSULTATION') {
       if (targetDoctor?.cabinStatus && targetDoctor.cabinStatus !== 'IN_CABIN') {
         const awayMsg = targetDoctor.cabinStatus === 'STEPPED_OUT'
-          ? `${cleanDoctorName(targetDoctor.fullName)} has stepped out${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Doctor must be In Cabin before calling patients.`
-          : `${cleanDoctorName(targetDoctor.fullName)} is currently Not in Cabin. Doctor must be In Cabin before calling patients.`;
+          ? `${cleanDoctorName(targetDoctor.fullName)} has stepped out${targetDoctor.expectedReturnTime ? ` (expected return ~${targetDoctor.expectedReturnTime})` : ''}. Set In cabin first.`
+          : `${cleanDoctorName(targetDoctor.fullName)} is currently Not in Cabin. Set In cabin first.`;
         toast.warning(awayMsg);
         return;
       }
@@ -632,7 +630,7 @@ export const useReceptionistDashboardState = () => {
     setStatus(status);
     try {
       await api.updateAppointmentStatus(appointmentId, status);
-      toast.success('Updated');
+      toast.success(status === 'IN_CONSULTATION' ? 'Consultation started' : status === 'COMPLETED' ? 'Consultation done' : status === 'CANCELLED' ? 'Appointment cancelled' : status === 'WAITING' ? 'Sent back to waiting' : 'Updated');
       fetchQueue(undefined, undefined, true);
       fetchDeskData();
     } catch (err: any) {
@@ -801,8 +799,6 @@ export const useReceptionistDashboardState = () => {
     setPatientPhone,
     gender,
     setGender,
-    reasonForVisit,
-    setReasonForVisit,
     bookingLoading,
     setBookingLoading,
     walkinPreview,

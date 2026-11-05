@@ -53,7 +53,7 @@ MediArca is a modern, fullstack clinical queue and healthcare operations platfor
 | Portal | Route Base | Target Audience | Primary Responsibilities |
 | :--- | :--- | :--- | :--- |
 | **Patient Portal** | `/patient/*` | Patients & Caregivers | Doctor discovery, multi-venue booking (Myself or Family), live queue ticket with receptionist contact & UPI phone coordination, arrival check-in. |
-| **Doctor Console** | `/doctor/*` | Practitioners | Live cabin queue, "Call Next Patient" (atomic transaction), consultation hold/complete, cabin presence toggling, multi-clinic schedule & fee management. |
+| **Doctor Console** | `/doctor/*` | Practitioners | Live cabin queue, "Start consultation" for arrived patients (atomic transaction), consultation hold/complete, cabin presence toggling, multi-clinic schedule & fee management. |
 | **Clinic Portal** | `/clinic/*` | Clinic Administrators | Doctor onboarding / invitations, revenue isolation per practitioner, front-desk receptionist provisioning with temporary passwords, QR standee download. |
 | **Receptionist Desk** | `/receptionist/*` | Front Desk Staff | Rapid walk-in token creation, fee collection recording (cash/UPI), ticket confirmation (`PENDING_APPROVAL` → `WAITING`), desk arrival check-ins, queue oversight. |
 | **Admin Control** | `/admin/*` | Platform Superadmins | Practitioner medical license verification, clinic licensing verification, platform-wide analytics and audit controls. |

@@ -226,12 +226,12 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           </div>
         )}
 
-        {/* Patient Details (When booked for dependent/family member or explicit patient name) */}
+        {/* Patient details when booked for someone else */}
         {(appointment.isForOther || (Boolean(appointment.patientName) && appointment.patient?.user?.fullName && appointment.patientName !== appointment.patient.user.fullName)) && (
           <div className="mt-3.5 p-3.5 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2.5 py-0.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] font-semibold text-[11px]">
-                {appointment.isForOther ? 'Family' : 'Patient'}
+                Patient
               </span>
               <span className="font-semibold text-[#1d1d1f]">
                 {appointment.patientName || appointment.patient?.user?.fullName || 'Patient'}

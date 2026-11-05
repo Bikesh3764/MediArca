@@ -5,20 +5,23 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type Appointment, type DoctorAffiliationsData, type DoctorSlot, api, formatDisplayDate, getLocalDateString, getTomorrowDateString, slotTimeLabel } from '@mediarca/shared/api';
-import { cleanVisitReason, visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
+import { visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
 import { CabinControl } from '@/components/CabinControl';
+import { CodeCard, type CodeTarget } from '@/components/CodeCard';
 import { InCabinCard } from '@/components/InCabinCard';
 import { EmptyState, IconButton, PillButton, PlaceholderCard, SectionTitle } from '@/components/kit';
 import { type MoveTarget, MoveSheet } from '@/components/MoveSheet';
 import { QueueRow } from '@/components/QueueRow';
+import { ShiftChips } from '@/components/ShiftChips';
 import { NotificationBell } from '@/components/NotificationBell';
-import { Button, Notice, Screen, Segmented, Title } from '@/components/ui';
+import { Notice, Screen, Segmented, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { confirmAction } from '@/lib/confirm';
 import { todayLong, yesterday } from '@/lib/dates';
 import { success } from '@/lib/haptics';
 import { usePolling, keepIfSame } from '@/lib/usePolling';
+import { groupByShift, rowMenuTitle, slotKey } from '@/lib/queueGroups';
 import { space, type } from '@/theme';
 
 type Queue = Awaited<ReturnType<typeof api.getDoctorQueue>>;
@@ -39,6 +42,8 @@ export default function DoctorQueue() {
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [menu, setMenu] = useState<{ title: string; actions: MenuAction[] } | null>(null);
   const [moving, setMoving] = useState<MoveTarget | null>(null);
+  const [chosenShift, setShift] = useState('all');
+  const [code, setCode] = useState<CodeTarget | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -80,26 +85,31 @@ export default function DoctorQueue() {
   }, [clinics, clinicId]);
 
   const inClinic = (a: Appointment) => clinicId === 'all' || a.clinicId === clinicId;
-  const waiting = (queue?.waitingQueue || []).filter(inClinic);
-  const done = (queue?.completedQueue || []).filter(inClinic);
+  // Shift chips: today and tomorrow only (Upcoming mixes days)
+  const showShifts = day !== 'upcoming';
+  const shift = showShifts && slots.some((s) => slotKey(s) === chosenShift) ? chosenShift : 'all';
+  const allSlots = clinics.flatMap((c) => c.slots || []);
+  const inShift = (a: Appointment) => shift === 'all' || allSlots.some((s) => slotKey(s) === shift && visitMatchesSlot(a, s));
+  const waiting = (queue?.waitingQueue || []).filter((a) => inClinic(a) && inShift(a));
+  const done = (queue?.completedQueue || []).filter((a) => inClinic(a) && inShift(a));
   const active = queue?.activeInConsultation && inClinic(queue.activeInConsultation) ? queue.activeInConsultation : null;
 
   const cabin = user?.doctorProfile?.cabinStatus || 'IN_CABIN';
   const away = cabin !== 'IN_CABIN';
   const today = getLocalDateString();
-  const callable = (a: Appointment) => Boolean(a.isCheckedIn) && (a.appointmentDate === today || a.appointmentDate === yesterday());
+  const canStart = (a: Appointment) => Boolean(a.isCheckedIn) && (a.appointmentDate === today || a.appointmentDate === yesterday());
 
   const shiftLabel = (a: Appointment) => {
     if (slots.length < 2) return null;
     const i = slots.findIndex((s) => visitMatchesSlot(a, s));
     return i >= 0 ? slotTimeLabel(slots[i]) : null;
   };
+  // Name the clinic only when the list mixes clinics
+  const mixedClinics = new Set([...waiting, ...done].map((a) => a.clinicId)).size > 1;
   const metaOf = (a: Appointment) =>
     [
       day === 'upcoming' ? formatDisplayDate(a.appointmentDate) : null,
-      shiftLabel(a),
-      clinics.length > 1 && clinicId === 'all' ? a.clinic?.clinicName : null,
-      cleanVisitReason(a.reasonForVisit, nameOf(a)),
+      mixedClinics ? a.clinic?.clinicName : null,
     ]
       .filter(Boolean)
       .join(' · ');
@@ -124,10 +134,10 @@ export default function DoctorQueue() {
     }
   };
 
-  const call = (a: Appointment) => {
+  const start = (a: Appointment) => {
     if (away) return setMessage({ tone: 'error', text: 'Set your status to In cabin first.' });
     patch((q) => ({ ...q, activeInConsultation: { ...a, status: 'IN_CONSULTATION' }, waitingQueue: q.waitingQueue.filter((w) => w.id !== a.id) }));
-    run(a.id, () => api.callPatient(a.id), undefined, load);
+    run(a.id, () => api.callPatient(a.id), 'Consultation started', load);
   };
 
   const complete = (a: Appointment) => {
@@ -153,14 +163,13 @@ export default function DoctorQueue() {
 
   const more = (a: Appointment) =>
     setMenu({
-      title: `#${a.queueNumber} · ${nameOf(a)}`,
+      title: rowMenuTitle(a.queueNumber, nameOf(a)),
       actions: [
         { label: 'Move to another day', onPress: () => setMoving({ id: a.id, name: nameOf(a), date: a.appointmentDate, slotId: a.slotId }) },
+        ...(a.walkInCode ? [{ label: 'Show code', onPress: () => setCode({ token: a.queueNumber, name: nameOf(a), code: a.walkInCode! }) }] : []),
         { label: 'Cancel appointment', destructive: true, onPress: () => cancel(a) },
       ],
     });
-
-  const nextUp = day === 'today' && !away ? waiting.find(callable) : undefined;
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -188,8 +197,8 @@ export default function DoctorQueue() {
       <CabinControl
         status={cabin}
         expectedReturnTime={user?.doctorProfile?.expectedReturnTime}
-        onChange={(s, back) => {
-          if (user?.doctorProfile) updateUser({ ...user, doctorProfile: { ...user.doctorProfile, cabinStatus: s, expectedReturnTime: back } });
+        onChange={(st, back) => {
+          if (user?.doctorProfile) updateUser({ ...user, doctorProfile: { ...user.doctorProfile, cabinStatus: st, expectedReturnTime: back } });
         }}
       />
 
@@ -210,10 +219,12 @@ export default function DoctorQueue() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
           <PillButton label="All clinics" active={clinicId === 'all'} onPress={() => setClinicId('all')} />
           {clinics.map((c) => (
-            <PillButton key={c.clinicId} label={c.clinicName} active={clinicId === c.clinicId} onPress={() => setClinicId(c.clinicId)} />
+            <PillButton key={c.clinicId} label={c.clinicName} active={clinicId === c.clinicId} onPress={() => { setClinicId(c.clinicId); setShift('all'); }} />
           ))}
         </ScrollView>
       ) : null}
+
+      {showShifts ? <ShiftChips slots={slots} value={shift} onChange={setShift} /> : null}
 
       <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
@@ -234,9 +245,7 @@ export default function DoctorQueue() {
               token={active?.queueNumber}
               name={active ? nameOf(active) : null}
               tag={active ? visitTag(active) : null}
-              meta={active ? [shiftLabel(active), clinics.length > 1 ? active.clinic?.clinicName : null].filter(Boolean).join(' · ') : null}
-              reason={active ? cleanVisitReason(active.reasonForVisit, nameOf(active)) : null}
-              symptoms={active?.symptoms}
+              meta={active ? [shiftLabel(active), mixedClinics ? active.clinic?.clinicName : null].filter(Boolean).join(' · ') : null}
               onComplete={active ? () => complete(active) : undefined}
               onHold={active ? () => hold(active) : undefined}
               completing={busy === `done-${active?.id}`}
@@ -244,31 +253,32 @@ export default function DoctorQueue() {
             />
           ) : null}
 
-          {nextUp && !active ? (
-            <Button label={`Call #${nextUp.queueNumber} · ${nameOf(nextUp)}`} icon="play" onPress={() => call(nextUp)} loading={busy === nextUp.id} />
-          ) : null}
-
           <SectionTitle title={`Waiting · ${waiting.length}`} />
           {waiting.length === 0 ? (
-            <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={day === 'today' ? 'New bookings show up here.' : undefined} />
+            <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={shift !== 'all' ? 'No one in this shift.' : day === 'today' ? 'New bookings show up here.' : undefined} />
           ) : (
-            waiting.map((a) => (
-              <QueueRow
-                key={a.id}
-                item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a), phone: phoneOf(a), arrived: a.isCheckedIn, code: a.walkInCode }}
-                showArrival={day === 'today'}
-                onToggleArrived={() => toggleArrived(a)}
-                call={callable(a) ? (away ? 'away' : 'call') : null}
-                onCall={() => call(a)}
-                calling={busy === a.id}
-                onMore={() => more(a)}
-              />
+            groupByShift(waiting, day === 'upcoming' || shift !== 'all' ? () => null : shiftLabel).map((g) => (
+              <View key={g.shift || 'all'} style={styles.group}>
+                {g.shift ? <Text style={styles.shift}>{g.shift}</Text> : null}
+                {g.items.map((a) => (
+                  <QueueRow
+                    key={a.id}
+                    item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a), phone: phoneOf(a), arrived: a.isCheckedIn }}
+                    showArrival={day === 'today'}
+                    onToggleArrived={() => toggleArrived(a)}
+                    start={canStart(a) ? (away ? 'away' : 'start') : null}
+                    onStart={() => start(a)}
+                    starting={busy === a.id}
+                    onMore={() => more(a)}
+                  />
+                ))}
+              </View>
             ))
           )}
 
           {done.length > 0 ? (
             <>
-              <SectionTitle title={`Completed · ${done.length}`} />
+              <SectionTitle title={`Done · ${done.length}`} />
               {done.map((a) => (
                 <QueueRow key={a.id} muted item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a) }} />
               ))}
@@ -281,6 +291,7 @@ export default function DoctorQueue() {
       )}
 
       <ActionMenu title={menu?.title} actions={menu?.actions || null} onClose={() => setMenu(null)} />
+      <CodeCard target={code} onClose={() => setCode(null)} />
       <MoveSheet
         target={moving}
         slots={
@@ -308,4 +319,6 @@ const styles = StyleSheet.create({
   bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
   pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   center: { textAlign: 'center' },
+  group: { gap: space.md },
+  shift: { ...type.footnote, fontWeight: '600', marginLeft: 4 },
 });

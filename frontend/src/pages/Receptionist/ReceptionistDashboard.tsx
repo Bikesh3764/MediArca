@@ -1,5 +1,3 @@
-import { formatDisplayDate, shiftLabel } from '../../services/api';
-import { formatDisplayPhone } from '../../utils/phoneUtils';
 import React from 'react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { UserPlus, CheckCircle2, AlertCircle, X, QrCode, FileText } from 'lucide-react';
@@ -153,72 +151,6 @@ export const ReceptionistDashboard: React.FC = () => {
       {/* 3. Guaranteed Queue Token Pass Modal */}
       {bookedPass && (
         <BookedPassModal />
-      )}
-
-      {/* Printable Thermal Token Slip */}
-      {bookedPass && (
-        <div className="hidden print:block font-sans text-black p-6 bg-white max-w-xs mx-auto border-2 border-black rounded-xl">
-          <div className="text-center pb-3 border-b-2 border-dashed border-[#a1a1a6]">
-            <h2 className="text-base font-semibold uppercase tracking-wide">
-              {bookedPass.clinicName || 'MediArca Clinic'}
-            </h2>
-            {bookedPass.clinicAddress && (
-              <p className="text-[11px] text-[#48484a] mt-0.5">{bookedPass.clinicAddress}</p>
-            )}
-            <p className="text-[11px] text-[#6e6e73] mt-1 uppercase tracking-wider">
-              Token
-            </p>
-          </div>
-
-          <div className="py-4 text-center">
-            <div className="text-xs uppercase text-[#86868b] tracking-wider">Token</div>
-            <div className="text-5xl font-semibold tracking-tight my-1">
-              #{bookedPass.queueNumber}
-            </div>
-            <div className="text-xs font-semibold text-[#1d1d1f]">
-              Shift: {shiftLabel(bookedPass, 'General')}
-            </div>
-          </div>
-
-          {bookedPass.walkInCode && (
-            <div className="pb-3 text-center">
-              <div className="text-[11px] uppercase text-[#6e6e73] tracking-wider">Tracking code</div>
-              <div className="text-2xl font-semibold tracking-[0.25em] my-0.5">{bookedPass.walkInCode}</div>
-              <div className="text-[11px] text-[#48484a]">{window.location.host} → Track walk-in</div>
-            </div>
-          )}
-
-          <div className="space-y-1.5 py-3 border-t-2 border-b-2 border-dashed border-[#a1a1a6] text-xs">
-            <div className="flex justify-between">
-              <span className="text-[#6e6e73]">Patient:</span>
-              <span className="font-semibold">{bookedPass.patientName}</span>
-            </div>
-            {bookedPass.patientPhone && (
-              <div className="flex justify-between">
-                <span className="text-[#6e6e73]">Phone:</span>
-                <span>{formatDisplayPhone(bookedPass.patientPhone)}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-[#6e6e73]">Doctor:</span>
-              <span className="font-semibold">{cleanDoctorName(bookedPass.doctorName)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6e6e73]">Date:</span>
-              <span>{formatDisplayDate(bookedPass.appointmentDate)}</span>
-            </div>
-            {bookedPass.estimatedTime && (
-              <div className="flex justify-between">
-                <span className="text-[#6e6e73]">Est. Time:</span>
-                <span className="font-semibold">{bookedPass.estimatedTime}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-3 text-center text-[11px] text-[#6e6e73] leading-tight">
-            Keep this slip. Wait for your number.
-          </div>
-        </div>
       )}
 
       {/* Mandatory Password Change Modal for Provisioned Accounts */}

@@ -60,10 +60,6 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
         res.status(400).json({ success: false, message: 'Patient full name is required when booking for someone else' });
         return;
       }
-      if (!patientAge || !String(patientAge).trim()) {
-        res.status(400).json({ success: false, message: 'Patient age is required when booking for someone else' });
-        return;
-      }
     }
 
     if (patientAge && String(patientAge).trim()) {

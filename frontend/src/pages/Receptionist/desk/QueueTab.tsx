@@ -1,15 +1,26 @@
 import React from 'react';
 import { formatDisplayPhone } from '../../../utils/phoneUtils';
-import { ReceptionistQueueItem, getLocalDateString, WEEKDAY_NAMES, getDayOfWeekCode } from '../../../services/api';
+import {
+  ReceptionistQueueItem,
+  formatDisplayDate,
+  getLocalDateString,
+  getTomorrowDateString,
+  WEEKDAY_NAMES,
+  getDayOfWeekCode,
+} from '../../../services/api';
 import { CabinStatusControl } from '../../../components/ui/DoctorCabinPresence';
-import { Clock, CheckCircle2, X, Printer, Stethoscope, Search, ChevronDown, CalendarX, CalendarOff, Users } from 'lucide-react';
+import { Clock, CheckCircle2, X, Search, ChevronDown, CalendarX, CalendarOff, Users, Play, PauseCircle } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
-import { cleanDoctorName, cleanShiftDisplayName, getCleanReason } from './helpers';
+import { cleanDoctorName, cleanShiftDisplayName } from './helpers';
 import { useReceptionistDashboard } from './state';
 import MoreLine from '../../../components/common/MoreLine';
+import { RowMenu, type RowMenuItem } from '../../../components/ui/RowMenu';
+import { WalkinCodeModal, type WalkinCodeTarget } from '../../../components/ui/WalkinCodeModal';
+
+const isDoneStatus = (status: string) => ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REJECTED'].includes(status);
+
 export const QueueTab: React.FC = () => {
   const {
-    data,
     setData,
     setActiveTab,
     setScheduleModalDoctor,
@@ -17,7 +28,6 @@ export const QueueTab: React.FC = () => {
     setRescheduleDate,
     setRescheduleSlotId,
     setRescheduleError,
-    setBookedPass,
     queueDoctorId,
     setQueueDoctorId,
     queueDate,
@@ -39,646 +49,473 @@ export const QueueTab: React.FC = () => {
     togglingCheckinId,
     handleToggleCheckIn,
   } = useReceptionistDashboard();
+
+  const today = getLocalDateString();
+  const tomorrow = getTomorrowDateString();
+  const isTodayQueue = queueDate === today;
+  const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
+  const isDoctorAway = Boolean(queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN');
+
+  const inShift = (a: ReceptionistQueueItem) => queueShiftFilter === 'ALL' || cleanShiftDisplayName(a) === queueShiftFilter;
+  const inCabin = isTodayQueue ? queueAppointments.find((a) => a.status === 'IN_CONSULTATION') : undefined;
+  const waitingAll = queueAppointments.filter((a) => a.status === 'WAITING' && inShift(a));
+  const doneAll = queueAppointments.filter((a) => isDoneStatus(a.status) && inShift(a));
+  const arrivedCount = waitingAll.filter((a) => a.isCheckedIn).length;
+  const showingDone = statusFilter === 'DONE';
+
+  const openMove = (appt: ReceptionistQueueItem) => {
+    setRescheduleTarget({
+      appointmentId: appt.id,
+      patientName: appt.patientName,
+      doctorName: queueDoctor?.fullName || 'Doctor',
+      currentDate: queueDate,
+      currentQueueNumber: appt.queueNumber,
+      doctorId: queueDoctorId,
+      slotId: appt.slotId,
+    });
+    const baseDate = queueDate && queueDate > today ? queueDate : today;
+    const [y, m, day] = baseDate.split('-').map(Number);
+    setRescheduleDate(getLocalDateString(new Date(y, m - 1, day + 1)));
+    setRescheduleSlotId(appt.slotId || '');
+    setRescheduleError(null);
+  };
+
+  const [codeFor, setCodeFor] = React.useState<WalkinCodeTarget | null>(null);
+
+  const dayButton = (value: string, label: string) => (
+    <button
+      type="button"
+      onClick={() => setQueueDate(value)}
+      className={`h-8 px-4 rounded-full text-xs transition-all whitespace-nowrap cursor-pointer ${
+        queueDate === value ? 'bg-white text-[#1d1d1f] font-semibold border border-black/5' : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  const selectClass =
+    'h-10 pl-4 pr-8 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto';
+
   return (
-<div className="space-y-5">
-              {/* Top Controls Row: Title + Doctor & Date Selectors */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#f0f0f2]">
-                <div className="flex items-center gap-2.5">
-                  <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">
-                    Queue
-                  </h3>
-                </div>
+    <div className="space-y-5">
+      {/* Top row: title, doctor, shift and day */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <h3 className="text-base sm:text-lg font-semibold text-[#1d1d1f] tracking-tight">Queue</h3>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                  {linkedDoctors.length > 1 && (
-                    <div className="relative">
-                      <select
-                        value={queueDoctorId}
-                        onChange={(e) => {
-                          setQueueDoctorId(e.target.value);
-                          setQueueShiftFilter('ALL');
-                        }}
-                        className="h-10 pl-4 pr-8 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
-                      >
-                        {linkedDoctors.map((doc) => (
-                          <option key={doc.doctorId} value={doc.doctorId}>
-                            {cleanDoctorName(doc.fullName)} — {doc.specialty}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    </div>
-                  )}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          {linkedDoctors.length > 1 && (
+            <div className="relative">
+              <select
+                value={queueDoctorId}
+                onChange={(e) => {
+                  setQueueDoctorId(e.target.value);
+                  setQueueShiftFilter('ALL');
+                }}
+                className={selectClass}
+                aria-label="Doctor"
+              >
+                {linkedDoctors.map((doc) => (
+                  <option key={doc.doctorId} value={doc.doctorId}>
+                    {cleanDoctorName(doc.fullName)} — {doc.specialty}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          )}
 
-                  {(availableQueueShifts.length > 1 || queueShiftFilter !== 'ALL') && (
-                  <div className="relative">
-                    <select
-                      value={queueShiftFilter}
-                      onChange={(e) => setQueueShiftFilter(e.target.value)}
-                      className="h-10 pl-4 pr-8 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] appearance-none cursor-pointer w-full sm:w-auto"
-                      title="Filter by shift"
-                    >
-                      <option value="ALL">All Shifts</option>
-                      {availableQueueShifts.map((shiftName) => (
-                        <option key={shiftName} value={shiftName}>
-                          {shiftName}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
-                  )}
+          {(availableQueueShifts.length > 1 || queueShiftFilter !== 'ALL') && (
+            <div className="relative">
+              <select value={queueShiftFilter} onChange={(e) => setQueueShiftFilter(e.target.value)} className={selectClass} aria-label="Shift">
+                <option value="ALL">All Shifts</option>
+                {availableQueueShifts.map((shiftName) => (
+                  <option key={shiftName} value={shiftName}>
+                    {shiftName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-[#86868b] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          )}
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="date"
-                      value={queueDate}
-                      onChange={(e) => setQueueDate(e.target.value)}
-                      className="h-10 px-4 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial"
-                    />
-                    {queueDate !== getLocalDateString() && (
-                      <button
-                        type="button"
-                        onClick={() => setQueueDate(getLocalDateString())}
-                        className="h-10 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-xs font-normal text-[#0066cc] border border-[#e5e5ea] transition-all cursor-pointer shrink-0"
-                      >
-                        Today
-                      </button>
-                    )}
-                  </div>
-                </div>
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 shrink-0">
+              {dayButton(today, 'Today')}
+              {dayButton(tomorrow, 'Tomorrow')}
+            </div>
+            <input
+              type="date"
+              value={queueDate}
+              onChange={(e) => e.target.value && setQueueDate(e.target.value)}
+              aria-label="Pick a date"
+              className="h-10 px-3.5 rounded-full border border-[#d2d2d7] text-base sm:text-xs font-normal bg-white text-[#1d1d1f] transition-all focus:outline-none focus:ring-4 focus:ring-[#0066cc]/10 focus:border-[#0066cc] flex-1 sm:flex-initial min-w-0"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Doctor and cabin status */}
+      {queueDoctor && (
+        <div className="p-4 rounded-2xl bg-[#f5f5f7] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[#1d1d1f] truncate">{cleanDoctorName(queueDoctor.fullName)}</p>
+            {queueDoctor.specialty && <p className="text-xs text-[#86868b] truncate">{queueDoctor.specialty}</p>}
+          </div>
+          <CabinStatusControl
+            currentStatus={queueDoctor.cabinStatus}
+            expectedReturnTime={queueDoctor.expectedReturnTime}
+            doctorId={queueDoctor.doctorId}
+            doctorName={cleanDoctorName(queueDoctor.fullName)}
+            onStatusChange={(newStatus, newReturnTime) => {
+              setData((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  doctors: prev.doctors.map((d) =>
+                    d.doctorId === queueDoctor.doctorId ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime } : d
+                  ),
+                };
+              });
+            }}
+          />
+        </div>
+      )}
+
+      {/* Leave or day-off notice */}
+      {(() => {
+        const doc = queueDoctor;
+        if (!doc) return null;
+        if (isTodayQueue && doc.isOnLeaveToday) {
+          return (
+            <div className="p-3.5 rounded-2xl bg-danger-soft border border-danger-line text-xs text-danger flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CalendarX className="w-4 h-4 text-danger shrink-0" />
+                <span className="font-semibold text-danger">
+                  {cleanDoctorName(doc.fullName)} is on leave today.
+                </span>
               </div>
+              <button
+                type="button"
+                onClick={() => setScheduleModalDoctor({ doctorId: doc.doctorId, doctorName: cleanDoctorName(doc.fullName) })}
+                className="h-8 px-3 rounded-full bg-white hover:bg-danger-soft text-danger border border-danger-line font-semibold text-xs shrink-0 transition-all cursor-pointer"
+              >
+                Schedule
+              </button>
+            </div>
+          );
+        }
+        const dayCode = getDayOfWeekCode(queueDate);
+        const docDays = doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        if (!docDays.includes(dayCode)) {
+          return (
+            <div className="p-3.5 rounded-2xl bg-warning-soft border border-warning-line text-xs text-warning flex items-center justify-between gap-3 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <CalendarOff className="w-4 h-4 text-warning shrink-0" />
+                <span>
+                  {cleanDoctorName(doc.fullName)} doesn’t work here on {WEEKDAY_NAMES[dayCode as any] || dayCode}s.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScheduleModalDoctor({ doctorId: doc.doctorId, doctorName: cleanDoctorName(doc.fullName) })}
+                className="h-8 px-3 rounded-full bg-white hover:bg-warning-soft text-warning border border-warning-line font-semibold text-xs shrink-0 transition-all cursor-pointer"
+              >
+                Days
+              </button>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
-              {/* Selected Doctor Cabin Presence Bar */}
-              {(() => {
-                const targetDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                if (!targetDoctor) return null;
-                return (
-                  <div className="pb-4 border-b border-[#f0f0f2] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {linkedDoctors.length === 0 && deskLoadFailed ? (
+        <EmptyState icon={Users} title="Couldn’t load doctors" description="Check your connection and try again." actionText="Try Again" onAction={() => retryDeskData()} />
+      ) : linkedDoctors.length === 0 ? (
+        <EmptyState icon={Users} title="No doctors yet" description="Ask your clinic to assign doctors to you." />
+      ) : queueLoading && !hasLoadedInitialQueue ? (
+        <div className="py-14 text-center text-xs text-[#86868b]">Loading…</div>
+      ) : (
+        <>
+          {/* In cabin */}
+          {isTodayQueue && (
+            <div className="rounded-2xl border border-[#e5e5ea] bg-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {inCabin ? (
+                <>
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-full bg-[#0066cc] text-white flex items-center justify-center font-semibold text-[16px] shrink-0">
+                      #{inCabin.queueNumber}
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-[#1d1d1f] truncate">{cleanDoctorName(targetDoctor.fullName)}</p>
-                      {targetDoctor.specialty && (
-                        <p className="text-xs text-[#86868b] truncate">{targetDoctor.specialty}</p>
-                      )}
+                      <p className="text-[11px] font-semibold text-[#0066cc]">In cabin</p>
+                      <p className="text-[15px] font-semibold text-[#1d1d1f] truncate">{inCabin.patientName}</p>
+                      {(() => {
+                        const line = [inCabin.patientPhone ? formatDisplayPhone(inCabin.patientPhone) : null]
+                          .filter(Boolean)
+                          .join(' · ');
+                        return line ? <MoreLine className="text-xs text-[#86868b]" text={line} /> : null;
+                      })()}
                     </div>
-                    <CabinStatusControl
-                      currentStatus={targetDoctor.cabinStatus}
-                      expectedReturnTime={targetDoctor.expectedReturnTime}
-                      doctorId={targetDoctor.doctorId}
-                      doctorName={cleanDoctorName(targetDoctor.fullName)}
-                      onStatusChange={(newStatus, newReturnTime) => {
-                        setData((prev) => {
-                          if (!prev) return prev;
-                          return {
-                            ...prev,
-                            doctors: prev.doctors.map((d) =>
-                              d.doctorId === targetDoctor.doctorId
-                                ? { ...d, cabinStatus: newStatus, expectedReturnTime: newReturnTime }
-                                : d
-                            ),
-                          };
-                        });
-                      }}
-                    />
                   </div>
-                );
-              })()}
-
-              {/* Filter Segmented Bar & Search Bar */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5 overflow-x-auto max-w-full no-scrollbar">
-                  {(
-                    [
-                      { id: 'WAITING', label: 'Waiting' },
-                      { id: 'IN_CONSULTATION', label: 'In Cabin' },
-                      { id: 'COMPLETED', label: 'Completed' },
-                      { id: 'CANCELLED', label: 'Cancelled' },
-                      { id: 'ALL', label: 'All' },
-                    ] as const
-                  ).map((tab) => {
-                    const count =
-                      tab.id === 'ALL'
-                        ? (queueShiftFilter === 'ALL'
-                            ? queueAppointments.length
-                            : queueAppointments.filter((a) => cleanShiftDisplayName(a) === queueShiftFilter).length)
-                        : (queueShiftFilter === 'ALL'
-                            ? queueAppointments.filter((a) => a.status === tab.id).length
-                            : queueAppointments.filter((a) => a.status === tab.id && cleanShiftDisplayName(a) === queueShiftFilter).length);
-                    const isActive = statusFilter === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setStatusFilter(tab.id)}
-                        className={`h-8 px-3.5 rounded-full text-xs transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
-                          isActive
-                            ? 'bg-white text-[#1d1d1f] font-semibold  border border-black/5'
-                            : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
-                        }`}
-                      >
-                        <span>{tab.label}</span>
-                        <span className={`text-[11px] ${isActive ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>
-                          {count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="relative w-full lg:w-64">
-                  <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={queueSearch}
-                    onChange={(e) => setQueueSearch(e.target.value)}
-                    placeholder="Search patient, phone or token"
-                    className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
-                  />
-                  {queueSearch && (
-                    <button aria-label="Close"
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
                       type="button"
-                      onClick={() => setQueueSearch('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
+                      onClick={() => handleStatusChange(inCabin.id, 'COMPLETED')}
+                      className="flex-1 sm:flex-none h-10 px-5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-4 h-4" />
+                      Complete
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange(inCabin.id, 'WAITING')}
+                      title="Send back to the waiting list"
+                      className="h-10 px-4 rounded-full bg-white hover:bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea] text-xs font-normal flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                      <PauseCircle className="w-3.5 h-3.5" />
+                      Hold
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] flex items-center justify-center shrink-0">
+                    <Users className="w-5 h-5 text-[#86868b]" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-[#1d1d1f]">No one in cabin</p>
+                    <p className="text-xs text-[#86868b]">Tap Start consultation on an arrived patient.</p>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+          )}
 
-              {/* Doctor On Leave / Off Day Alert */}
-              {(() => {
-                const doc = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                if (!doc) return null;
-                const isToday = queueDate === getLocalDateString();
-                if (isToday && doc.isOnLeaveToday) {
-                  return (
-                    <div className="mb-4 p-3.5 rounded-2xl bg-danger-soft border border-danger-line text-xs text-danger flex items-center justify-between gap-3 animate-fadeIn">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <CalendarX className="w-4 h-4 text-danger shrink-0" />
-                        <span className="font-semibold text-danger">
-                          {cleanDoctorName(doc.fullName)} is marked on leave today{doc.todayLeave?.reason ? ` (${doc.todayLeave.reason})` : ''}.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setScheduleModalDoctor({
-                            doctorId: doc.doctorId,
-                            doctorName: cleanDoctorName(doc.fullName),
-                          })
-                        }
-                        className="h-7 px-3 rounded-full bg-white hover:bg-danger-soft text-danger border border-danger-line font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
-                      >
-                        Schedule
-                      </button>
-                    </div>
-                  );
-                }
-                const dayCode = getDayOfWeekCode(queueDate);
-                const docDays = doc.workingDays || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                if (!docDays.includes(dayCode)) {
-                  return (
-                    <div className="mb-4 p-3 rounded-2xl bg-warning-soft border border-warning-line text-xs text-warning flex items-center justify-between gap-3 animate-fadeIn">
-                      <div className="flex items-center gap-2">
-                        <CalendarOff className="w-4 h-4 text-warning shrink-0" />
-                        <span>
-                          {cleanDoctorName(doc.fullName)} does not usually sit on {WEEKDAY_NAMES[dayCode as any] || dayCode}s at this clinic.
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setScheduleModalDoctor({
-                            doctorId: doc.doctorId,
-                            doctorName: cleanDoctorName(doc.fullName),
-                          })
-                        }
-                        className="h-7 px-2.5 rounded-full bg-white hover:bg-warning-soft text-warning border border-warning-line font-semibold text-[11px] shrink-0 transition-all cursor-pointer"
-                      >
-                        Days
-                      </button>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
+          {/* Waiting / Done + search */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+            <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full inline-flex items-center gap-0.5">
+              {(
+                [
+                  { id: 'WAITING', label: 'Waiting', count: waitingAll.length },
+                  { id: 'DONE', label: 'Done', count: doneAll.length },
+                ] as const
+              ).map((tab) => {
+                const isActive = statusFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.id)}
+                    className={`h-8 px-4 rounded-full text-xs transition-all whitespace-nowrap cursor-pointer inline-flex items-center gap-1.5 ${
+                      isActive ? 'bg-white text-[#1d1d1f] font-semibold border border-black/5' : 'text-[#86868b] hover:text-[#1d1d1f] font-normal'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[11px] ${isActive ? 'text-[#0066cc] font-semibold' : 'text-[#86868b]'}`}>{tab.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!showingDone && waitingAll.length > 0 && <span className="text-xs text-[#86868b]">{arrivedCount} arrived</span>}
+            </div>
 
-              {/* Queue Content */}
-              {linkedDoctors.length === 0 && deskLoadFailed ? (
-                <EmptyState
-                  icon={Users}
-                  title="Couldn’t load doctors"
-                  description="Check your connection and try again."
-                  actionText="Try Again"
-                  onAction={() => retryDeskData()}
-                />
-              ) : linkedDoctors.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title="No doctors yet"
-                  description="Ask your clinic to assign doctors to you."
-                />
-              ) : queueLoading && !hasLoadedInitialQueue ? (
-                <div className="py-14 text-center text-xs text-[#86868b]">Loading…</div>
-              ) : queueAppointments.length === 0 ? (
+            <div className="relative w-full sm:w-64">
+              <Search className="w-3.5 h-3.5 text-[#86868b] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={queueSearch}
+                onChange={(e) => setQueueSearch(e.target.value)}
+                placeholder="Search name, phone or token"
+                className="w-full h-10 pl-9 pr-8 rounded-full border border-[#e5e5ea] text-base sm:text-xs bg-[#f5f5f7] focus:bg-white text-[#1d1d1f] placeholder:text-[#86868b] transition-all focus:outline-none focus:ring-2 focus:ring-[#0066cc]/20 focus:border-[#0066cc]"
+              />
+              {queueSearch && (
+                <button
+                  aria-label="Clear search"
+                  type="button"
+                  onClick={() => setQueueSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f] p-0.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {(() => {
+            const base = showingDone ? doneAll : waitingAll;
+            const q = queueSearch.toLowerCase().trim();
+            const rows = q
+              ? base.filter(
+                  (a) =>
+                    (a.patientName || '').toLowerCase().includes(q) ||
+                    (a.patientPhone || '').toLowerCase().includes(q) ||
+                    String(a.queueNumber || '').includes(q)
+                )
+              : base;
+
+            if (queueAppointments.length === 0) {
+              return (
                 <EmptyState
                   icon={Clock}
                   title="No patients"
-                  description={`No appointments scheduled for ${queueDate}.`}
-                  actionText="Issue Walk-in Token"
+                  description={`Nothing booked for ${formatDisplayDate(queueDate)}.`}
+                  actionText="Add walk-in"
                   onAction={() => setActiveTab('walkin')}
                 />
-              ) : (() => {
-                const filteredAppointments = queueAppointments.filter((appt) => {
-                  if (statusFilter !== 'ALL' && appt.status !== statusFilter) return false;
-                  if (queueShiftFilter !== 'ALL' && cleanShiftDisplayName(appt) !== queueShiftFilter) return false;
-                  if (!queueSearch.trim()) return true;
-                  const q = queueSearch.toLowerCase().trim();
-                  const name = (appt.patientName || '').toLowerCase();
-                  const phone = (appt.patientPhone || '').toLowerCase();
-                  const token = String(appt.queueNumber || '');
-                  return name.includes(q) || phone.includes(q) || token.includes(q);
-                });
+              );
+            }
 
-                const queueDoctor = linkedDoctors.find((d) => d.doctorId === queueDoctorId);
-                const isDoctorAway = Boolean(queueDoctor?.cabinStatus && queueDoctor.cabinStatus !== 'IN_CABIN');
-                const isTodayQueue = queueDate === getLocalDateString();
+            if (rows.length === 0) {
+              return q ? (
+                <div className="py-14 text-center">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">No matches</p>
+                  <button type="button" onClick={() => setQueueSearch('')} className="mt-2 text-xs text-[#0066cc] font-normal hover:underline cursor-pointer">
+                    Clear search
+                  </button>
+                </div>
+              ) : (
+                <div className="py-14 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#f5f5f7] flex items-center justify-center mx-auto mb-3">
+                    {showingDone ? <CheckCircle2 className="w-5 h-5 text-[#86868b]" /> : <Clock className="w-5 h-5 text-[#86868b]" />}
+                  </div>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">{showingDone ? 'None done yet' : 'No one waiting'}</p>
+                </div>
+              );
+            }
 
-                if (filteredAppointments.length === 0) {
-                  if (queueSearch.trim()) {
-                    return (
-                      <div className="py-14 text-center">
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No matches</p>
-                        <p className="text-xs text-[#86868b] mt-1 mb-2">
-                          No patients match &ldquo;{queueSearch}&rdquo;.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setQueueSearch('')}
-                          className="text-xs text-[#0066cc] font-normal hover:underline cursor-pointer"
-                        >
-                          Clear Search
-                        </button>
+            // Group by shift, keep token order inside each shift
+            const groups: Record<string, ReceptionistQueueItem[]> = {};
+            rows.forEach((a) => {
+              const key = cleanShiftDisplayName(a);
+              (groups[key] ||= []).push(a);
+            });
+            Object.values(groups).forEach((list) => list.sort((a, b) => (a.queueNumber || 0) - (b.queueNumber || 0)));
+            const shiftKeys = Object.keys(groups).sort((a, b) => {
+              const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+              const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+              return numA !== numB ? numA - numB : a.localeCompare(b);
+            });
+            const showShiftHeaders = shiftKeys.length > 1 || availableQueueShifts.length > 1;
+
+            return (
+              <div className="space-y-5">
+                {shiftKeys.map((shiftName) => (
+                  <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl bg-white">
+                    {showShiftHeaders && (
+                      <div className="px-4 sm:px-5 py-2.5 bg-[#f5f5f7] rounded-t-2xl border-b border-[#e5e5ea] flex items-center justify-between gap-3">
+                        <span className="text-[13px] font-semibold text-[#1d1d1f]">{shiftName}</span>
+                        <span className="text-xs text-[#86868b]">{groups[shiftName].length}</span>
                       </div>
-                    );
-                  }
+                    )}
 
-                  if (statusFilter === 'WAITING') {
-                    return (
-                      <div className="py-14 text-center">
-                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                          <Clock className="w-5 h-5 text-[#86868b]" />
-                        </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No one waiting</p>
-                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          New patients show up here.{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
-                        </p>
-                      </div>
-                    );
-                  }
+                    <div className="divide-y divide-[#f0f0f2]">
+                      {groups[shiftName].map((appt) => {
+                        const isDone = isDoneStatus(appt.status);
+                        const isCancelled = appt.status !== 'COMPLETED' && isDone;
+                        const canStart = appt.status === 'WAITING' && appt.isCheckedIn && (appt.appointmentDate || queueDate) === today;
 
-                  if (statusFilter === 'IN_CONSULTATION') {
-                    return (
-                      <div className="py-14 text-center">
-                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                          <Stethoscope className="w-5 h-5 text-[#86868b]" />
-                        </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">No one in cabin</p>
-                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          Doctor cabin is currently clear{queueShiftFilter !== 'ALL' ? ` for ${queueShiftFilter}` : ''}.
-                        </p>
-                      </div>
-                    );
-                  }
+                        const menuItems: RowMenuItem[] = [];
+                        if (!isDone && appt.isCheckedIn) {
+                          menuItems.push({
+                            label: 'Undo arrival',
+                            disabled: togglingCheckinId === appt.id,
+                            onSelect: () => handleToggleCheckIn(appt.id, appt.isCheckedIn),
+                          });
+                        }
+                        if (!isDone) menuItems.push({ label: 'Move to another day', onSelect: () => openMove(appt) });
+                        if (appt.walkInCode) {
+                          const code = appt.walkInCode;
+                          menuItems.push({ label: 'Show code', onSelect: () => setCodeFor({ token: appt.queueNumber, name: appt.patientName, code }) });
+                        }
+                        if (appt.status === 'WAITING') {
+                          menuItems.push({ label: 'Cancel appointment', destructive: true, onSelect: () => handleStatusChange(appt.id, 'CANCELLED') });
+                        }
 
-                  if (statusFilter === 'COMPLETED') {
-                    return (
-                      <div className="py-14 text-center">
-                        <div className="w-12 h-12 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center mx-auto mb-3 text-[#86868b]">
-                          <CheckCircle2 className="w-5 h-5 text-[#86868b]" />
-                        </div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">None completed</p>
-                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          No completed visits yet{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  if (statusFilter === 'CANCELLED') {
-                    return (
-                      <div className="py-14 text-center">
-                        <p className="text-sm font-semibold text-[#1d1d1f]">None cancelled</p>
-                        <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                          Nothing cancelled on this date.{queueShiftFilter !== 'ALL' ? ` in ${queueShiftFilter}` : ''}.
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="py-14 text-center">
-                      <p className="text-sm font-semibold text-[#1d1d1f]">
-                        No Patients {queueShiftFilter !== 'ALL' ? `in ${queueShiftFilter}` : 'Scheduled'}
-                      </p>
-                      <p className="text-xs text-[#86868b] mt-1 max-w-sm mx-auto">
-                        No appointments found for this selection on {queueDate}.
-                      </p>
-                    </div>
-                  );
-                }
-
-                const getStatusPriority = (status: string): number => {
-                  switch (status) {
-                    case 'IN_CONSULTATION':
-                      return 0;
-                    case 'WAITING':
-                      return 1;
-                    case 'COMPLETED':
-                      return 2;
-                    case 'CANCELLED':
-                    case 'EXPIRED':
-                    case 'REJECTED':
-                      return 3;
-                    default:
-                      return 4;
-                  }
-                };
-
-                const groupedByShift: Record<string, ReceptionistQueueItem[]> = {};
-
-                filteredAppointments.forEach((appt) => {
-                  const shiftKey = cleanShiftDisplayName(appt);
-                  if (!groupedByShift[shiftKey]) {
-                    groupedByShift[shiftKey] = [];
-                  }
-                  groupedByShift[shiftKey].push(appt);
-                });
-
-                Object.keys(groupedByShift).forEach((shiftKey) => {
-                  groupedByShift[shiftKey].sort((a, b) => {
-                    const prioA = getStatusPriority(a.status);
-                    const prioB = getStatusPriority(b.status);
-                    if (prioA !== prioB) return prioA - prioB;
-                    return (a.queueNumber || 0) - (b.queueNumber || 0);
-                  });
-                });
-
-                const sortedShiftKeys = Object.keys(groupedByShift).sort((a, b) => {
-                  const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
-                  const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
-                  if (numA !== numB) return numA - numB;
-                  return a.localeCompare(b);
-                });
-
-                const showShiftHeaders = sortedShiftKeys.length > 1 || availableQueueShifts.length > 1;
-
-                return (
-                  <div className="space-y-5">
-                    {sortedShiftKeys.map((shiftName) => {
-                      const shiftAppts = groupedByShift[shiftName];
-                      const waitingCount = shiftAppts.filter((a) => a.status === 'WAITING').length;
-                      const inCabinCount = shiftAppts.filter((a) => a.status === 'IN_CONSULTATION').length;
-                      const completedCount = shiftAppts.filter((a) => a.status === 'COMPLETED').length;
-                      const cancelledCount = shiftAppts.filter((a) => a.status === 'CANCELLED' || a.status === 'EXPIRED').length;
-
-                      return (
-                        <div key={shiftName} className="border border-[#e5e5ea] rounded-2xl overflow-hidden bg-white ">
-                          {showShiftHeaders && (
-                          <div className="px-4 sm:px-5 py-2.5 bg-[#f5f5f7] border-b border-[#e5e5ea] flex items-center justify-between gap-3 flex-wrap">
-                            <span className="text-[13px] font-semibold text-[#1d1d1f]">
-                              {shiftName}
-                            </span>
-
-                            {statusFilter !== 'ALL' ? (
-                              <span className="text-xs text-[#86868b]">{shiftAppts.length}</span>
-                            ) : (
-                            <div className="flex items-center gap-2 text-xs text-[#86868b] flex-wrap">
-                              {inCabinCount > 0 && (
-                                <span className="inline-flex items-center gap-1 font-normal text-[#0066cc]">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0066cc] animate-pulse" />
-                                  {inCabinCount} in cabin
-                                </span>
-                              )}
-                              {waitingCount > 0 && (
-                                <span className="font-normal text-[#1d1d1f]">
-                                  {waitingCount} waiting
-                                </span>
-                              )}
-                              {completedCount > 0 && (
-                                <span className="text-[#86868b]">
-                                  {waitingCount > 0 ? '• ' : ''}{completedCount} done
-                                </span>
-                              )}
-                              {cancelledCount > 0 && (
-                                <span className="text-[#86868b]">
-                                  • {cancelledCount} cancelled
-                                </span>
-                              )}
-                            </div>
-                            )}
-                          </div>
-                          )}
-
-                          <div className="divide-y divide-[#f0f0f2]">
-                            {shiftAppts.map((appt) => {
-                      const canMarkArrival = !['EXPIRED', 'CANCELLED', 'REJECTED', 'COMPLETED'].includes(appt.status);
-                      const canCallIn =
-                        appt.status === 'WAITING' &&
-                        appt.isCheckedIn &&
-                        !isDoctorAway &&
-                        (appt.appointmentDate || queueDate) === getLocalDateString();
-
-                      const isCancelledOrExpired = appt.status === 'CANCELLED' || appt.status === 'EXPIRED';
-
-                      return (
-                        <div
-                          key={appt.id}
-                          className={`px-3 py-3.5 sm:px-5 sm:py-4 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-3.5 ${
-                            isCancelledOrExpired ? 'bg-[#fafafc]/60 opacity-75' : 'hover:bg-[#fafafc]'
-                          }`}
-                        >
-                          {/* Left: Token + Patient Details */}
-                          <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
-                            <div
-                              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center font-semibold text-[15px] shrink-0 transition-all ${
-                                appt.status === 'IN_CONSULTATION'
-                                  ? 'bg-[#1d1d1f] text-white '
-                                  : appt.status === 'COMPLETED'
-                                  ? 'bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]'
-                                  : isCancelledOrExpired
-                                  ? 'bg-[#f5f5f7] text-[#a1a1a6] border border-[#e5e5ea] line-through'
-                                  : 'bg-[#f5f5f7] text-[#1d1d1f] border border-[#e5e5ea]'
-                              }`}
-                            >
-                              #{appt.queueNumber}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span
-                                  className={`font-semibold text-sm truncate ${
-                                    isCancelledOrExpired ? 'text-[#86868b] line-through' : 'text-[#1d1d1f]'
-                                  }`}
-                                >
-                                  {appt.patientName}
-                                </span>
-                                {/* The tab, shift group and doctor picker already say the rest; only the All tab needs a status */}
-                                {statusFilter === 'ALL' && !['WAITING', 'IN_CONSULTATION'].includes(appt.status) && (
-                                  <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b]">
-                                    {appt.status === 'COMPLETED' ? 'Done' : appt.status === 'CANCELLED' ? 'Cancelled' : 'Expired'}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex items-center gap-x-2.5 gap-y-0.5 text-xs text-[#86868b] mt-1 flex-wrap">
-                                {appt.patientPhone && <span>{formatDisplayPhone(appt.patientPhone)}</span>}
-                                {appt.estimatedTime && (
-                                  <>
-                                    {appt.patientPhone && <span aria-hidden="true">•</span>}
-                                    <span>
-                                      Est. <span className="text-[#1d1d1f] font-normal">{appt.estimatedTime}</span>
-                                    </span>
-                                  </>
-                                )}
-                                {(() => {
-                                  const cleanReason = getCleanReason(appt.reasonForVisit, appt.patientName);
-                                  if (!cleanReason) return null;
-                                  return (
-                                    <>
-                                      <span aria-hidden="true" className="hidden sm:inline">•</span>
-                                      <div className="basis-full sm:basis-auto min-w-0 sm:max-w-[220px]"><MoreLine text={cleanReason} /></div>
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Right: Arrival Toggle + Queue Actions */}
-                          <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 flex-wrap pt-2.5 lg:pt-0 border-t lg:border-t-0 border-[#f0f0f2]">
-                            {/* Arrival Check-In Pill */}
-                            {canMarkArrival && (
-                              <button
-                                type="button"
-                                disabled={togglingCheckinId === appt.id}
-                                onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
-                                className={`h-8 px-2.5 sm:px-3 rounded-full text-xs font-normal inline-flex items-center gap-1.5 transition-all cursor-pointer ${
-                                  appt.isCheckedIn
-                                    ? 'bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/25'
-                                    : 'bg-[#f5f5f7] hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#e5e5ea]'
-                                }`}
-                                title={appt.isCheckedIn ? 'Click to undo arrival' : 'Mark patient arrived at clinic'}
+                        return (
+                          <div
+                            key={appt.id}
+                            className={`px-3 py-3.5 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isDone ? 'opacity-70' : ''}`}
+                          >
+                            {/* Token and patient */}
+                            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                              <div
+                                className={`w-11 h-11 rounded-full flex items-center justify-center font-semibold text-[15px] shrink-0 ${
+                                  appt.isCheckedIn && !isDone ? 'bg-[#0066cc]/10 text-[#0066cc]' : 'bg-[#f5f5f7] text-[#1d1d1f]'
+                                } ${isCancelled ? 'line-through text-[#a1a1a6]' : ''}`}
+                                title={appt.isCheckedIn ? 'Arrived' : undefined}
                               >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full ${
-                                    appt.isCheckedIn ? 'bg-[#0066cc]' : 'bg-[#86868b]'
-                                  }`}
+                                #{appt.queueNumber}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`font-semibold text-sm truncate ${isCancelled ? 'text-[#86868b] line-through' : 'text-[#1d1d1f]'}`}>
+                                    {appt.patientName}
+                                  </span>
+                                  {isDone && (
+                                    <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b]">
+                                      {appt.status === 'COMPLETED' ? 'Done' : appt.status === 'CANCELLED' ? 'Cancelled' : 'Expired'}
+                                    </span>
+                                  )}
+                                </div>
+                                <MoreLine
+                                  className="text-xs text-[#86868b] mt-0.5"
+                                  text={[
+                                    appt.patientPhone ? formatDisplayPhone(appt.patientPhone) : null,
+                                    appt.estimatedTime && !isDone ? `Est. ${appt.estimatedTime}` : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
                                 />
-                                <span>{appt.isCheckedIn ? 'Arrived' : 'Mark arrived'}</span>
-                              </button>
-                            )}
+                              </div>
+                            </div>
 
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {/* Primary Action: Call In or Complete */}
-                              {canCallIn && (
+                            {/* One main action + menu */}
+                            <div className="flex items-center gap-2 justify-end shrink-0">
+                              {!isDone && !appt.isCheckedIn && (
+                                <button
+                                  type="button"
+                                  disabled={togglingCheckinId === appt.id}
+                                  onClick={() => handleToggleCheckIn(appt.id, appt.isCheckedIn)}
+                                  className="flex-1 sm:flex-none h-9 px-4 rounded-full text-xs font-normal border bg-white border-[#e5e5ea] text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#86868b]" />
+                                  Mark arrived
+                                </button>
+                              )}
+                              {canStart && !isDoctorAway && (
                                 <button
                                   type="button"
                                   onClick={() => handleStatusChange(appt.id, 'IN_CONSULTATION')}
-                                  className="h-8 px-3 sm:px-3.5 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-normal transition-all active:scale-[0.98] cursor-pointer"
+                                  className="flex-1 sm:flex-none h-9 px-4 rounded-full bg-[#0066cc] hover:bg-[#0071e3] text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                                 >
-                                  Call In
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  Start consultation
                                 </button>
                               )}
-
-                              {appt.status === 'WAITING' && appt.isCheckedIn && isDoctorAway && isTodayQueue && (
-                                <span className="h-8 px-3 rounded-full bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea] text-xs font-normal inline-flex items-center">
-                                  Doctor away
+                              {canStart && isDoctorAway && (
+                                <span className="h-9 px-3.5 rounded-full bg-[#f5f5f7] text-[#86868b] text-xs font-normal inline-flex items-center">Doctor away</span>
+                              )}
+                              {!isDone && appt.isCheckedIn && !canStart && (
+                                <span className="h-9 px-3.5 rounded-full bg-[#0066cc]/10 text-[#0066cc] text-xs font-normal inline-flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  Arrived
                                 </span>
                               )}
-
-                              {appt.status === 'IN_CONSULTATION' && (
-                                <span className="h-8 px-3 rounded-full bg-[#0066cc]/10 text-[#0066cc] border border-[#0066cc]/20 text-xs font-normal inline-flex items-center">
-                                  In Cabin
-                                </span>
-                              )}
-
-                              {/* Shift Date */}
-                              {(appt.status === 'WAITING' || appt.status === 'PENDING_APPROVAL') && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRescheduleTarget({
-                                      appointmentId: appt.id,
-                                      patientName: appt.patientName,
-                                      doctorName: queueDoctor?.fullName || 'Practitioner',
-                                      currentDate: queueDate,
-                                      currentQueueNumber: appt.queueNumber,
-                                      doctorId: queueDoctorId,
-                                      slotId: appt.slotId,
-                                    });
-                                    const baseDate = queueDate && queueDate > getLocalDateString() ? queueDate : getLocalDateString();
-                                    const [y, m, day] = baseDate.split('-').map(Number);
-                                    const d = new Date(y, m - 1, day + 1);
-                                    setRescheduleDate(getLocalDateString(d));
-                                    setRescheduleSlotId(appt.slotId || '');
-                                    setRescheduleError(null);
-                                  }}
-                                  className="h-8 px-2.5 sm:px-3 rounded-full text-[#1d1d1f] hover:bg-[#f5f5f7] text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
-                                  title="Move to another date"
-                                >
-                                  Move
-                                </button>
-                              )}
-
-                              {/* Cancel */}
-                              {appt.status === 'WAITING' && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleStatusChange(appt.id, 'CANCELLED')}
-                                  className="h-8 px-2.5 sm:px-3 rounded-full text-[#86868b] hover:text-danger hover:bg-danger-soft text-xs font-normal border border-[#e5e5ea] transition-all cursor-pointer"
-                                >
-                                  Cancel
-                                </button>
-                              )}
-
-                              {/* Reprint Pass */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setBookedPass({
-                                    queueNumber: appt.queueNumber,
-                                    estimatedTime: appt.estimatedTime,
-                                    checkingWindow: appt.checkingWindow,
-                                    shiftTime: appt.shiftTime,
-                                    appointmentDate: queueDate,
-                                    patientName: appt.patientName,
-                                    patientPhone: appt.patientPhone,
-                                    doctorName: queueDoctor?.fullName || 'Practitioner',
-                                    doctorSpecialty: queueDoctor?.specialty,
-                                    clinicName: data?.clinic?.clinicName,
-                                    clinicAddress: data?.clinic?.address,
-                                    walkInCode: appt.walkInCode,
-                                  });
-                                }}
-                                className="w-8 h-8 flex items-center justify-center rounded-full text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border border-[#e5e5ea] transition-colors cursor-pointer"
-                                title="Print slip"
-                              >
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
+                              <RowMenu label={`More for ${appt.patientName}`} items={menuItems} />
                             </div>
                           </div>
-                        </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                );
-              })()}
-            </div>
+                ))}
+              </div>
+            );
+          })()}
+        </>
+      )}
+      <WalkinCodeModal target={codeFor} onClose={() => setCodeFor(null)} />
+    </div>
   );
 };

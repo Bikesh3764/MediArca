@@ -24,7 +24,10 @@ export default function Visit() {
 
   const load = useCallback(async () => {
     try {
-      setAppt(keepIfSame(await api.getAppointmentById(String(id))));
+      // The "my visits" list carries the live queue (now serving, ahead, live time); fall back to the single lookup
+      const active = await api.getPatientAppointments({ status: 'active' }).catch(() => [] as Appointment[]);
+      const found = active.find((a) => a.id === String(id));
+      setAppt(keepIfSame(found || (await api.getAppointmentById(String(id)))));
       setFailed(false);
     } catch {
       // Keep the last pass on screen during background refreshes

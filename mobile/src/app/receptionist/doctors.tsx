@@ -240,9 +240,9 @@ function ScheduleSheet({
             <LeaveForm
               onDone={() => setAdding(false)}
               onCancel={() => setAdding(false)}
-              onSave={async (startDate, endDate, reason) => {
+              onSave={async (startDate, endDate) => {
                 setError(null);
-                await api.addDoctorLeave(doctorId, { type: 'DATE_RANGE', startDate, endDate, reason: reason || undefined, clinicId });
+                await api.addDoctorLeave(doctorId, { type: 'DATE_RANGE', startDate, endDate, clinicId });
                 success();
                 setNote('Leave added.');
                 onChanged(`Leave added for ${doctorName(doctor?.fullName)}.`);

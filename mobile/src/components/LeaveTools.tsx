@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { ALL_WEEKDAYS, type DoctorLeave, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
 import { kitStyles, Sheet } from '@/components/kit';
-import { Button, Card, Field, Notice, SelectField } from '@/components/ui';
+import { Button, Card, Notice, SelectField } from '@/components/ui';
 import { nextDays } from '@/lib/dates';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -60,7 +60,6 @@ export function LeaveList({ leaves, onRemove }: { leaves: DoctorLeave[]; onRemov
         <View key={l.id} style={[styles.leaveRow, i > 0 && styles.divider]}>
           <View style={styles.flex}>
             <Text style={type.body}>{leaveDates(l)}</Text>
-            {l.reason ? <Text style={type.footnote}>{l.reason}</Text> : null}
           </View>
           <Pressable accessibilityRole="button" hitSlop={8} onPress={() => onRemove(l)}>
             <Text style={styles.remove}>Remove</Text>
@@ -71,7 +70,7 @@ export function LeaveList({ leaves, onRemove }: { leaves: DoctorLeave[]; onRemov
   );
 }
 
-type SaveLeave = (start: string, end: string, reason: string) => Promise<void>;
+type SaveLeave = (start: string, end: string) => Promise<void>;
 
 /** Add leave in its own sheet (Shifts screen). */
 export function LeaveSheet({ visible, onClose, onSave }: { visible: boolean; onClose: () => void; onSave: SaveLeave }) {
@@ -82,11 +81,10 @@ export function LeaveSheet({ visible, onClose, onSave }: { visible: boolean; onC
   );
 }
 
-/** Pick From / To dates (next 90 days) and an optional reason. Used inside another sheet too. */
+/** Pick From / To dates (next 90 days). Used inside another sheet too. */
 export function LeaveForm({ onDone, onSave, onCancel }: { onDone: () => void; onSave: SaveLeave; onCancel?: () => void }) {
   const [start, setStart] = useState(LEAVE_DAYS[1].label);
   const [end, setEnd] = useState(LEAVE_DAYS[1].label);
-  const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const valueOf = (label: string) => LEAVE_DAYS.find((d) => d.label === label)?.value || '';
@@ -99,8 +97,7 @@ export function LeaveForm({ onDone, onSave, onCancel }: { onDone: () => void; on
     setSaving(true);
     setError(null);
     try {
-      await onSave(s, e, reason.trim());
-      setReason('');
+      await onSave(s, e);
       onDone();
     } catch (err: any) {
       setError(err?.message || 'Couldn’t add leave. Try again.');
@@ -113,7 +110,6 @@ export function LeaveForm({ onDone, onSave, onCancel }: { onDone: () => void; on
     <Card>
       <SelectField label="From" value={start} options={LEAVE_DAYS.map((d) => d.label)} onChange={setStart} />
       <SelectField label="To" value={end} options={LEAVE_DAYS.map((d) => d.label)} onChange={setEnd} />
-      <Field label="Reason (optional)" value={reason} onChangeText={setReason} maxLength={120} placeholder="e.g. Conference" />
       <Notice tone="error" message={error} />
       <Button label="Add leave" onPress={save} loading={saving} />
       {onCancel ? <Button label="Cancel" variant="plain" onPress={onCancel} /> : null}

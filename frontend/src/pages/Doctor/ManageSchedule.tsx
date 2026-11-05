@@ -847,7 +847,7 @@ export const ManageSchedule: React.FC = () => {
                               On leave today
                             </span>
                             <span className="text-[11px] text-[#86868b]">
-                              {todayLeave?.reason ? todayLeave.reason : 'Bookings are paused today.'}
+                              Bookings are paused today.
                             </span>
                           </div>
                         </>

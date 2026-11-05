@@ -3,12 +3,13 @@
 // Same checks as frontend/src/pages/Receptionist/desk (WalkinTab, state.tsx) and Doctor/dashboard/WalkinModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type QueuePreview, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
 import { api } from '@mediarca/shared/api';
 import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
 import { DayPills } from '@/components/DayPills';
+import { DoctorBar } from '@/components/DoctorBar';
 import { OptionList, PillButton } from '@/components/kit';
 import { Button, Card, Field, Notice, Segmented } from '@/components/ui';
 import { doctorName } from '@/lib/booking';
@@ -40,7 +41,7 @@ export interface IssuedToken {
   appointmentDate: string;
 }
 
-type Choice = { id: string; label: string };
+type Choice = { id: string; label: string; specialty?: string | null; avatarUrl?: string | null };
 
 export function WalkinForm({
   doctors,
@@ -75,7 +76,6 @@ export function WalkinForm({
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Not Specified');
-  const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issued, setIssued] = useState<IssuedToken | null>(null);
@@ -133,14 +133,12 @@ export function WalkinForm({
         patientAge: age.trim() || undefined,
         gender,
         isForOther: forOther,
-        reasonForVisit: reason.trim() || undefined,
       });
       success();
       setIssued(token);
       setName('');
       setPhone('');
       setAge('');
-      setReason('');
       setGender('Not Specified');
       loadPreview();
     } catch (err: any) {
@@ -154,12 +152,15 @@ export function WalkinForm({
 
   return (
     <>
-      {doctors && doctors.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
-          {doctors.map((d) => (
-            <PillButton key={d.id} label={d.label} active={d.id === doctorId} onPress={() => setDoctorId(d.id)} />
-          ))}
-        </ScrollView>
+      {doctors && doctors.length > 0 ? (
+        <DoctorBar
+          doctors={doctors.map((d) => ({ id: d.id, name: d.label, specialty: d.specialty, avatarUrl: d.avatarUrl }))}
+          value={doctorId}
+          onChange={(id) => {
+            setDoctorId(id);
+            setSlotId('');
+          }}
+        />
       ) : null}
       {clinics && clinics.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
@@ -224,7 +225,7 @@ export function WalkinForm({
         />
         <View style={styles.row}>
           <View style={styles.ageBox}>
-            <Field label="Age" value={age} onChangeText={(t) => setAge(t.replace(/\D/g, '').slice(0, 3))} keyboardType="number-pad" placeholder="Years" />
+            <Field label="Age (optional)" value={age} onChangeText={(t) => setAge(t.replace(/\D/g, '').slice(0, 3))} keyboardType="number-pad" placeholder="Years" />
           </View>
           <View style={styles.flex}>
             <Text style={styles.label}>Gender</Text>
@@ -239,7 +240,6 @@ export function WalkinForm({
             />
           </View>
         </View>
-        <Field label="Reason (optional)" value={reason} onChangeText={setReason} placeholder="e.g. Fever" maxLength={200} />
         <Notice tone="error" message={error} />
         <Button label="Add to queue" icon="add" onPress={add} loading={saving} />
       </Card>
@@ -248,15 +248,6 @@ export function WalkinForm({
 }
 
 function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void }) {
-  const share = () => {
-    const lines = [
-      `MediArca token #${token.queueNumber}`,
-      `${token.patientName} · ${doctorName(token.doctorName)}`,
-      `${formatDisplayDate(token.appointmentDate)}${token.checkingWindow ? ` · ${shiftLabel(token)}` : ''}${token.estimatedTime ? ` · ~${token.estimatedTime}` : ''}`,
-      token.walkInCode ? `Track: mediarca.in/track · code ${token.walkInCode}` : '',
-    ].filter(Boolean);
-    Share.share({ message: lines.join('\n') }).catch(() => {});
-  };
   return (
     <>
       <View style={styles.pass}>
@@ -288,7 +279,6 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
         <Detail label="Doctor" value={doctorName(token.doctorName)} />
         <Detail label="Date" value={formatDisplayDate(token.appointmentDate)} />
       </Card>
-      <Button label="Share slip" icon="share-outline" variant="secondary" onPress={share} />
       <Button label="Done" onPress={onDone} />
     </>
   );

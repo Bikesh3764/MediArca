@@ -114,11 +114,6 @@ export const PendingTab: React.FC = () => {
                               <span className="font-semibold text-sm text-[#1d1d1f]">
                                 {patientDisplay}
                               </span>
-                              {appt.isForOther && (
-                                <span className="px-2 py-0.5 rounded-full text-[11px] font-normal bg-[#f5f5f7] text-[#86868b] border border-[#e5e5ea]">
-                                  Family{appt.patientAge ? ` • ${appt.patientAge}y` : ''}
-                                </span>
-                              )}
                               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#0066cc]/10 text-[#0066cc]">
                                 ₹{fee}
                               </span>
@@ -146,11 +141,6 @@ export const PendingTab: React.FC = () => {
                               )}
                             </div>
 
-                            {appt.reasonForVisit && appt.reasonForVisit !== 'General Medical Consultation' && (
-                              <p className="text-xs text-[#86868b] pt-0.5 truncate max-w-xl">
-                                Reason: {appt.reasonForVisit}
-                              </p>
-                            )}
                           </div>
 
                           {/* Actions */}

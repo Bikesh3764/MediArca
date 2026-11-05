@@ -145,7 +145,7 @@ export const DoctorsTab: React.FC = () => {
                           <span className="text-[11px] text-[#86868b] truncate">
                             {doc.isOnLeaveToday ? (
                               <span className="text-danger font-normal truncate">
-                                {doc.todayLeave?.reason ? `Leave: ${doc.todayLeave.reason}` : 'On leave today'}
+                                On leave today
                               </span>
                             ) : (
                               'Available today'

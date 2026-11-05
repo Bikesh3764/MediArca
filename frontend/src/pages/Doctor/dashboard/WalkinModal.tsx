@@ -19,8 +19,6 @@ export const WalkinModal: React.FC = () => {
     setWalkinPhone,
     walkinDate,
     setWalkinDate,
-    walkinReason,
-    setWalkinReason,
     walkinSlotId,
     setWalkinSlotId,
     walkinClinicId,
@@ -112,7 +110,7 @@ export const WalkinModal: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                    Age
+                    Age <span className="text-[#86868b]">(optional)</span>
                   </label>
                   <input
                     type="number"
@@ -257,19 +255,6 @@ export const WalkinModal: React.FC = () => {
                   </select>
                   <ChevronDown className="w-4 h-4 text-[#86868b] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Reason
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Fever, cough"
-                  value={walkinReason}
-                  onChange={(e) => setWalkinReason(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                />
               </div>
 
               <div className="pt-2">

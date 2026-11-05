@@ -19,7 +19,7 @@ export default function DeskWalkin() {
         <EmptyState icon="medkit-outline" title="No doctors yet" message="Your clinic adds doctors to this desk." />
       ) : (
         <WalkinForm
-          doctors={doctors.map((d) => ({ id: d.doctorId, label: doctorName(d.fullName) }))}
+          doctors={doctors.map((d) => ({ id: d.doctorId, label: doctorName(d.fullName), specialty: d.specialty, avatarUrl: d.avatarUrl }))}
           fixedClinicId={desk.clinic?.id || doctors[0]?.clinics?.[0]?.clinicId}
           phoneRequired
           forOther={false}

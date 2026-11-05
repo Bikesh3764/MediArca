@@ -49,9 +49,6 @@ export const AppointmentDetailsModal: React.FC = () => {
                     <strong className="text-[#1d1d1f] mt-0.5 block">
                       {selectedAppointment.patient?.user?.fullName || selectedAppointment.patientName || 'Walk-in Patient'}
                     </strong>
-                    {selectedAppointment.isForOther && (
-                      <span className="text-[11px] text-[#86868b] font-normal">(Family)</span>
-                    )}
                   </div>
                   <div>
                     <span className="text-[#86868b] block text-[11px]">Phone</span>

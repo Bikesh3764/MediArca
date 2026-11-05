@@ -3,13 +3,12 @@ import { ChangePasswordCard } from '../../components/auth/ChangePasswordCard';
 import { DeleteAccountCard } from '../../components/auth/DeleteAccountCard';
 import { SubNav } from '../../components/layout/SubNav';
 import { useAuth } from '../../context/AuthContext';
-import { api, getLocalDateString, getFileUrl } from '../../services/api';
+import { api, getFileUrl } from '../../services/api';
 import { AvatarImage } from '../../components/ui/AvatarImage';
 import { UtilityCard } from '../../components/ui/UtilityCard';
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
 } from 'lucide-react';
 import { sanitizeIndianPhone, formatIndianPhone, isValidIndianPhone } from '../../utils/phoneUtils';
 import { useToast } from '../../context/ToastContext';
@@ -20,12 +19,7 @@ export const PatientProfile: React.FC = () => {
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [bloodGroup, setBloodGroup] = useState(user?.patientProfile?.bloodGroup || '');
-  const [dateOfBirth, setDateOfBirth] = useState(
-    user?.patientProfile?.dateOfBirth ? String(user.patientProfile.dateOfBirth).split('T')[0] : ''
-  );
   const [gender, setGender] = useState(user?.patientProfile?.gender || '');
-  const [emergencyContact, setEmergencyContact] = useState(user?.patientProfile?.emergencyContact || '');
 
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -37,12 +31,7 @@ export const PatientProfile: React.FC = () => {
       if (mounted && user) {
         setFullName(user.fullName || '');
         setPhone(user.phone || '');
-        setBloodGroup(user.patientProfile?.bloodGroup || '');
-        setDateOfBirth(
-          user.patientProfile?.dateOfBirth ? String(user.patientProfile.dateOfBirth).split('T')[0] : ''
-        );
         setGender(user.patientProfile?.gender || '');
-        setEmergencyContact(user.patientProfile?.emergencyContact || '');
       }
     });
     return () => {
@@ -75,10 +64,7 @@ export const PatientProfile: React.FC = () => {
       const updated = await api.updateUserProfile({
         fullName: fullName.trim(),
         phone: formattedPhone,
-        bloodGroup,
-        dateOfBirth,
         gender,
-        emergencyContact: emergencyContact.trim(),
       });
 
       updateUser(updated);
@@ -184,37 +170,6 @@ export const PatientProfile: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Emergency Contact <span className="text-[#86868b] font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={emergencyContact}
-                  onChange={(e) => setEmergencyContact(e.target.value)}
-                  placeholder="Name and phone"
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f] placeholder:text-[#a1a1a6]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                />
-              </div>
-            </div>
-          </UtilityCard>
-
-          {/* Health Details */}
-          <UtilityCard title="Health Details">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  max={getLocalDateString()}
-                  value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm text-[#1d1d1f]  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
                   Gender
                 </label>
                 <div className="p-1 bg-[#f5f5f7] border border-[#e5e5ea] rounded-full grid grid-cols-3 gap-0.5 h-11 select-none">
@@ -235,32 +190,6 @@ export const PatientProfile: React.FC = () => {
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-normal text-[#1d1d1f] mb-1.5 tracking-tight">
-                  Blood Group
-                </label>
-                <div className="relative">
-                  <select
-                    value={bloodGroup}
-                    onChange={(e) => setBloodGroup(e.target.value)}
-                    className={`w-full h-11 pl-3.5 pr-9 rounded-xl border border-[#d2d2d7] bg-white text-base sm:text-sm  focus:outline-none focus:border-[#0066cc] focus:ring-4 focus:ring-[#0066cc]/10 transition-all duration-150 appearance-none cursor-pointer ${
-                      bloodGroup ? 'text-[#1d1d1f] font-normal' : 'text-[#a1a1a6]'
-                    }`}
-                  >
-                    <option value="">Select</option>
-                    <option value="A+">A+</option>
-                    <option value="A-">A-</option>
-                    <option value="B+">B+</option>
-                    <option value="B-">B-</option>
-                    <option value="AB+">AB+</option>
-                    <option value="AB-">AB-</option>
-                    <option value="O+">O+</option>
-                    <option value="O-">O-</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-[#86868b] pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2" />
                 </div>
               </div>
             </div>

@@ -179,7 +179,8 @@ export default function DoctorProfile() {
               <SectionTitle title="Shift" />
               <ShiftList items={shiftItems} selectedId={slotId} onSelect={setSlotId} />
 
-              {preview ? (
+              {/* No token preview when nothing can be booked; the notice below says why */}
+              {preview && !block ? (
                 <View style={updating && styles.dim}>
                   <TokenTile preview={preview} blocked={Boolean(preview.isOnLeave || preview.isDayOff || preview.isPassed)} />
                 </View>

@@ -7,7 +7,7 @@ import { Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-nati
 import { Text } from '@/components/AppText';
 import { type Appointment, api, formatDisplayDate, shiftLabel } from '@mediarca/shared/api';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
-import { cleanVisitReason, visitTag } from '@mediarca/shared/utils/queueDisplay';
+import { visitTag } from '@mediarca/shared/utils/queueDisplay';
 import { EmptyState, kitStyles } from '@/components/kit';
 import { type MoveTarget, MoveSheet } from '@/components/MoveSheet';
 import { Button, Notice, Screen, Title } from '@/components/ui';
@@ -85,7 +85,6 @@ export default function DeskRequests() {
           const name = a.patientName || a.patient?.user?.fullName || 'Patient';
           const phone = a.patientPhone || a.patient?.user?.phone || '';
           const fee = a.fee || a.doctor?.consultationFee || 0;
-          const reason = cleanVisitReason(a.reasonForVisit, name);
           const tag = visitTag(a);
           return (
             <View key={a.id} style={styles.card}>
@@ -103,11 +102,6 @@ export default function DeskRequests() {
                   <Text style={type.footnote} numberOfLines={1}>
                     {formatDisplayDate(a.appointmentDate)} · {shiftLabel(a)}
                   </Text>
-                  {reason ? (
-                    <Text style={type.footnote} numberOfLines={2}>
-                      {reason}
-                    </Text>
-                  ) : null}
                 </View>
                 <Text style={styles.fee}>₹{fee}</Text>
               </View>
