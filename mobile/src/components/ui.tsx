@@ -19,6 +19,7 @@ import {
 import { Text, TextInput } from '@/components/AppText';
 import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 import { NavBar } from '@/components/kit';
+import { warning } from '@/lib/haptics';
 import { FadeIn, nativeDriver, smoothLayout, usePressScale } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -41,7 +42,7 @@ export function Screen({
     <SafeAreaView style={styles.screen} edges={edges}>
       {back ? <NavBar fallback={back} /> : null}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <FadeIn style={styles.flex}>
+        <View style={styles.flex}>
           {scroll ? (
             <ScrollView contentContainerStyle={styles.scrollBody} keyboardShouldPersistTaps="handled" refreshControl={refreshControl}>
               {children}
@@ -49,7 +50,7 @@ export function Screen({
           ) : (
             <View style={[styles.flex, styles.scrollBody]}>{children}</View>
           )}
-        </FadeIn>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -59,12 +60,22 @@ export function Card({ children, style }: { children: React.ReactNode; style?: V
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-/** Large title. `eyebrow` is a small grey line above it, e.g. today's date on home screens. */
-export function Title({ children, subtitle, eyebrow }: { children: React.ReactNode; subtitle?: string; eyebrow?: string }) {
+/**
+ * Large title. `eyebrow` is a small grey line above it, e.g. today's date on home screens.
+ * `right` (e.g. the bell) sits on the title's own line, not under the subtitle.
+ */
+export function Title({ children, subtitle, eyebrow, right }: { children: React.ReactNode; subtitle?: string; eyebrow?: string; right?: React.ReactNode }) {
   return (
-    <View style={styles.titleBlock}>
+    <View style={[styles.titleBlock, right ? styles.titleBlockWide : null]}>
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}
-      <Text style={type.largeTitle}>{children}</Text>
+      {right ? (
+        <View style={styles.titleRow}>
+          <Text style={[type.largeTitle, styles.titleText]}>{children}</Text>
+          {right}
+        </View>
+      ) : (
+        <Text style={type.largeTitle}>{children}</Text>
+      )}
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
@@ -194,6 +205,9 @@ export function Notice({
     setHidden(false);
   }
   const ms = tone === 'info' || persist ? 0 : NOTICE_MS[tone];
+  useEffect(() => {
+    if (message && tone === 'error') warning();
+  }, [message, stamp, tone]);
   useEffect(() => {
     if (!message || !ms) return;
     const timer = setTimeout(() => {
@@ -352,21 +366,51 @@ export function SelectField({
   );
 }
 
-export function Loading() {
+/** First open of a detail screen: grey shapes of the page instead of a spinner (no pulsing). */
+export function PagePlaceholder({ back = '/patient', title }: { back?: string; title?: string }) {
   return (
-    <View style={[styles.screen, styles.center]}>
-      <ActivityIndicator color={colors.primary} />
-    </View>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <NavBar title={title} fallback={back} />
+      <View style={styles.scrollBody} accessibilityLabel="Loading">
+        <View style={[styles.phCard, styles.phHead]}>
+          <View style={styles.phCircle} />
+          <View style={styles.phLines}>
+            <View style={[styles.phLine, { width: '62%' }]} />
+            <View style={[styles.phLine, { width: '38%' }]} />
+          </View>
+        </View>
+        <View style={[styles.phCard, { height: 128 }]} />
+        <View style={[styles.phCard, { height: 172 }]} />
+      </View>
+    </SafeAreaView>
   );
+}
+
+/** Plain screen while something loads; the spinner only shows if it takes longer than a moment. */
+export function Loading() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), 800);
+    return () => clearTimeout(timer);
+  }, []);
+  return <View style={[styles.screen, styles.center]}>{slow ? <ActivityIndicator color={colors.primary} /> : null}</View>;
 }
 
 export const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: colors.canvas },
   center: { alignItems: 'center', justifyContent: 'center' },
+  phCard: { borderRadius: radius.card, backgroundColor: colors.card, opacity: 0.7, padding: space.lg },
+  phHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  phCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.fill },
+  phLines: { flex: 1, gap: 10 },
+  phLine: { height: 12, borderRadius: 6, backgroundColor: colors.fill },
   scrollBody: { paddingHorizontal: space.lg + 4, paddingTop: space.sm, paddingBottom: space.xxl * 1.5, gap: space.lg },
   card: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg + 4, gap: space.lg, ...shadow.card },
   titleBlock: { marginTop: space.xl, marginBottom: space.xs, gap: 6, flexShrink: 1 },
+  titleBlockWide: { alignSelf: 'stretch' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
+  titleText: { flexShrink: 1 },
   subtitle: { fontSize: 17, color: colors.muted, lineHeight: 23 },
   eyebrow: { fontSize: 13, fontWeight: '600', color: colors.muted, letterSpacing: 0.3, marginBottom: -4 },
   button: { height: 52, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl },

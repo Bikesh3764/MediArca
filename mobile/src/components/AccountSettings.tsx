@@ -1,6 +1,8 @@
-// Settings list, password change, sign out and delete account, for every account type.
+// Settings list, password change, help and legal links, sign out, delete account and app version, for every account type.
 // Same rules as frontend/src/components/auth/ChangePasswordCard.tsx and DeleteAccountCard.tsx.
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
@@ -9,6 +11,7 @@ import { ListGroup, ListRow, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { success } from '@/lib/haptics';
+import { contactUrl, helpUrl, privacyUrl, termsUrl } from '@/lib/site';
 import { colors, space, type } from '@/theme';
 
 const WHAT_GOES: Record<string, string> = {
@@ -109,11 +112,21 @@ export function AccountActions({ rows = [] }: { rows?: React.ReactElement[] }) {
         <ListRow icon="key" tint={colors.tabInactive} label="Change password" onPress={() => setPasswordOpen(true)} />
       </ListGroup>
       <ListGroup>
+        <ListRow icon="help-circle" tint={colors.success} label="Help" onPress={() => WebBrowser.openBrowserAsync(helpUrl)} />
+        <ListRow icon="chatbubble-ellipses" tint={colors.success} label="Contact us" onPress={() => WebBrowser.openBrowserAsync(contactUrl)} />
+        <ListRow icon="shield-checkmark" tint={colors.tabInactive} label="Privacy" onPress={() => WebBrowser.openBrowserAsync(privacyUrl)} />
+        <ListRow icon="document-text" tint={colors.tabInactive} label="Terms" onPress={() => WebBrowser.openBrowserAsync(termsUrl)} />
+      </ListGroup>
+      <ListGroup>
         <ListRow icon="log-out-outline" destructive label="Sign out" onPress={signOut} />
       </ListGroup>
-      <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen(true)} style={styles.deleteLink}>
-        <Text style={styles.deleteText}>Delete account</Text>
-      </Pressable>
+      {/* Front desk logins belong to the clinic, which removes them from Staff */}
+      {user.role !== 'RECEPTIONIST' ? (
+        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setOpen(true)} style={styles.deleteLink}>
+          <Text style={styles.deleteText}>Delete account</Text>
+        </Pressable>
+      ) : null}
+      <Text style={[type.footnote, styles.version]}>MediArca {Constants.expoConfig?.version || ''}</Text>
 
       <Sheet visible={passwordOpen} title="Change password" doneLabel="Close" onClose={() => setPasswordOpen(false)}>
         <ChangePasswordForm />
@@ -146,4 +159,5 @@ const styles = StyleSheet.create({
   stack: { gap: space.lg, marginTop: space.sm },
   deleteLink: { alignSelf: 'center', paddingVertical: space.sm },
   deleteText: { fontSize: 15, color: colors.danger },
+  version: { textAlign: 'center', marginTop: -space.sm },
 });

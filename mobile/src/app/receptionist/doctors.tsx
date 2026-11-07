@@ -2,10 +2,10 @@
 // working days and planned leave at this clinic. Same calls as frontend/src/pages/Receptionist/desk/DoctorsTab.tsx
 // and components/common/DoctorScheduleLeaveModal.tsx.
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { ALL_WEEKDAYS, type DoctorLeave, type DoctorScheduleConfig, type ReceptionistLinkedDoctor, api } from '@mediarca/shared/api';
-import { Avatar, Chip, EmptyState, PillButton, PlaceholderCard, SectionTitle, Sheet } from '@/components/kit';
+import { Avatar, Chip, EmptyState, PillButton, PlaceholderCard, SectionTitle, Sheet, Toggle } from '@/components/kit';
 import { LeaveForm, LeaveList, leaveDates, upcomingLeaves, WeekdayDiscs } from '@/components/LeaveTools';
 import { Button, Notice, Screen, Title } from '@/components/ui';
 import { useDesk } from '@/context/DeskContext';
@@ -100,12 +100,11 @@ export default function DeskDoctors() {
                     </Text>
                   ) : null}
                 </View>
-                <Switch
+                <Toggle
                   accessibilityLabel={`${doctorName(doc.fullName)} on leave today`}
                   value={leave}
                   onValueChange={() => toggleToday(doc)}
                   disabled={busy === doc.doctorId}
-                  trackColor={{ true: colors.primary, false: undefined }}
                 />
               </View>
 

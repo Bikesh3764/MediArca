@@ -8,14 +8,14 @@ function ClinicTabs() {
   const requests = data?.incomingRequests?.length || 0;
   return (
     <Tabs screenOptions={tabScreenOptions} screenListeners={tabListeners}>
-      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('business', 'business-outline') }} />
+      <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home', 'home-outline') }} />
       <Tabs.Screen
         name="doctors"
         options={{ title: 'Doctors', tabBarIcon: tabIcon('medkit', 'medkit-outline'), tabBarBadge: requests ? requests : undefined }}
       />
       <Tabs.Screen name="staff" options={{ title: 'Staff', tabBarIcon: tabIcon('people', 'people-outline') }} />
       <Tabs.Screen name="qr" options={{ title: 'QR Code', tabBarIcon: tabIcon('qr-code', 'qr-code-outline') }} />
-      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person-circle', 'person-circle-outline') }} />
+      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person', 'person-outline') }} />
     </Tabs>
   );
 }

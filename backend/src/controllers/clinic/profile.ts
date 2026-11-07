@@ -191,6 +191,9 @@ export const getMyClinic = async (req: AuthRequest, res: Response): Promise<void
           status: cd.status,
           requestedBy: (cd as any).requestedBy || 'CLINIC',
           joinedAt: cd.createdAt,
+          // Live cabin status for the clinic's Doctors list
+          cabinStatus: (cd.doctor as any).cabinStatus || 'IN_CABIN',
+          expectedReturnTime: (cd.doctor as any).expectedReturnTime || null,
         };
       })
     );

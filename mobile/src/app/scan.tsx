@@ -86,7 +86,7 @@ export default function Scan() {
   if (user?.role !== 'PATIENT') {
     return (
       <Panel icon="qr-code" title="Check in" message={user ? 'Sign in with your patient account to check in.' : 'Sign in with the account you booked with.'} onClose={close}>
-        <Button label="Sign in" onPress={() => router.replace({ pathname: '/login', params: { role: 'PATIENT', next: '/scan' } })} />
+        <Button label="Sign in" onPress={() => router.replace({ pathname: '/login', params: { role: 'PATIENT', next: '/scan', why: 'to check in' } })} />
       </Panel>
     );
   }
@@ -147,8 +147,13 @@ export default function Scan() {
 
   if (!permission.granted) {
     return (
-      <Panel icon="camera" title="Allow camera" message="MediArca needs the camera to scan the QR code at the front desk." onClose={close}>
-        <Button label="Allow camera" onPress={allowCamera} />
+      <Panel
+        icon="camera"
+        title="Allow camera"
+        message={permission.canAskAgain ? 'MediArca needs the camera to scan the QR code at the front desk.' : 'Camera is off for MediArca. Turn it on in Settings › Permissions.'}
+        onClose={close}
+      >
+        <Button label={permission.canAskAgain ? 'Allow camera' : 'Open settings'} onPress={allowCamera} />
       </Panel>
     );
   }

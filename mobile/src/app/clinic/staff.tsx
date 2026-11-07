@@ -1,4 +1,5 @@
-// Front desk staff: add a receptionist (and hand over their login), choose their doctors, remove.
+// Front desk staff: add a receptionist (and hand over their login), edit name, mobile and doctors,
+// set a new temporary password, remove.
 // Same calls and checks as frontend/src/pages/Clinic/dashboard/StaffSection.tsx, AddStaffModal.tsx,
 // EditStaffModal.tsx and CredentialsModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
@@ -6,12 +7,12 @@ import { useState } from 'react';
 import { Linking, Pressable, RefreshControl, Share, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type ClinicReceptionistItem, api } from '@mediarca/shared/api';
-import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
+import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { CheckList } from '@/components/CheckList';
 import { Avatar, Chip, EmptyState, IconButton, InfoRow, kitStyles, PlaceholderCard, SectionTitle, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice, Screen, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
-import { doctorName } from '@/lib/booking';
+import { deskName, doctorName } from '@/lib/booking';
 import { confirmAction } from '@/lib/confirm';
 import { success } from '@/lib/haptics';
 import { receptionistLoginUrl } from '@/lib/site';
@@ -31,13 +32,13 @@ export default function ClinicStaff() {
   };
 
   const remove = async (rec: ClinicReceptionistItem) => {
-    const ok = await confirmAction({ title: 'Remove receptionist?', message: `Remove ${rec.fullName}? They won’t be able to sign in.`, confirmLabel: 'Remove' });
+    const ok = await confirmAction({ title: 'Remove receptionist?', message: `Remove ${deskName(rec.fullName)}? They won’t be able to sign in.`, confirmLabel: 'Remove' });
     if (!ok) return;
     setMessage(null);
     try {
       await api.removeClinicReceptionist(rec.id);
       success();
-      setMessage({ tone: 'success', text: `${rec.fullName} removed.` });
+      setMessage({ tone: 'success', text: `${deskName(rec.fullName)} removed.` });
       reload();
     } catch (err: any) {
       setMessage({ tone: 'error', text: err?.message || 'Couldn’t remove. Try again.' });
@@ -66,10 +67,10 @@ export default function ClinicStaff() {
         staff.map((rec) => (
           <View key={rec.id} style={styles.card}>
             <View style={styles.top}>
-              <Avatar name={rec.fullName} size={44} />
+              <Avatar name={deskName(rec.fullName)} size={44} />
               <View style={styles.flex}>
                 <Text style={type.headline} numberOfLines={1}>
-                  {rec.fullName}
+                  {deskName(rec.fullName)}
                 </Text>
                 <Text style={type.footnote} numberOfLines={1}>
                   {rec.email}
@@ -79,7 +80,7 @@ export default function ClinicStaff() {
               {rec.phone ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Call ${rec.fullName}`}
+                  accessibilityLabel={`Call ${deskName(rec.fullName)}`}
                   hitSlop={8}
                   onPress={() => Linking.openURL(toTelUri(rec.phone!))}
                   style={({ pressed }) => [styles.round, pressed && kitStyles.pressed]}
@@ -93,7 +94,7 @@ export default function ClinicStaff() {
             </View>
             <View style={styles.links}>
               <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setEditing(rec)}>
-                <Text style={styles.link}>Doctors</Text>
+                <Text style={styles.link}>Edit</Text>
               </Pressable>
               <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(rec)}>
                 <Text style={[styles.link, { color: colors.danger }]}>Remove</Text>
@@ -104,7 +105,7 @@ export default function ClinicStaff() {
       )}
 
       <AddStaffSheet visible={adding} onClose={() => setAdding(false)} onAdded={reload} />
-      <EditDoctorsSheet
+      <EditStaffSheet
         rec={editing}
         onClose={() => setEditing(null)}
         onSaved={(text) => {
@@ -217,29 +218,46 @@ function AddStaffSheet({ visible, onClose, onAdded }: { visible: boolean; onClos
   );
 }
 
-function EditDoctorsSheet({ rec, onClose, onSaved }: { rec: ClinicReceptionistItem | null; onClose: () => void; onSaved: (message: string) => void }) {
+/** Name, mobile and doctors; plus a new temporary password if they forgot theirs. */
+function EditStaffSheet({ rec, onClose, onSaved }: { rec: ClinicReceptionistItem | null; onClose: () => void; onSaved: (message: string) => void }) {
+  const { data } = useClinic();
   const doctors = useDoctorOptions();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [ids, setIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetDone, setResetDone] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const [seen, setSeen] = useState<string | null>(null);
   if ((rec?.id || null) !== seen) {
     setSeen(rec?.id || null);
     if (rec) {
+      setName(deskName(rec.fullName) || rec.fullName || '');
+      setPhone(sanitizeIndianPhone(rec.phone));
       setIds(rec.doctorIds || rec.doctors?.map((d) => d.id) || []);
       setError(null);
+      setPassword('');
+      setResetDone(null);
+      setResetError(null);
     }
   }
 
   const save = async () => {
     if (!rec || busy) return;
+    if (!name.trim()) return setError('Enter the name.');
+    if (phone && !isValidIndianPhone(phone)) return setError('Enter a valid 10-digit mobile number.');
     setBusy(true);
     setError(null);
     try {
-      const res = await api.updateClinicReceptionistDoctors(rec.id, ids);
+      const detailsChanged = name.trim() !== (deskName(rec.fullName) || rec.fullName) || phone !== sanitizeIndianPhone(rec.phone);
+      if (detailsChanged) await api.updateClinicReceptionist(rec.id, { fullName: name.trim(), phone: phone ? formatIndianPhone(phone) : '' });
+      await api.updateClinicReceptionistDoctors(rec.id, ids);
       success();
-      onSaved(res?.message || 'Saved.');
+      onSaved(`${name.trim()} saved.`);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Couldn’t save. Try again.');
@@ -248,12 +266,61 @@ function EditDoctorsSheet({ rec, onClose, onSaved }: { rec: ClinicReceptionistIt
     }
   };
 
+  const reset = async () => {
+    if (!rec || resetting) return;
+    if (password.trim().length < 8) return setResetError('Password must be at least 8 characters.');
+    const ok = await confirmAction({ title: 'Set a new password?', message: `${name.trim() || 'They'} will be signed out and must use the new password.`, confirmLabel: 'Set password' });
+    if (!ok) return;
+    setResetting(true);
+    setResetError(null);
+    try {
+      await api.resetClinicReceptionistPassword(rec.id, password.trim());
+      success();
+      setResetDone(password.trim());
+    } catch (err: any) {
+      setResetError(err?.message || 'Couldn’t reset the password. Try again.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const shareLogin = () => {
+    if (!rec || !resetDone) return;
+    Share.share({
+      message: `MediArca receptionist login
+Clinic: ${data?.clinic?.clinicName || 'Clinic'}
+Name: ${name.trim()}
+Email: ${rec.email}
+Password: ${resetDone}
+Sign in: MediArca app or ${receptionistLoginUrl}`,
+    }).catch(() => {});
+  };
+
   return (
-    <Sheet visible={Boolean(rec)} title={rec?.fullName || 'Doctors'} doneLabel="Close" onClose={() => !busy && onClose()}>
+    <Sheet visible={Boolean(rec)} title={deskName(rec?.fullName) || 'Edit'} doneLabel="Close" onClose={() => !busy && !resetting && onClose()}>
       <View style={styles.stack}>
+        <Card>
+          <Field label="Full name" value={name} onChangeText={setName} autoComplete="name" maxLength={100} />
+          <Field label="Mobile" prefix="+91" value={phone} onChangeText={(t) => setPhone(t.replace(/\D/g, '').slice(0, 10))} keyboardType="phone-pad" placeholder="Optional" />
+        </Card>
+        <SectionTitle title="Doctors" />
         {doctors.length ? <CheckList options={doctors} value={ids} onChange={setIds} /> : <Text style={[type.caption, styles.centerText]}>Add doctors first.</Text>}
         <Notice tone="error" message={error} />
-        <Button label="Save" onPress={save} loading={busy} disabled={!doctors.length} />
+        <Button label="Save" onPress={save} loading={busy} />
+
+        <SectionTitle title="Password" />
+        {resetDone ? (
+          <Card>
+            <Text style={type.caption}>New password set. Share it; they choose their own at sign-in.</Text>
+            <Button label="Share login" icon="share-outline" onPress={shareLogin} />
+          </Card>
+        ) : (
+          <Card>
+            <Field label="New temporary password" value={password} onChangeText={setPassword} secure autoComplete="off" placeholder="At least 8 characters" maxLength={128} />
+            <Notice tone="error" message={resetError} />
+            <Button label="Set new password" variant="secondary" onPress={reset} loading={resetting} />
+          </Card>
+        )}
       </View>
     </Sheet>
   );

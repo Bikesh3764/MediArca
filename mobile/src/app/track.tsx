@@ -1,4 +1,4 @@
-// Walk-in patients follow their queue with the mobile number and the 6-character code on their slip.
+// Walk-in patients follow their queue with the mobile number and the 6-character code the front desk gives them.
 // No account needed. Only shows the queue; it never checks anyone in (FIX-058). Mirrors TrackWalkin.tsx.
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -67,7 +67,7 @@ export default function Track() {
 
   return (
     <Screen back="/welcome">
-      <Title subtitle="Use the mobile number and code from your walk-in slip.">Track walk-in</Title>
+      <Title subtitle="Use your mobile number and the code from the front desk.">Track walk-in</Title>
 
       {result ? (
         <>
@@ -107,7 +107,7 @@ export default function Track() {
             onSubmitEditing={submit}
             returnKeyType="search"
           />
-          <Text style={styles.help}>The code is printed on the slip from the front desk.</Text>
+          <Text style={styles.help}>Ask the front desk for your code.</Text>
           <Notice tone="error" message={error} />
           <Button label="Show my queue" icon="search" onPress={submit} loading={loading} />
         </Card>

@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
-import { type AppNotification, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
+import { type AppNotification, api, formatDisplayDate, getLocalDateString, tidyTimes } from '@mediarca/shared/api';
 import { EmptyState, type IconName, PlaceholderCard, SectionTitle } from '@/components/kit';
 import { Screen, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
@@ -16,12 +16,35 @@ import { colors, radius, shadow, space, type } from '@/theme';
 
 const SEEN_AFTER_MS = 1200;
 
-const iconFor = (n: AppNotification): IconName => {
-  if (n.type === 'CABIN_STATUS') return 'medkit';
-  if (n.type === 'CLINICAL') return 'checkmark-circle';
-  if (n.type === 'QUEUE') return 'time';
-  if (n.type === 'APPOINTMENT') return 'calendar';
-  return 'notifications';
+/** Icon and colour by kind, so the list is easy to scan. */
+const lookOf = (n: AppNotification): { icon: IconName; color: string; soft: string } => {
+  const title = (n.title || '').toLowerCase();
+  if (/cancel|declin|reject|expired/.test(title)) return { icon: 'close-circle', color: colors.danger, soft: colors.dangerSoft };
+  if (title.includes('leave') || title.includes('stepped out')) return { icon: 'cafe', color: colors.warning, soft: colors.warningSoft };
+  if (n.type === 'QUEUE' || title.includes('turn')) return { icon: 'walk', color: colors.success, soft: colors.successSoft };
+  if (n.type === 'CABIN_STATUS') return { icon: 'medkit', color: colors.success, soft: colors.successSoft };
+  if (n.type === 'CLINICAL' || title.includes('confirmed')) return { icon: 'checkmark-circle', color: colors.success, soft: colors.successSoft };
+  if (n.type === 'APPOINTMENT') return { icon: 'calendar', color: colors.primary, soft: colors.primarySoft };
+  return { icon: 'notifications', color: colors.primary, soft: colors.primarySoft };
+};
+
+/** Old messages named the shift ("Sat, 7 Nov (Morning Shift)"); the date says enough. */
+const cleanMessage = (m: string) => tidyTimes(m).replace(/\s*\([A-Za-z ]*Shift\)/g, '');
+
+/**
+ * Repeats in the same group (Today, Yesterday, Earlier) become one row with a count: the doctor going in and out many times,
+ * or the same "Doctor on leave" message sent more than once. The newest one is shown.
+ */
+const collapse = (items: AppNotification[]): { n: AppNotification; ids: string[] }[] => {
+  const out: { n: AppNotification; ids: string[]; key: string }[] = [];
+  for (const n of items) {
+    const who = (n.message || '').split(/ (?:is now|will be|stepped out)/)[0];
+    const key = n.type === 'CABIN_STATUS' ? `cabin|${who}` : `same|${n.title}|${n.message}`;
+    const hit = out.find((x) => x.key === key);
+    if (hit) hit.ids.push(n.id);
+    else out.push({ n, ids: [n.id], key });
+  }
+  return out;
 };
 
 /** Where a notification takes you in the app. */
@@ -91,8 +114,22 @@ export default function Notifications() {
     setRefreshing(false);
   };
 
-  const open = (n: AppNotification) => {
-    markRead([n.id]);
+  const open = async (n: AppNotification, ids: string[]) => {
+    markRead(ids);
+    if (user?.role === 'PATIENT') {
+      // Open the visit it is about: the one active visit whose doctor the message names
+      try {
+        const visits = await api.getPatientAppointments({ status: 'active' });
+        const text = `${n.title} ${n.message}`.toLowerCase();
+        const hits = (Array.isArray(visits) ? visits : []).filter((a) => {
+          const name = (a.doctor?.user?.fullName || '').replace(/^dr\.?\s*/i, '').toLowerCase();
+          return name && text.includes(name);
+        });
+        if (hits.length === 1) return router.push({ pathname: '/visit/[id]', params: { id: hits[0].id } });
+      } catch {
+        // fall back to the list
+      }
+    }
     const link = linkFor(user?.role, n);
     if (link) router.navigate(link as never);
   };
@@ -132,17 +169,18 @@ export default function Notifications() {
           <View key={g.title} style={styles.section}>
             <SectionTitle title={g.title} />
             <View style={styles.group}>
-              {g.items.map((n, i) => {
-                const isNew = !n.isRead || fresh.has(n.id);
+              {collapse(g.items).map(({ n, ids }, i) => {
+                const isNew = ids.some((id) => fresh.has(id)) || !n.isRead;
+                const look = lookOf(n);
                 return (
                   <Pressable
                     key={n.id}
                     accessibilityRole="button"
-                    onPress={() => open(n)}
+                    onPress={() => open(n, ids)}
                     style={({ pressed }) => [styles.row, i > 0 && styles.divider, isNew && styles.rowNew, pressed && { backgroundColor: colors.canvas }]}
                   >
-                    <View style={[styles.icon, isNew && { backgroundColor: colors.primary }]}>
-                      <Ionicons name={iconFor(n)} size={16} color={isNew ? colors.white : colors.primary} />
+                    <View style={[styles.icon, { backgroundColor: isNew ? look.color : look.soft }]}>
+                      <Ionicons name={look.icon} size={16} color={isNew ? colors.white : look.color} />
                     </View>
                     <View style={styles.flex}>
                       <View style={styles.topLine}>
@@ -152,8 +190,9 @@ export default function Notifications() {
                         <Text style={type.footnote}>{timeLabel(n.createdAt)}</Text>
                       </View>
                       <Text style={type.caption} numberOfLines={3}>
-                        {n.message}
+                        {cleanMessage(n.message)}
                       </Text>
+                      {ids.length > 1 ? <Text style={type.footnote}>+{ids.length - 1} earlier</Text> : null}
                     </View>
                     {isNew ? <View style={styles.dot} /> : null}
                   </Pressable>

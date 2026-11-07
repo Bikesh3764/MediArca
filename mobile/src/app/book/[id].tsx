@@ -6,13 +6,13 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { MoreText } from '@/components/MoreText';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { type Appointment, type Doctor, type QueuePreview, api, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
+import { type Appointment, type Doctor, type QueuePreview, api, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel, tidyTimes } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, BottomBar, EmptyState, InfoRow, NavBar, goBack } from '@/components/kit';
-import { Button, Field, Loading, Notice, Segmented } from '@/components/ui';
+import { Button, Field, Notice, PagePlaceholder, Segmented } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
-import { bookingBlock, clinicFor, doctorName, feeFor, receptionistsFor, sortClinics } from '@/lib/booking';
+import { bookingBlock, clinicFor, deskName, doctorName, feeFor, receptionistsFor, sortClinics } from '@/lib/booking';
 import { success, tap } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -62,9 +62,9 @@ export default function Book() {
 
   if (!user) {
     const next = `/book/${id}?date=${date}${params.slot ? `&slot=${params.slot}` : ''}${params.clinic ? `&clinic=${params.clinic}` : ''}`;
-    return <Redirect href={{ pathname: '/login', params: { role: 'PATIENT', next } }} />;
+    return <Redirect href={{ pathname: '/login', params: { role: 'PATIENT', next, ...(doctor ? { why: `to book ${doctorName(doctor.user?.fullName)}` } : {}) } }} />;
   }
-  if (loadState === 'loading') return <Loading />;
+  if (loadState === 'loading') return <PagePlaceholder title="Book" />;
   if (!doctor) {
     return (
       <SafeAreaView style={styles.screen}>
@@ -116,11 +116,13 @@ export default function Book() {
   if (booked) {
     const desk = receptionistsFor(doctor, clinicId)[0];
     const phone = booked.receptionistPhone || desk?.phone || booked.clinic?.phone || clinic?.clinic.phone || null;
-    const deskName = booked.receptionistName || desk?.name || 'Front desk';
+    const deskLabel = deskName(booked.receptionistName || desk?.name) || 'Front desk';
     const token = booked.estimatedQueueNumber || (booked.queueNumber > 0 ? booked.queueNumber : 1);
     const leave = (path: '/patient/visits' | '/patient') => {
       if (router.canDismiss()) router.dismissAll();
-      router.replace(path);
+      // Open the Upcoming tab, where the new booking is
+      if (path === '/patient/visits') router.replace({ pathname: path, params: { tab: 'upcoming', at: String(Date.now()) } });
+      else router.replace(path);
     };
     return (
       <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -142,7 +144,7 @@ export default function Book() {
             <View style={styles.deskTop}>
               <View style={styles.flex}>
                 <Text style={type.caption}>Receptionist</Text>
-                <Text style={type.headline}>{deskName}</Text>
+                <Text style={type.headline}>{deskLabel}</Text>
                 <MoreText style={type.caption} lines={2}>
                   {`${clinic?.clinic.clinicName || ''}${clinic ? ` · ${formatClinicAddress(clinic.clinic, { withState: false })}` : ''}`}
                 </MoreText>
@@ -188,10 +190,12 @@ export default function Book() {
             <InfoRow label="Date" value={formatDisplayDate(date)} />
             <InfoRow label="Shift" value={shiftName} />
             <InfoRow
-              label="Token"
+              label="Est. token"
               value={
                 <Text style={styles.tokenValue}>
-                  {preview && !block ? `#${Math.max(1, preview.nextQueueNumber || 1)} · ${preview.estimatedTime}` : '—'}
+                  {preview && !block
+                    ? `#${Math.max(1, preview.nextQueueNumber || 1)}${/\d/.test(preview.estimatedTime || '') ? ` · about ${tidyTimes(preview.estimatedTime)}` : ''}`
+                    : '—'}
                 </Text>
               }
             />

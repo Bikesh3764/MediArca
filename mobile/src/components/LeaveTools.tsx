@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { ALL_WEEKDAYS, type DoctorLeave, formatDisplayDate, getLocalDateString } from '@mediarca/shared/api';
 import { kitStyles, Sheet } from '@/components/kit';
-import { Button, Card, Notice, SelectField } from '@/components/ui';
+import { RangeCalendar } from '@/components/RangeCalendar';
+import { Button, Card, Notice } from '@/components/ui';
 import { nextDays } from '@/lib/dates';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -53,7 +54,7 @@ export function WeekdayDiscs({ days, onToggle, small = false }: { days: string[]
 
 /** Planned leave with Remove on each. */
 export function LeaveList({ leaves, onRemove }: { leaves: DoctorLeave[]; onRemove: (l: DoctorLeave) => void }) {
-  if (!leaves.length) return <Text style={type.caption}>No leave planned.</Text>;
+  if (!leaves.length) return <Text style={[type.caption, styles.empty]}>No leave planned.</Text>;
   return (
     <View style={styles.group}>
       {leaves.map((l, i) => (
@@ -81,23 +82,20 @@ export function LeaveSheet({ visible, onClose, onSave }: { visible: boolean; onC
   );
 }
 
-/** Pick From / To dates (next 90 days). Used inside another sheet too. */
+/** Pick the leave days on a calendar (next 90 days): tap the first day, then the last. Used inside another sheet too. */
 export function LeaveForm({ onDone, onSave, onCancel }: { onDone: () => void; onSave: SaveLeave; onCancel?: () => void }) {
-  const [start, setStart] = useState(LEAVE_DAYS[1].label);
-  const [end, setEnd] = useState(LEAVE_DAYS[1].label);
+  const [start, setStart] = useState(LEAVE_DAYS[1].value);
+  const [end, setEnd] = useState<string | null>(LEAVE_DAYS[1].value);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const valueOf = (label: string) => LEAVE_DAYS.find((d) => d.label === label)?.value || '';
+  const last = end || start;
 
   const save = async () => {
-    const s = valueOf(start);
-    const e = valueOf(end);
-    if (!s || !e) return setError('Pick a start and end date.');
-    if (s > e) return setError('Start date must be before end date.');
+    if (!start) return setError('Pick the leave days.');
     setSaving(true);
     setError(null);
     try {
-      await onSave(s, e);
+      await onSave(start, last);
       onDone();
     } catch (err: any) {
       setError(err?.message || 'Couldn’t add leave. Try again.');
@@ -108,8 +106,18 @@ export function LeaveForm({ onDone, onSave, onCancel }: { onDone: () => void; on
 
   return (
     <Card>
-      <SelectField label="From" value={start} options={LEAVE_DAYS.map((d) => d.label)} onChange={setStart} />
-      <SelectField label="To" value={end} options={LEAVE_DAYS.map((d) => d.label)} onChange={setEnd} />
+      <Text style={type.headline}>{start === last ? formatDisplayDate(start) : `${formatDisplayDate(start)} – ${formatDisplayDate(last)}`}</Text>
+      <RangeCalendar
+        start={start}
+        end={end}
+        min={LEAVE_DAYS[0].value}
+        max={LEAVE_DAYS[LEAVE_DAYS.length - 1].value}
+        onChange={(a, b) => {
+          setStart(a);
+          setEnd(b);
+          setError(null);
+        }}
+      />
       <Notice tone="error" message={error} />
       <Button label="Add leave" onPress={save} loading={saving} />
       {onCancel ? <Button label="Cancel" variant="plain" onPress={onCancel} /> : null}
@@ -131,4 +139,5 @@ const styles = StyleSheet.create({
   leaveRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, minHeight: 56 },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
   remove: { fontSize: 15, color: colors.danger },
+  empty: { marginLeft: 4 },
 });

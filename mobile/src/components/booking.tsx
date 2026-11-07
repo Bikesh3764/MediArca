@@ -4,7 +4,7 @@ import { type ComponentProps, useEffect, useRef } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { MoreText } from '@/components/MoreText';
-import { type ClinicProfile, type Doctor, type DoctorSlot, type QueuePreview, type SlotStatusResult, WEEKDAY_SINGLE_LETTERS, formatDisplayDate, formatDoctorDegrees, getDayOfWeekCode, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
+import { type ClinicProfile, type Doctor, type DoctorSlot, type QueuePreview, type SlotStatusResult, WEEKDAY_SINGLE_LETTERS, formatDisplayDate, formatDoctorDegrees, getDayOfWeekCode, getLocalDateString, shiftLabel, slotTimeLabel, tidyTimes } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { Avatar, CabinBadge, Chip, ClinicImage, PressableCard } from '@/components/kit';
 import { doctorName } from '@/lib/booking';
@@ -56,11 +56,16 @@ export function DoctorCard({
         ) : clinic ? (
           <View style={[styles.metaRow, styles.flex]}>
             <Ionicons name="location" size={13} color={colors.placeholder} />
-            <Text style={[type.footnote, styles.shrink]} numberOfLines={2}>
+            <Text style={[type.footnote, styles.shrink]} numberOfLines={1}>
               {clinic.clinic.clinicName}
-              {clinic.clinic.city ? ` · ${clinic.clinic.city}` : ''}
-              {doctor.clinics && doctor.clinics.length > 1 ? ` +${doctor.clinics.length - 1}` : ''}
             </Text>
+            {/* Name shortens first; city and "+1" always stay */}
+            {clinic.clinic.city ? (
+              <Text style={[type.footnote, styles.keep]} numberOfLines={1}>
+                · {clinic.clinic.city}
+              </Text>
+            ) : null}
+            {doctor.clinics && doctor.clinics.length > 1 ? <Text style={[type.footnote, styles.keep]}>+{doctor.clinics.length - 1}</Text> : null}
           </View>
         ) : (
           <Text style={[type.caption, styles.flex]}>No clinic yet</Text>
@@ -78,7 +83,7 @@ export function ClinicCard({ clinic, onPress }: { clinic: ClinicProfile; onPress
       <View style={styles.row}>
         <ClinicImage uri={clinic.avatarUrl} size={60} />
         <View style={styles.flex}>
-          <Text style={type.headline} numberOfLines={1}>
+          <Text style={type.headline} numberOfLines={2}>
             {clinic.clinicName}
           </Text>
           <MoreText style={type.caption} lines={2}>{formatClinicAddress(clinic) || 'Clinic'}</MoreText>
@@ -122,8 +127,8 @@ export function ClinicChoice({
           >
             <ClinicImage uri={c.clinic.avatarUrl} size={44} />
             <View style={styles.flex}>
-              <View style={styles.nameRow}>
-                <Text style={[styles.optionTitle, styles.shrink]} numberOfLines={1}>
+              <View style={[styles.nameRow, styles.nameRowTop]}>
+                <Text style={[styles.optionTitle, styles.shrink]} numberOfLines={2}>
                   {c.clinic.clinicName}
                 </Text>
                 {c.hasReceptionist === false ? <Chip label="Closed" /> : null}
@@ -188,7 +193,8 @@ export function DateStrip({
         const code = getDayOfWeekCode(item);
         const off = workingDays ? !workingDays.has(code) : false;
         const dayNum = Number(item.slice(8, 10));
-        const showMonth = dayNum === 1 || item === dates[0];
+        // Weekday letter on every day (M T W…); the month only on the 1st, when a new month starts
+        const showMonth = dayNum === 1 && item !== dates[0];
         return (
           <Pressable
             accessibilityRole="button"
@@ -256,8 +262,6 @@ export function ShiftList({
           <Chip label="Ended" />
         ) : full ? (
           <Chip label="Full" tone="danger" />
-        ) : selected ? (
-          <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
         ) : (
           <Chip label="Available" tone="primary" />
         );
@@ -312,7 +316,7 @@ export function TokenTile({ preview, blocked }: { preview: QueuePreview; blocked
         </View>
         <View style={styles.tokenRight}>
           <Text style={styles.tokenLabel}>Est. time</Text>
-          <Text style={styles.tokenTime}>{blocked ? '—' : preview.estimatedTime}</Text>
+          <Text style={styles.tokenTime}>{blocked ? '—' : tidyTimes(preview.estimatedTime)}</Text>
         </View>
       </View>
       <View style={styles.tokenFooter}>
@@ -328,9 +332,11 @@ export function TokenTile({ preview, blocked }: { preview: QueuePreview; blocked
 const styles = StyleSheet.create({
   flex: { flex: 1, minWidth: 0 },
   shrink: { flexShrink: 1 },
+  keep: { flexShrink: 0 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   stack: { gap: space.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nameRowTop: { alignItems: 'flex-start' },
   specialty: { fontSize: 15, color: colors.primary, marginTop: 2, marginBottom: 1 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   feeBox: { alignItems: 'flex-end', gap: 2 },

@@ -5,12 +5,11 @@ import { useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { MoreText } from '@/components/MoreText';
-import { type ClinicAppointment, formatDisplayDate, shiftLabel } from '@mediarca/shared/api';
+import { type ClinicAppointment, formatDisplayDate, shiftLabel, tidyTimes } from '@mediarca/shared/api';
 import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { ClinicDetailsSheet } from '@/components/ClinicDetailsSheet';
-import { Chip, ClinicImage, EmptyState, type IconName, ListGroup, ListRow, PlaceholderCard, SectionTitle } from '@/components/kit';
+import { Chip, ClinicImage, EmptyState, type IconName, PlaceholderCard, SectionTitle } from '@/components/kit';
 import { NotificationBell } from '@/components/NotificationBell';
-import { ReportSheet } from '@/components/ReportSheet';
 import { Button, Notice, Screen, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
 import { doctorName } from '@/lib/booking';
@@ -26,6 +25,7 @@ const STATUS: Record<string, { label: string; tone: 'primary' | 'warning' | 'dan
   EXPIRED: { label: 'Expired', tone: 'neutral' },
 };
 
+const PAID = new Set(['WAITING', 'IN_CONSULTATION', 'COMPLETED']);
 const rupees = (n?: number | null) => `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
 
 export default function ClinicHome() {
@@ -33,7 +33,6 @@ export default function ClinicHome() {
   const [refreshing, setRefreshing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [report, setReport] = useState(false);
   const clinic = data?.clinic;
 
   const onRefresh = async () => {
@@ -44,8 +43,16 @@ export default function ClinicHome() {
 
   const status = clinic?.verificationStatus;
   const needsLocation = Boolean(clinic) && (!clinic?.address || !clinic?.city || !clinic?.state);
-  const bookings = data?.recentAppointments || [];
+  // Newest day first, with a heading per day
+  const bookings = [...(data?.recentAppointments || [])].sort((x, y) => String(y.date || '').localeCompare(String(x.date || '')));
   const shown = showAll ? bookings : bookings.slice(0, 8);
+  const days: { day: string; items: ClinicAppointment[] }[] = [];
+  for (const a of shown) {
+    const day = String(a.date || '').slice(0, 10);
+    const last = days[days.length - 1];
+    if (last && last.day === day) last.items.push(a);
+    else days.push({ day, items: [a] });
+  }
 
   return (
     <Screen edges={['top']} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
@@ -94,28 +101,29 @@ export default function ClinicHome() {
           <View style={styles.stats}>
             <Stat icon="medkit" tint={colors.primary} label="Doctors" value={String(data.totalDoctors ?? data.doctors.length)} />
             <Stat icon="calendar" tint={colors.orange} label="Bookings" value={String(data.totalBookings || 0)} />
-            <Stat icon="wallet" tint={colors.success} label="Revenue" value={rupees(data.totalRevenue)} />
+            <Stat icon="wallet" tint={colors.success} label="Fees" value={rupees(data.totalRevenue)} />
           </View>
-          <ListGroup>
-            <ListRow icon="document-text" label="Report" onPress={() => setReport(true)} />
-          </ListGroup>
 
           <SectionTitle title="Recent bookings" />
           {bookings.length === 0 ? (
             <EmptyState icon="calendar-outline" title="No bookings yet" message="New bookings show up here." />
           ) : (
-            <View style={styles.group}>
-              {shown.map((a, i) => (
-                <BookingRow key={a.id} a={a} first={i === 0} />
-              ))}
-            </View>
+            days.map((g) => (
+              <View key={g.day} style={styles.day}>
+                <Text style={styles.dayTitle}>{isToday(g.day) ? 'Today' : formatDisplayDate(g.day)}</Text>
+                <View style={styles.group}>
+                  {g.items.map((a, i) => (
+                    <BookingRow key={a.id} a={a} first={i === 0} />
+                  ))}
+                </View>
+              </View>
+            ))
           )}
           {bookings.length > shown.length ? <Button label={`Show all ${bookings.length}`} variant="plain" onPress={() => setShowAll(true)} /> : null}
         </>
       )}
 
       <ClinicDetailsSheet clinic={clinic} visible={editing} onClose={() => setEditing(false)} onSaved={reload} />
-      <ReportSheet role="CLINIC" visible={report} onClose={() => setReport(false)} />
     </Screen>
   );
 }
@@ -146,12 +154,16 @@ function BookingRow({ a, first }: { a: ClinicAppointment; first: boolean }) {
           {a.patientName}
         </Text>
         <Text style={type.footnote} numberOfLines={1}>
-          {[doctorName(a.doctorName), isToday(String(a.date || '').slice(0, 10)) ? '' : formatDisplayDate(a.date), a.estimatedTime || shiftLabel(a, '')].filter(Boolean).join(' · ')}
+          {doctorName(a.doctorName)}
+        </Text>
+        <Text style={type.footnote} numberOfLines={1}>
+          {tidyTimes(a.estimatedTime) || shiftLabel(a, '')}
         </Text>
       </View>
       <View style={styles.right}>
         <Chip label={s.label} tone={s.tone} />
-        <Text style={type.footnote}>{rupees(a.fee)}</Text>
+        {/* Only paid visits show the fee */}
+        {PAID.has(a.status) ? <Text style={type.footnote}>{rupees(a.fee)}</Text> : null}
       </View>
     </View>
   );
@@ -164,7 +176,7 @@ const styles = StyleSheet.create({
   statIcon: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
   card: { backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, gap: space.sm, ...shadow.card },
   stats: { flexDirection: 'row', gap: space.sm },
-  stat: { flex: 1, backgroundColor: colors.card, borderRadius: radius.tile + 2, paddingVertical: space.md + 2, paddingHorizontal: space.md, gap: 2, ...shadow.card },
+  stat: { flex: 1, backgroundColor: colors.card, borderRadius: radius.tile + 2, paddingVertical: space.md + 2, paddingHorizontal: space.md, gap: 2, alignItems: 'center', ...shadow.card },
   statValue: { fontSize: 22, fontWeight: '600', letterSpacing: -0.4, color: colors.ink },
   group: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden', ...shadow.card },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md },
@@ -172,4 +184,6 @@ const styles = StyleSheet.create({
   token: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center' },
   tokenText: { fontSize: 14, fontWeight: '600', color: colors.ink },
   right: { alignItems: 'flex-end', gap: 4 },
+  day: { gap: space.sm },
+  dayTitle: { ...type.headline, marginLeft: 4 },
 });

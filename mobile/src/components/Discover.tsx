@@ -3,10 +3,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type ClinicProfile, type Doctor, api } from '@mediarca/shared/api';
 import { INDIAN_STATES, getCitiesForState } from '@mediarca/shared/utils/indiaStates';
+import { specialtyFromSearch } from '@mediarca/shared/utils/searchWords';
 import { ClinicCard, DoctorCard } from '@/components/booking';
 import { EmptyState, OptionList, PillButton, PlaceholderCard, SearchBar, Sheet } from '@/components/kit';
 import { Button, Segmented, SelectField } from '@/components/ui';
@@ -21,7 +22,8 @@ const PAGE_SIZE = 20;
 
 const matches = (value: string | undefined | null, q: string) => Boolean(value && value.toLowerCase().includes(q));
 
-export function Discover({ header }: { header?: React.ReactNode }) {
+/** `header` can depend on the Doctors / Clinics switch (e.g. "Find a clinic"). */
+export function Discover({ header }: { header?: React.ReactNode | ((section: Section) => React.ReactNode) }) {
   const [section, setSection] = useState<Section>('doctors');
   const [query, setQuery] = useState('');
   const [specialty, setSpecialty] = useState('All');
@@ -49,10 +51,12 @@ export function Discover({ header }: { header?: React.ReactNode }) {
       const id = ++requestId.current;
       if (targetPage === 1) setSearching(true);
       else setLoadingMore(true);
+      // "skin doctor" → Dermatology (only when no specialty is picked in Filters)
+      const guess = specialty === 'All' ? specialtyFromSearch(query) : null;
       try {
         const res = await api.getDoctorsPaginated({
-          search: query.trim() || undefined,
-          specialty: specialty !== 'All' ? specialty : undefined,
+          search: (guess ? guess.rest : query.trim()) || undefined,
+          specialty: guess ? guess.specialty : specialty !== 'All' ? specialty : undefined,
           minExp: Number(filters.minExp) || undefined,
           sortBy: filters.sortBy,
           state: filters.state,
@@ -122,6 +126,7 @@ export function Discover({ header }: { header?: React.ReactNode }) {
   }, [clinics, clinicPlace, query]);
 
   const doctorFilterCount =
+    (specialty !== 'All' ? 1 : 0) +
     (filters.state !== 'All' ? 1 : 0) + (filters.city !== 'All' ? 1 : 0) + (filters.minExp !== '0' ? 1 : 0) + (filters.sortBy !== 'experience' ? 1 : 0);
   const clinicFilterCount = (clinicPlace.state !== 'All' ? 1 : 0) + (clinicPlace.city !== 'All' ? 1 : 0);
   const filterCount = section === 'doctors' ? doctorFilterCount : clinicFilterCount;
@@ -140,11 +145,12 @@ export function Discover({ header }: { header?: React.ReactNode }) {
   };
 
   const isDoctors = section === 'doctors';
+  // Say which specialty an everyday word matched ("3 doctors · Skin")
+  const guessed = specialty === 'All' ? specialtyFromSearch(query) : null;
+  const guessedLabel = guessed ? SPECIALTY_TILES.find((t) => t.value === guessed.specialty)?.label || guessed.specialty : '';
   const countLabel = isDoctors
     ? loaded
-      ? total === 1
-        ? '1 doctor'
-        : `${total} doctors`
+      ? `${total === 1 ? '1 doctor' : `${total} doctors`}${guessedLabel ? ` · ${guessedLabel}` : ''}`
       : ' '
     : clinicsLoaded
       ? filteredClinics.length === 1
@@ -154,7 +160,7 @@ export function Discover({ header }: { header?: React.ReactNode }) {
 
   const listHeader = (
     <View style={styles.header}>
-      {header}
+      {typeof header === 'function' ? header(section) : header}
       <SearchBar value={query} onChangeText={setQuery} placeholder={isDoctors ? 'Doctor, specialty or city' : 'Clinic or city'} />
       <Segmented
         options={[
@@ -167,33 +173,6 @@ export function Discover({ header }: { header?: React.ReactNode }) {
           setSection(s);
         }}
       />
-      {isDoctors ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles} style={styles.tilesScroll}>
-          {SPECIALTY_TILES.map((t) => {
-            const selected = specialty === t.value;
-            return (
-              <Pressable
-                key={t.value}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                accessibilityLabel={t.label}
-                onPress={() => {
-                  tap();
-                  setSpecialty(selected && t.value !== 'All' ? 'All' : t.value);
-                }}
-                style={({ pressed }) => [styles.tile, selected && styles.tileSelected, pressed && { transform: [{ scale: 0.96 }] }]}
-              >
-                <View style={[styles.tileIcon, selected && { backgroundColor: colors.primary }]}>
-                  <MaterialCommunityIcons name={t.icon} size={26} color={selected ? colors.white : colors.primary} />
-                </View>
-                <Text style={[styles.tileText, selected && { color: colors.primary }]} numberOfLines={1}>
-                  {t.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      ) : null}
       <View style={styles.countRow}>
         <View style={styles.countLeft}>
           <Text style={type.caption}>{countLabel}</Text>
@@ -270,9 +249,40 @@ export function Discover({ header }: { header?: React.ReactNode }) {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.muted} />}
       />
 
-      <Sheet visible={filtersOpen} title="Filters" onClose={() => setFiltersOpen(false)}>
+      <Sheet
+        visible={filtersOpen}
+        title="Filters"
+        onClose={() => setFiltersOpen(false)}
+        footer={
+          <Button
+            label={(isDoctors ? loaded && !searching : clinicsLoaded) ? `Show ${countLabel}` : 'Show results'}
+            onPress={() => setFiltersOpen(false)}
+          />
+        }
+      >
         {isDoctors ? (
           <>
+            <Text style={styles.groupLabel}>Specialty</Text>
+            <View style={styles.specialties}>
+              {SPECIALTY_TILES.map((t) => {
+                const selected = specialty === t.value;
+                return (
+                  <Pressable
+                    key={t.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={t.label}
+                    onPress={() => setSpecialty(t.value)}
+                    style={({ pressed }) => [styles.specialty, selected && styles.specialtyOn, pressed && { opacity: 0.85 }]}
+                  >
+                    <MaterialCommunityIcons name={t.icon} size={24} color={selected ? colors.white : colors.primary} />
+                    <Text style={[styles.specialtyText, selected && { color: colors.white }]} numberOfLines={1}>
+                      {t.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
             <Text style={styles.groupLabel}>Location</Text>
             <View style={styles.group}>
               <SelectField
@@ -339,7 +349,12 @@ export function Discover({ header }: { header?: React.ReactNode }) {
             <Button
               label="Reset"
               variant="secondary"
-              onPress={() => (isDoctors ? setFilters(NO_FILTERS) : setClinicPlace({ state: 'All', city: 'All' }))}
+              onPress={() => {
+                if (isDoctors) {
+                  setFilters(NO_FILTERS);
+                  setSpecialty('All');
+                } else setClinicPlace({ state: 'All', city: 'All' });
+              }}
             />
           </View>
         ) : null}
@@ -353,12 +368,10 @@ const Gap = () => <View style={{ height: space.md }} />;
 const styles = StyleSheet.create({
   list: { paddingHorizontal: space.lg + 4, paddingTop: space.sm, paddingBottom: space.xxl * 2 },
   header: { gap: space.md, marginBottom: space.md },
-  tilesScroll: { marginHorizontal: -(space.lg + 4) },
-  tiles: { paddingHorizontal: space.lg + 4, paddingVertical: 6, gap: space.sm },
-  tile: { width: 72, alignItems: 'center', gap: 8 },
-  tileSelected: {},
-  tileIcon: { width: 60, height: 60, borderRadius: 30, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', ...shadow.card },
-  tileText: { fontSize: 13, color: colors.secondaryInk },
+  specialties: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  specialty: { flexBasis: '31%', height: 76, borderRadius: radius.tile + 2, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', gap: 6, ...shadow.card },
+  specialtyOn: { backgroundColor: colors.primary },
+  specialtyText: { fontSize: 13, fontWeight: '600', color: colors.ink },
   countRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   countLeft: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   placeholders: { gap: space.md },

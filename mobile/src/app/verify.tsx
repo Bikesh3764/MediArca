@@ -9,9 +9,11 @@ import { parseRole } from '@/lib/roles';
 import { type } from '@/theme';
 
 export default function Verify() {
-  const params = useLocalSearchParams<{ email: string; role?: string; cooldown?: string }>();
+  const params = useLocalSearchParams<{ email: string; role?: string; cooldown?: string; next?: string }>();
   const email = String(params.email || '');
   const role = parseRole(params.role);
+  // `next`: the booking a new patient started before signing up
+  const next = params.next?.startsWith('/') ? params.next : undefined;
   const { verifyOtp } = useAuth();
 
   const [otp, setOtp] = useState('');
@@ -38,7 +40,7 @@ export default function Verify() {
     setSubmitting(true);
     try {
       const user = await verifyOtp(email, otp, role);
-      router.replace(homeFor(user));
+      router.replace(user.role === 'PATIENT' && next ? (next as never) : homeFor(user));
     } catch (err: any) {
       if (isAlready(err)) setAlreadyVerified(true);
       else setError(err?.message || 'Wrong code. Try again.');
@@ -65,14 +67,14 @@ export default function Verify() {
     return (
       <Screen back="/welcome">
         <Title subtitle={email}>Email already verified</Title>
-        <Button label="Sign in" onPress={() => router.replace({ pathname: '/login', params: { role, email } })} />
+        <Button label="Sign in" onPress={() => router.replace({ pathname: '/login', params: { role, email, ...(next ? { next } : {}) } })} />
       </Screen>
     );
   }
 
   return (
     <Screen back="/welcome">
-      <Title subtitle={`We sent a 6-digit code to ${email}`}>Verify email</Title>
+      <Title subtitle={`We sent a 6-digit code to ${email}. Not there? Check spam.`}>Verify email</Title>
       <Notice tone="error" message={error} />
       <Notice tone="success" message={info} />
       <Card>
@@ -84,6 +86,12 @@ export default function Verify() {
           <LinkText label="Resend code" onPress={resend} />
         )}
       </Card>
+      <LinkText
+        label="Wrong email? Change it"
+        onPress={() =>
+          router.canGoBack() ? router.back() : router.replace({ pathname: '/signup', params: { role, ...(next ? { next } : {}) } })
+        }
+      />
     </Screen>
   );
 }

@@ -110,6 +110,9 @@ export interface ClinicDoctorStat {
   revenue: number;
   status: string;
   joinedAt: string;
+  /** Live: IN_CABIN, STEPPED_OUT or NOT_IN_CABIN (doctors at the clinic only). */
+  cabinStatus?: string;
+  expectedReturnTime?: string | null;
 }
 
 export interface ClinicAppointment {

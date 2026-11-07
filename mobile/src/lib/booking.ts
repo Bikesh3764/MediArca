@@ -12,18 +12,18 @@ import {
 
 type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-/** Quick specialty picker on the home screen (same list as the website home page). */
+/** Specialty choices in Filters (same list as the website home page). Filled icons read better small. */
 export const SPECIALTY_TILES: { label: string; value: string; icon: McIcon }[] = [
-  { label: 'All', value: 'All', icon: 'view-grid-outline' },
+  { label: 'All', value: 'All', icon: 'view-grid' },
   { label: 'General', value: 'General Medicine', icon: 'stethoscope' },
-  { label: 'Children', value: 'Pediatrics', icon: 'baby-face-outline' },
+  { label: 'Children', value: 'Pediatrics', icon: 'baby-face' },
   { label: 'Women', value: 'Gynecology & Obstetrics', icon: 'gender-female' },
-  { label: 'Skin', value: 'Dermatology', icon: 'creation-outline' },
-  { label: 'Bones', value: 'Orthopedics', icon: 'bone' },
+  { label: 'Skin', value: 'Dermatology', icon: 'face-woman-shimmer' },
+  { label: 'Bones', value: 'Orthopedics', icon: 'arm-flex' },
   { label: 'Heart', value: 'Cardiology', icon: 'heart-pulse' },
   { label: 'ENT', value: 'ENT / Otorhinolaryngology', icon: 'ear-hearing' },
-  { label: 'Dental', value: 'Dentistry', icon: 'tooth-outline' },
-  { label: 'Eyes', value: 'Ophthalmology', icon: 'eye-outline' },
+  { label: 'Dental', value: 'Dentistry', icon: 'tooth' },
+  { label: 'Eyes', value: 'Ophthalmology', icon: 'eye' },
   { label: 'Brain', value: 'Neurology', icon: 'brain' },
 ];
 
@@ -34,7 +34,10 @@ export const doctorName = (name?: string | null) => {
 };
 
 /** Clinics with a receptionist first, since only those take online bookings. */
-export const sortClinics = (doctor: Doctor) =>
+/** A desk person's name without the "(Front Desk)" tag the server adds. */
+export const deskName = (name?: string | null) => (name || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+export const sortClinics =(doctor: Doctor) =>
   [...(doctor.clinics || [])].sort((a, b) => Number(Boolean(b.hasReceptionist)) - Number(Boolean(a.hasReceptionist)));
 
 export const clinicFor = (doctor: Doctor | null, clinicId?: string | null) =>

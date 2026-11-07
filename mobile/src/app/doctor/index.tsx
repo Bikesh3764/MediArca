@@ -2,7 +2,7 @@
 // Same server calls and rules as frontend/src/pages/Doctor/dashboard (state.tsx, QueueTab.tsx).
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type Appointment, type DoctorAffiliationsData, type DoctorSlot, api, formatDisplayDate, getLocalDateString, getTomorrowDateString, slotTimeLabel } from '@mediarca/shared/api';
 import { visitMatchesSlot, visitTag } from '@mediarca/shared/utils/queueDisplay';
@@ -27,6 +27,11 @@ import { space, type } from '@/theme';
 type Queue = Awaited<ReturnType<typeof api.getDoctorQueue>>;
 type Day = 'today' | 'tomorrow' | 'upcoming';
 
+/** First word or two of a clinic name, so the filter pill stays small. */
+const shortClinic = (name?: string | null) => {
+  const words = (name || 'Clinic').split(' ');
+  return words.slice(0, words[0].length < 6 ? 2 : 1).join(' ');
+};
 const nameOf = (a: Appointment) => a.patientName || a.patient?.user?.fullName || 'Patient';
 const phoneOf = (a: Appointment) => a.patientPhone || a.patient?.user?.phone || null;
 
@@ -113,6 +118,10 @@ export default function DoctorQueue() {
     ]
       .filter(Boolean)
       .join(' · ');
+
+  // One Start at a time: none while someone is in the cabin, and the next patient's Start is on the card above
+  const nextUp = day === 'today' && !active ? waiting.find(canStart) : undefined;
+  const rowCanStart = (a: Appointment) => canStart(a) && !active && a.id !== nextUp?.id;
 
   const patch = (change: (q: Queue) => Queue) => setQueue((q) => (q ? change(q) : q));
 
@@ -215,15 +224,6 @@ export default function DoctorQueue() {
         }}
       />
 
-      {clinics.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills} style={styles.bleed}>
-          <PillButton label="All clinics" active={clinicId === 'all'} onPress={() => setClinicId('all')} />
-          {clinics.map((c) => (
-            <PillButton key={c.clinicId} label={c.clinicName} active={clinicId === c.clinicId} onPress={() => { setClinicId(c.clinicId); setShift('all'); }} />
-          ))}
-        </ScrollView>
-      ) : null}
-
       {showShifts ? <ShiftChips slots={slots} value={shift} onChange={setShift} /> : null}
 
       <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
@@ -250,10 +250,34 @@ export default function DoctorQueue() {
               onHold={active ? () => hold(active) : undefined}
               completing={busy === `done-${active?.id}`}
               holding={busy === `hold-${active?.id}`}
+              next={(() => {
+                const n = waiting.find(canStart);
+                return n ? { token: n.queueNumber, name: nameOf(n), tag: visitTag(n), away, onStart: () => start(n), starting: busy === n.id } : null;
+              })()}
             />
           ) : null}
 
-          <SectionTitle title={`Waiting · ${waiting.length}`} />
+          <SectionTitle
+            title={`Waiting · ${waiting.length}`}
+            right={
+              clinics.length > 1 ? (
+                <PillButton
+                  icon="business-outline"
+                  label={clinicId === 'all' ? 'All clinics' : shortClinic(clinics.find((c) => c.clinicId === clinicId)?.clinicName)}
+                  active={clinicId !== 'all'}
+                  onPress={() =>
+                    setMenu({
+                      title: 'Clinic',
+                      actions: [
+                        { label: 'All clinics', onPress: () => setClinicId('all') },
+                        ...clinics.map((c) => ({ label: c.clinicName, onPress: () => { setClinicId(c.clinicId); setShift('all'); } })),
+                      ],
+                    })
+                  }
+                />
+              ) : null
+            }
+          />
           {waiting.length === 0 ? (
             <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={shift !== 'all' ? 'No one in this shift.' : day === 'today' ? 'New bookings show up here.' : undefined} />
           ) : (
@@ -266,7 +290,7 @@ export default function DoctorQueue() {
                     item={{ id: a.id, token: a.queueNumber, name: nameOf(a), tag: visitTag(a), meta: metaOf(a), phone: phoneOf(a), arrived: a.isCheckedIn }}
                     showArrival={day === 'today'}
                     onToggleArrived={() => toggleArrived(a)}
-                    start={canStart(a) ? (away ? 'away' : 'start') : null}
+                    start={rowCanStart(a) ? (away ? 'away' : 'start') : null}
                     onStart={() => start(a)}
                     starting={busy === a.id}
                     onMore={() => more(a)}
@@ -316,8 +340,6 @@ export default function DoctorQueue() {
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  bleed: { marginHorizontal: -(space.lg + 4), flexGrow: 0 },
-  pills: { gap: space.sm, paddingHorizontal: space.lg + 4 },
   center: { textAlign: 'center' },
   group: { gap: space.md },
   shift: { ...type.footnote, fontWeight: '600', marginLeft: 4 },

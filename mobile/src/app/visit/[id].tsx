@@ -6,7 +6,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type Appointment, api, getLocalDateString } from '@mediarca/shared/api';
-import { DeskCard, QueuePass, passFromAppointment } from '@/components/QueuePass';
+import { DeskCard, QueuePass, passFromAppointment, queueLine } from '@/components/QueuePass';
 import { EmptyState, PlaceholderCard } from '@/components/kit';
 import { Button, Notice, Screen } from '@/components/ui';
 import { confirmAction } from '@/lib/confirm';
@@ -130,12 +130,13 @@ export default function Visit() {
         </View>
       ) : null}
 
-      {checkedIn ? (
+      {/* In the cabin the pass already says "With Dr. …"; no third line here */}
+      {checkedIn && appt.status !== 'IN_CONSULTATION' ? (
         <View style={styles.checkedRow}>
           <Ionicons name="checkmark-circle" size={24} color={colors.success} />
           <View style={styles.flex}>
             <Text style={type.headline}>You’re checked in</Text>
-            <Text style={type.caption}>{appt.status === 'IN_CONSULTATION' ? 'With doctor' : 'Wait for your turn'}</Text>
+            <Text style={type.caption}>{queueLine(appt)}</Text>
           </View>
           {appt.status === 'WAITING' ? (
             <Pressable accessibilityRole="button" disabled={busy} onPress={stepOut} hitSlop={8} style={styles.stepOut}>

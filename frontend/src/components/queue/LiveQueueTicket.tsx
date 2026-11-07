@@ -425,11 +425,14 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
           <div className="mt-4 p-4 sm:p-5 rounded-2xl bg-[#f5f5f7] border border-[#e5e5ea]">
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3.5">
               <span className="text-xs font-semibold text-[#1d1d1f] flex items-center gap-2 whitespace-nowrap">
-                <span className="w-2 h-2 rounded-full bg-[#0066cc] shrink-0"></span>
+                <span className="relative flex w-2 h-2 shrink-0">
+                  <span className="absolute inset-0 rounded-full bg-[#0066cc] opacity-60 motion-safe:animate-ping"></span>
+                  <span className="relative w-2 h-2 rounded-full bg-[#0066cc]"></span>
+                </span>
                 Live queue
               </span>
               <div className="px-3 py-1 rounded-full bg-white border border-[#e5e5ea] text-xs font-normal text-[#48484a] select-none whitespace-nowrap">
-                Now serving: <strong className="text-[#1d1d1f] font-semibold">{liveQueue.currentServingQueueNumber > 0 ? `Queue #${liveQueue.currentServingQueueNumber}` : 'Waiting to Call'}</strong>
+                Now serving: <strong key={liveQueue.currentServingQueueNumber} className="ma-tick text-[#1d1d1f] font-semibold">{liveQueue.currentServingQueueNumber > 0 ? `Queue #${liveQueue.currentServingQueueNumber}` : 'Waiting to Call'}</strong>
               </div>
             </div>
 
@@ -451,7 +454,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
             )}
 
             {status === 'IN_CONSULTATION' || (liveQueue.currentServingQueueNumber === queueNumber && queueNumber > 0) ? (
-              <div className="flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-normal border border-[#0066cc]/30">
+              <div className={`flex items-center gap-3 text-[#1d1d1f] bg-white p-3.5 sm:p-4 rounded-xl text-xs sm:text-sm font-normal border border-[#0066cc]/30 ${status === 'WAITING' ? 'ma-glow' : ''}`}>
                 <CheckCircle2 className="w-5 h-5 text-[#0066cc] shrink-0" />
                 <div>
                   <span className="font-semibold text-[#1d1d1f] block">
@@ -471,7 +474,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     Ahead of you
                   </span>
                   <div className="mt-1.5">
-                    <div className="text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
+                    <div key={liveQueue.patientsAway} className="ma-tick text-xl sm:text-2xl font-semibold text-[#1d1d1f] tracking-tight">
                       {liveQueue.patientsAway}
                     </div>
                     <p className="text-[11px] text-[#86868b] mt-0.5 font-normal">
@@ -493,7 +496,7 @@ export const LiveQueueTicket: React.FC<LiveQueueTicketProps> = ({
                     </div>
                   ) : (
                   <div className="mt-1.5">
-                    <div className="text-xl sm:text-2xl font-semibold text-[#0066cc] tracking-tight">
+                    <div key={liveQueue.estimatedWaitMinutes} className="ma-tick text-xl sm:text-2xl font-semibold text-[#0066cc] tracking-tight">
                       {liveQueue.estimatedWaitMinutes >= 60 ? (
                         <>
                           ~{Math.floor(liveQueue.estimatedWaitMinutes / 60)} <span className="text-xs sm:text-sm font-semibold text-[#86868b]">hr</span>

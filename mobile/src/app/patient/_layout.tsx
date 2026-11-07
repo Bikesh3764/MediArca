@@ -8,7 +8,7 @@ export default function PatientLayout() {
       <Tabs screenOptions={tabScreenOptions} screenListeners={tabListeners}>
         <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('home', 'home-outline') }} />
         <Tabs.Screen name="visits" options={{ title: 'Visits', tabBarIcon: tabIcon('ticket', 'ticket-outline') }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('person-circle', 'person-circle-outline') }} />
+        <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('person', 'person-outline') }} />
       </Tabs>
     </PortalGuard>
   );

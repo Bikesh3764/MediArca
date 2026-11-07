@@ -41,6 +41,15 @@ const STATUS_FILTERS: { value: StatusFilter; label: string; match: string[] }[] 
 ];
 const CANCELLED = ['CANCELLED', 'REJECTED', 'EXPIRED'];
 const shiftOf = (a: ClinicalReportAppointment) => shiftLabel(a);
+/** Shifts in day order: by start time ("9:00 AM"), else Morning → Afternoon → Evening → Night. */
+const DAY_PARTS = ['morning', 'afternoon', 'evening', 'night'];
+const shiftRank = (label: string) => {
+  const t = label.match(/(\d{1,2}):(\d{2})\s*([AP]M)/i);
+  if (t) return ((Number(t[1]) % 12) + (t[3].toUpperCase() === 'PM' ? 12 : 0)) * 60 + Number(t[2]);
+  const part = DAY_PARTS.findIndex((p) => label.toLowerCase().includes(p));
+  return part >= 0 ? part * 360 + 1 : 9999;
+};
+const byDayOrder = (a: string, b: string) => shiftRank(a) - shiftRank(b) || a.localeCompare(b, 'en', { numeric: true });
 const rupees = (n?: number | null) => `₹${Math.round(n || 0).toLocaleString('en-IN')}`;
 const startFor = (p: Exclude<Period, 'custom'>) => (p === '1' ? getLocalDateString() : nextDays(1, -Number(p))[0].value);
 /** Oldest day the server reports on (90 days back). */
@@ -127,7 +136,7 @@ export function ReportSheet({ role, visible, onClose }: { role: ReportRole; visi
 
   // Shift and status filters: count again from the visits that match
   const shifts = useMemo(
-    () => [...new Set((data?.appointments || []).map(shiftOf))].sort((a, b) => a.localeCompare(b, 'en', { numeric: true })),
+    () => [...new Set((data?.appointments || []).map(shiftOf))].sort(byDayOrder),
     [data]
   );
   const activeShift = shifts.includes(shift) ? shift : 'all';
@@ -182,7 +191,7 @@ export function ReportSheet({ role, visible, onClose }: { role: ReportRole; visi
       )
       .join('');
     const split = breakdown.length
-      ? `<h2>By ${other.toLowerCase()}</h2><table><tr><th>${other}</th><th class="r">Visits</th><th class="r">Revenue</th></tr>${breakdown
+      ? `<h2>By ${other.toLowerCase()}</h2><table><tr><th>${other}</th><th class="r">Visits</th><th class="r">Fees collected</th></tr>${breakdown
           .map((b) => `<tr><td>${escapeHtml(b.name)}</td><td class="r">${b.bookings}</td><td class="r">${escapeHtml(rupees(b.revenue))}</td></tr>`)
           .join('')}</table>`
       : '';
@@ -196,11 +205,11 @@ export function ReportSheet({ role, visible, onClose }: { role: ReportRole; visi
   <div class="tile"><b>${s.totalBookings}</b><span class="muted">Visits</span></div>
   <div class="tile"><b>${s.completedCount}</b><span class="muted">Done</span></div>
   <div class="tile"><b>${s.cancelledCount}</b><span class="muted">Cancelled</span></div>
-  <div class="tile"><b>${escapeHtml(rupees(s.totalRevenue))}</b><span class="muted">Revenue</span></div>
+  <div class="tile"><b>${escapeHtml(rupees(s.totalRevenue))}</b><span class="muted">Fees collected</span></div>
 </div>
 ${split}
 <h2>Visits${data.truncated ? ` <span class="muted">(newest ${data.maxRows || data.appointments.length})</span>` : ''}</h2>
-<table><tr><th>Token</th><th>Date</th><th>Shift</th><th>Patient</th><th>${other}</th><th>Status</th><th class="r">Revenue</th></tr>${rows}</table>`
+<table><tr><th>Token</th><th>Date</th><th>Shift</th><th>Patient</th><th>${other}</th><th>Status</th><th class="r">Fee collected</th></tr>${rows}</table>`
     );
   };
 
@@ -208,7 +217,7 @@ ${split}
     const other = role === 'DOCTOR' ? 'Clinic' : 'Doctor';
     const total = visits.reduce((n, a) => n + Math.round(a.earnedRevenue || 0), 0);
     return [
-      ['Token', 'Date', 'Shift', 'Patient', 'Mobile', other, 'Status', 'Fee (₹)', 'Revenue (₹)'],
+      ['Token', 'Date', 'Shift', 'Patient', 'Mobile', other, 'Status', 'Fee (₹)', 'Fee collected (₹)'],
       ...visits.map((a) => [
         a.queueNumber,
         paperDate(a.appointmentDate),
@@ -323,9 +332,11 @@ ${split}
               <Tile label="Cancelled" value={String(s.cancelledCount)} />
             </View>
             <View style={styles.revenue}>
-              <Text style={type.footnote}>Revenue</Text>
+              <Text style={type.footnote}>Fees collected</Text>
               <Text style={styles.revenueValue}>{rupees(s.totalRevenue)}</Text>
+              <Text style={type.footnote}>From paid visits in these dates</Text>
             </View>
+            <VisitsChart visits={visits} start={startDate} end={endDate} />
 
             {breakdown.length > 1 ? (
               <>
@@ -366,6 +377,68 @@ function DateTile({ label, value, active, onPress }: { label: string; value: str
   );
 }
 
+/**
+ * Visits per day (per week beyond 31 days) as thin bars on one baseline.
+ * Tap a bar to read it; the line above says what it is.
+ */
+function VisitsChart({ visits, start, end }: { visits: ClinicalReportAppointment[]; start: string; end: string }) {
+  const [picked, setPicked] = useState<number | null>(null);
+  const days: string[] = [];
+  const [y, m, d] = start.split('-').map(Number);
+  for (let i = 0; i < 400; i++) {
+    const day = getLocalDateString(new Date(Date.UTC(y, m - 1, d + i, 6, 30)));
+    if (day > end) break;
+    days.push(day);
+  }
+  if (days.length < 2) return null;
+  const weekly = days.length > 31;
+  const buckets: { from: string; to: string; count: number }[] = [];
+  days.forEach((day, i) => {
+    if (!weekly || i % 7 === 0) buckets.push({ from: day, to: day, count: 0 });
+    buckets[buckets.length - 1].to = day;
+  });
+  for (const a of visits) {
+    const day = String(a.appointmentDate || '').slice(0, 10);
+    const b = buckets.find((x) => day >= x.from && day <= x.to);
+    if (b) b.count += 1;
+  }
+  const max = Math.max(1, ...buckets.map((b) => b.count));
+  const label = (b: { from: string; to: string }) => (b.from === b.to ? formatDisplayDate(b.from) : `${formatDisplayDate(b.from)} – ${formatDisplayDate(b.to)}`);
+  const shown = picked !== null && buckets[picked] ? buckets[picked] : null;
+  return (
+    <View style={styles.chart}>
+      <Text style={type.footnote}>{weekly ? 'Visits by week' : 'Visits by day'}</Text>
+      <Text style={styles.chartRead} numberOfLines={1}>
+        {shown ? `${label(shown)} · ${shown.count} ${shown.count === 1 ? 'visit' : 'visits'}` : 'Tap a bar'}
+      </Text>
+      <View style={styles.bars}>
+        {buckets.map((b, i) => (
+          <Pressable
+            key={b.from}
+            accessibilityRole="button"
+            accessibilityLabel={`${label(b)}: ${b.count} visits`}
+            onPress={() => setPicked(i === picked ? null : i)}
+            style={styles.barHit}
+          >
+            <View
+              style={[
+                styles.bar,
+                { height: b.count ? Math.max(4, (b.count / max) * 96) : 2 },
+                b.count === 0 && styles.barEmpty,
+                picked !== null && picked !== i && styles.barDim,
+              ]}
+            />
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.axis}>
+        <Text style={type.footnote}>{formatDisplayDate(buckets[0].from)}</Text>
+        <Text style={type.footnote}>{formatDisplayDate(buckets[buckets.length - 1].to)}</Text>
+      </View>
+    </View>
+  );
+}
+
 function Tile({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.tile}>
@@ -387,6 +460,14 @@ const styles = StyleSheet.create({
   dateTileActive: { borderColor: colors.primary },
   dateValue: { fontSize: 16, fontWeight: '600', color: colors.ink },
   tiles: { flexDirection: 'row', gap: space.sm },
+  chart: { backgroundColor: colors.card, borderRadius: radius.tile + 2, padding: space.md, gap: 4, ...shadow.card },
+  chartRead: { ...type.caption, color: colors.ink },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', height: 104, gap: 2, marginTop: space.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  barHit: { flex: 1, height: '100%', justifyContent: 'flex-end' },
+  bar: { backgroundColor: colors.primary, borderTopLeftRadius: 4, borderTopRightRadius: 4, maxWidth: 18, alignSelf: 'center', width: '100%' },
+  barEmpty: { backgroundColor: colors.border, borderTopLeftRadius: 1, borderTopRightRadius: 1 },
+  barDim: { opacity: 0.35 },
+  axis: { flexDirection: 'row', justifyContent: 'space-between' },
   tile: { flex: 1, backgroundColor: colors.card, borderRadius: radius.tile + 2, paddingVertical: space.md, paddingHorizontal: space.md, gap: 2, ...shadow.card },
   tileValue: { fontSize: 22, fontWeight: '600', letterSpacing: -0.4, color: colors.ink },
   revenue: { backgroundColor: colors.card, borderRadius: radius.tile + 2, padding: space.md, gap: 2, ...shadow.card },

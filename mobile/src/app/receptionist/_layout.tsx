@@ -7,14 +7,14 @@ function DeskTabs() {
   const { pending } = useDesk();
   return (
     <Tabs screenOptions={tabScreenOptions} screenListeners={tabListeners}>
-      <Tabs.Screen name="index" options={{ title: 'Queue', tabBarIcon: tabIcon('people', 'people-outline') }} />
+      <Tabs.Screen name="index" options={{ title: 'Queue', tabBarIcon: tabIcon('list', 'list-outline') }} />
       <Tabs.Screen name="doctors" options={{ title: 'Doctors', tabBarIcon: tabIcon('medkit', 'medkit-outline') }} />
       <Tabs.Screen name="walkin" options={{ title: 'Walk-in', tabBarIcon: tabIcon('person-add', 'person-add-outline') }} />
       <Tabs.Screen
         name="requests"
-        options={{ title: 'Requests', tabBarIcon: tabIcon('wallet', 'wallet-outline'), tabBarBadge: pending.length ? pending.length : undefined }}
+        options={{ title: 'Requests', tabBarIcon: tabIcon('receipt', 'receipt-outline'), tabBarBadge: pending.length ? pending.length : undefined }}
       />
-      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person-circle', 'person-circle-outline') }} />
+      <Tabs.Screen name="account" options={{ title: 'Account', tabBarIcon: tabIcon('person', 'person-outline') }} />
     </Tabs>
   );
 }

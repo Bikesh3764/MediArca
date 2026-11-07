@@ -17,6 +17,19 @@ import { confirmAction } from '@/lib/confirm';
 import { success } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
 
+const nameOf = (a: Appointment) => a.patientName || a.patient?.user?.fullName || 'Patient';
+
+/** "Requested 5 min ago" (or "2 h ago", "Yesterday"). */
+const agoLabel = (iso?: string) => {
+  const t = iso ? new Date(iso).getTime() : NaN;
+  if (!Number.isFinite(t)) return null;
+  const min = Math.max(0, Math.floor((Date.now() - t) / 60000));
+  if (min < 1) return 'Requested just now';
+  if (min < 60) return `Requested ${min} min ago`;
+  if (min < 24 * 60) return `Requested ${Math.floor(min / 60)} h ago`;
+  return min < 48 * 60 ? 'Requested yesterday' : `Requested ${Math.floor(min / 1440)} days ago`;
+};
+
 export default function DeskRequests() {
   const { desk, pending, setPending, reloadPending, reload } = useDesk();
   const [busy, setBusy] = useState<string | null>(null);
@@ -31,13 +44,18 @@ export default function DeskRequests() {
   );
 
   const markPaid = async (a: Appointment) => {
+    // A paid token can't be taken back, so check first (no Undo)
+    const name = nameOf(a);
+    const ok = await confirmAction({ title: `Mark ${name} paid?`, message: 'Their token is confirmed and they are told.', confirmLabel: 'Mark paid' });
+    if (!ok) return;
     setBusy(`ok-${a.id}`);
     setMessage(null);
     try {
       const res: any = await api.approveAppointment(a.id);
       success();
       setPending((list) => list.filter((x) => x.id !== a.id));
-      setMessage({ tone: 'success', text: res?.message || 'Paid. Token confirmed.' });
+      const token = res?.data?.queueNumber ?? res?.queueNumber;
+      setMessage({ tone: 'success', text: token > 0 ? `${name} paid · Token #${token}.` : `${name} paid. Token confirmed.` });
       reloadPending();
       reload();
     } catch (err: any) {
@@ -82,7 +100,7 @@ export default function DeskRequests() {
         <EmptyState icon="wallet-outline" title="No requests" message="New online bookings show up here." />
       ) : (
         pending.map((a) => {
-          const name = a.patientName || a.patient?.user?.fullName || 'Patient';
+          const name = nameOf(a);
           const phone = a.patientPhone || a.patient?.user?.phone || '';
           const fee = a.fee || a.doctor?.consultationFee || 0;
           const tag = visitTag(a);
@@ -101,6 +119,9 @@ export default function DeskRequests() {
                   </Text>
                   <Text style={type.footnote} numberOfLines={1}>
                     {formatDisplayDate(a.appointmentDate)} · {shiftLabel(a)}
+                  </Text>
+                  <Text style={type.footnote} numberOfLines={1}>
+                    {[a.estimatedQueueNumber ? `Est. token #${a.estimatedQueueNumber}` : null, agoLabel(a.createdAt)].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
                 <Text style={styles.fee}>₹{fee}</Text>

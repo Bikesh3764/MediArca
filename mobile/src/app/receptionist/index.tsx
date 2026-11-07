@@ -44,6 +44,8 @@ export default function DeskQueue() {
 
   const doctor = doctors.find((d) => d.doctorId === doctorId);
   const isTodayQueue = date === getLocalDateString();
+  // Upcoming: every confirmed visit from today on, like the doctor's Upcoming tab
+  const upcoming = date === 'upcoming';
 
   const load = useCallback(async () => {
     if (!doctorId) return;
@@ -68,7 +70,7 @@ export default function DeskQueue() {
   const away = Boolean(doctor?.cabinStatus && doctor.cabinStatus !== 'IN_CABIN');
   const slots = doctor?.slots || [];
   // Chosen shift; falls back to all shifts when it no longer exists
-  const shift = slots.some((s) => slotKey(s) === chosenShift) ? chosenShift : 'all';
+  const shift = !upcoming && slots.some((s) => slotKey(s) === chosenShift) ? chosenShift : 'all';
   const inShift = (a: ReceptionistQueueItem) => shift === 'all' || slots.some((s) => slotKey(s) === shift && visitMatchesSlot(a, s));
   const inCabin = items.find((a) => a.status === 'IN_CONSULTATION');
   const waiting = items.filter((a) => a.status === 'WAITING' && inShift(a));
@@ -79,8 +81,10 @@ export default function DeskQueue() {
     const i = slots.findIndex((s) => visitMatchesSlot(a, s));
     return i >= 0 ? slotTimeLabel(slots[i]) : shiftLabel(a);
   };
+  // One Start at a time: none while someone is in the cabin, and the next patient's Start is on the card above
+  const nextUp = isTodayQueue && !inCabin ? waiting.find((a) => a.isCheckedIn) : undefined;
   const metaOf = (a: ReceptionistQueueItem) => (a.status === 'CANCELLED' ? 'Cancelled' : undefined);
-  const waitingGroups = groupByShift(waiting, shift === 'all' ? shiftOf : () => null);
+  const waitingGroups = groupByShift(waiting, shift === 'all' && !upcoming ? shiftOf : () => null);
 
   const patchItem = (id: string, change: Partial<ReceptionistQueueItem>) => setList((l) => (l ? l.map((a) => (a.id === id ? { ...a, ...change } : a)) : l));
 
@@ -166,10 +170,9 @@ export default function DeskQueue() {
   if (doctors.length === 0) {
     return (
       <Screen edges={['top']}>
-        <View style={styles.header}>
-          <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName}>Queue</Title>
-          <NotificationBell />
-        </View>
+        <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName} right={<NotificationBell />}>
+          Queue
+        </Title>
         <EmptyState icon="medkit-outline" title="No doctors yet" message="Your clinic adds doctors to this desk." />
       </Screen>
     );
@@ -177,10 +180,9 @@ export default function DeskQueue() {
 
   return (
     <Screen edges={['top']} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      <View style={styles.header}>
-        <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName}>Queue</Title>
-        <NotificationBell />
-      </View>
+      <Title eyebrow={todayLong()} subtitle={desk.clinic?.clinicName} right={<NotificationBell />}>
+        Queue
+      </Title>
 
       {doctor ? (
         <CabinControl
@@ -210,6 +212,7 @@ export default function DeskQueue() {
         options={[
           { value: getLocalDateString(), label: 'Today' },
           { value: getTomorrowDateString(), label: 'Tomorrow' },
+          { value: 'upcoming', label: 'Upcoming' },
         ]}
         value={date}
         onChange={(d) => {
@@ -218,7 +221,7 @@ export default function DeskQueue() {
         }}
       />
 
-      <ShiftChips slots={slots} value={shift} onChange={setShift} />
+      {upcoming ? null : <ShiftChips slots={slots} value={shift} onChange={setShift} />}
 
       <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
 
@@ -243,6 +246,19 @@ export default function DeskQueue() {
               completing={busy === `COMPLETED-${inCabin?.id}`}
               onHold={inCabin ? () => setStatus(inCabin, 'WAITING', 'Sent back to waiting') : undefined}
               holding={busy === `WAITING-${inCabin?.id}`}
+              next={(() => {
+                const n = waiting.find((a) => a.isCheckedIn);
+                return n
+                  ? {
+                      token: n.queueNumber,
+                      name: n.patientName,
+                      tag: visitTag(n),
+                      away,
+                      onStart: () => setStatus(n, 'IN_CONSULTATION', 'Consultation started'),
+                      starting: busy === `IN_CONSULTATION-${n.id}`,
+                    }
+                  : null;
+              })()}
             />
           ) : null}
 
@@ -251,7 +267,7 @@ export default function DeskQueue() {
             right={waiting.length > 0 && isTodayQueue ? <Text style={type.footnote}>{waiting.filter((a) => a.isCheckedIn).length} arrived</Text> : null}
           />
           {waiting.length === 0 ? (
-            <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={shift === 'all' ? `${formatDisplayDate(date)} is clear.` : 'No one in this shift.'} />
+            <EmptyState icon="checkmark-circle-outline" title="No one waiting" message={upcoming ? 'Nothing booked ahead.' : shift === 'all' ? `${formatDisplayDate(date)} is clear.` : 'No one in this shift.'} />
           ) : (
             waitingGroups.map((g) => (
               <View key={g.shift || 'all'} style={styles.group}>
@@ -259,10 +275,18 @@ export default function DeskQueue() {
                 {g.items.map((a) => (
                   <QueueRow
                     key={a.id}
-                    item={{ id: a.id, token: a.queueNumber, name: a.patientName, tag: visitTag(a), phone: a.patientPhone, arrived: a.isCheckedIn }}
+                    item={{
+                      id: a.id,
+                      token: a.queueNumber,
+                      name: a.patientName,
+                      tag: visitTag(a),
+                      phone: a.patientPhone,
+                      arrived: a.isCheckedIn,
+                      meta: upcoming ? formatDisplayDate(a.appointmentDate) : undefined,
+                    }}
                     showArrival={isTodayQueue}
                     onToggleArrived={() => toggleArrived(a)}
-                    start={isTodayQueue && a.isCheckedIn ? (away ? 'away' : 'start') : null}
+                    start={isTodayQueue && a.isCheckedIn && !inCabin && a.id !== nextUp?.id ? (away ? 'away' : 'start') : null}
                     onStart={() => setStatus(a, 'IN_CONSULTATION', 'Consultation started')}
                     starting={busy === `IN_CONSULTATION-${a.id}`}
                     onMore={() => more(a)}
@@ -307,7 +331,6 @@ export default function DeskQueue() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: space.md },
   group: { gap: space.md },
   shift: { ...type.footnote, fontWeight: '600', marginLeft: 4 },
 });

@@ -47,7 +47,7 @@ export function QueueRow({
           <Text style={[styles.tokenText, item.arrived && !muted && { color: colors.primary }]}>#{item.token}</Text>
         </View>
         <View style={styles.flex}>
-          <Text style={type.headline} numberOfLines={1}>
+          <Text style={type.headline} numberOfLines={2}>
             {item.name}
           </Text>
           {item.tag || item.meta ? (
@@ -103,11 +103,11 @@ export function QueueRow({
               accessibilityRole="button"
               disabled={starting}
               onPress={onStart}
-              style={({ pressed }) => [styles.call, pressed && { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.98 }] }]}
+              style={({ pressed }) => [styles.call, pressed && { opacity: 0.8, transform: [{ scale: 0.98 }] }]}
             >
-              {starting ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="play" size={13} color={colors.white} />}
+              {starting ? <ActivityIndicator size="small" color={colors.primary} /> : <Ionicons name="play" size={13} color={colors.primary} />}
               <Text style={styles.callText} numberOfLines={1}>
-                Start consultation
+                Start
               </Text>
             </Pressable>
           ) : start === 'away' ? (
@@ -132,6 +132,7 @@ const styles = StyleSheet.create({
   arrived: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: colors.canvas },
   arrivedOn: { backgroundColor: colors.primaryTint },
   arrivedText: { fontSize: 14, color: colors.ink },
-  call: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.primary, flexShrink: 1 },
-  callText: { fontSize: 14, fontWeight: '600', color: colors.white },
+  // Soft on rows: the one big Start lives on the Next card at the top.
+  call: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 36, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.primarySoft, flexShrink: 1 },
+  callText: { fontSize: 14, fontWeight: '600', color: colors.primary },
 });

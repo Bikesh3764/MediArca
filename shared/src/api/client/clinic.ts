@@ -76,6 +76,26 @@ export const clinicApi = {
     return handleResponse(res);
   },
 
+  /** Name and mobile (+91). */
+  async updateClinicReceptionist(receptionistId: string, data: { fullName: string; phone?: string }): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  /** New temporary password; they choose their own at next sign-in. */
+  async resetClinicReceptionistPassword(receptionistId: string, password: string): Promise<any> {
+    const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}/reset-password`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ password }),
+    });
+    return handleResponse(res);
+  },
+
   async removeClinicReceptionist(receptionistId: string): Promise<any> {
     const res = await safeFetch(`${API_BASE_URL}/clinics/receptionists/${receptionistId}`, {
       method: 'DELETE',

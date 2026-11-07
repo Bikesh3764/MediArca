@@ -255,7 +255,13 @@
 }
 .ma-float-late { animation-delay: -2s; }
 .ma-scan { animation: ma-scan 2.4s ease-in-out infinite; }
+/* Soft blue ring that breathes around "It's your turn". */
+@keyframes ma-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 102, 204, 0.28); }
+  50% { box-shadow: 0 0 0 6px rgba(0, 102, 204, 0); }
+}
+.ma-glow { animation: ma-glow 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .ma-fade-up, .ma-float, .ma-tick, .ma-scan { animation: none; }
+  .ma-fade-up, .ma-float, .ma-tick, .ma-scan, .ma-glow { animation: none; }
   .ma-scan { top: 50%; }
 }

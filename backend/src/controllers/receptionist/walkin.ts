@@ -358,6 +358,7 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
               slotId: true,
               checkingWindow: true,
               queueNumber: true,
+              status: true,
             },
           });
 
@@ -419,7 +420,18 @@ export const bookWalkin = async (req: AuthRequest, res: Response): Promise<void>
           if (chosenSlot.startTime) {
             const [sh, sm] = chosenSlot.startTime.split(':').map(Number);
             const slotStartMins = sh * 60 + sm;
-            estimatedTime = minutesTo12Hour(slotStartMins + Math.round(patientsAheadInQueue * pace));
+            let estMins = slotStartMins + Math.round(patientsAheadInQueue * pace);
+            if (slotStatus.isInProgress) {
+              // Shift already running: never before now (same rule as the booking preview)
+              const waitingInSlot = dayAppointments.filter((a) => {
+                if (a.status !== 'WAITING' && a.status !== 'IN_CONSULTATION') return false;
+                if (a.slotId) return a.slotId === chosenSlot.id;
+                if (a.checkingWindow) return a.checkingWindow.includes(chosenSlot.startTime) || cleanSlotName(a.checkingWindow) === cleanSlotName(chosenSlot.name);
+                return slots.length === 1;
+              }).length;
+              estMins = Math.max(estMins, getIndianTimeMinutes(new Date()) + Math.round(waitingInSlot * pace));
+            }
+            estimatedTime = minutesTo12Hour(estMins);
           }
           const checkingWindow = cleanSlotName(chosenSlot.name, 'Shift 1');
           const isTodayBooking = appointmentDate === istTodayStr;

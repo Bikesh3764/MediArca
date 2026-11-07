@@ -20,7 +20,9 @@
       "predictiveBackGestureEnabled": false,
       "package": "in.mediarca.app",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -50,8 +52,16 @@
         "expo-image-picker",
         {
           "photosPermission": "MediArca uses your photos to set your profile picture.",
-          "cameraPermission": false,
+          "cameraPermission": "MediArca uses the camera to scan the clinic's check-in QR code.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f5f5f7",
+          "image": "./assets/splash-blank.png",
+          "imageWidth": 1
         }
       ]
     ],

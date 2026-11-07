@@ -2,9 +2,10 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
-import { type DoctorSlot, slotTimeLabel } from '@mediarca/shared/api';
+import { type DoctorSlot } from '@mediarca/shared/api';
 import { DayPills } from '@/components/DayPills';
-import { OptionList, Sheet } from '@/components/kit';
+import { ShiftList } from '@/components/booking';
+import { Sheet } from '@/components/kit';
 import { Button, Notice } from '@/components/ui';
 import { nextDays } from '@/lib/dates';
 import { space, type } from '@/theme';
@@ -70,14 +71,7 @@ export function MoveSheet({
           {slots.length > 0 ? (
             <View style={styles.block}>
               <Text style={type.headline}>Shift</Text>
-              <OptionList
-                options={slots.map((s, i) => ({
-                  value: s.id,
-                  label: slotTimeLabel(s),
-                }))}
-                value={slotId}
-                onChange={setSlotId}
-              />
+              <ShiftList items={slots.map((slot) => ({ slot }))} selectedId={slotId || null} onSelect={setSlotId} />
             </View>
           ) : null}
           <Notice tone="error" message={error} />

@@ -2,15 +2,17 @@
 // Same calls as frontend/src/pages/Clinic/dashboard/DoctorsSection.tsx + InviteDoctorModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useMemo, useState } from 'react';
-import { Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { Linking, Pressable, RefreshControl, Share, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { type ClinicDoctorStat, type Doctor, api, formatDoctorDegrees } from '@mediarca/shared/api';
 import { toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { ActionMenu, type MenuAction } from '@/components/ActionMenu';
-import { Avatar, Chip, EmptyState, IconButton, kitStyles, PlaceholderCard, SearchBar, SectionTitle, Sheet } from '@/components/kit';
+import { Avatar, CabinBadge, Chip, EmptyState, IconButton, kitStyles, PlaceholderCard, SearchBar, SectionTitle, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice, Screen, Title } from '@/components/ui';
 import { useClinic } from '@/context/ClinicContext';
 import { doctorName } from '@/lib/booking';
+import { doctorBookingUrl } from '@/lib/site';
 import { confirmAction } from '@/lib/confirm';
 import { success } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
@@ -62,6 +64,13 @@ export default function ClinicDoctors() {
 
   const openMenu = (doc: ClinicDoctorStat) => {
     const actions: MenuAction[] = [];
+    actions.push({ label: 'View booking page', onPress: () => router.push({ pathname: '/doctors/[id]', params: { id: doc.doctorId } }) });
+    actions.push({
+      label: 'Share booking link',
+      onPress: () => {
+        Share.share({ message: `Book a visit with ${doctorName(doc.fullName)} on MediArca: ${doctorBookingUrl(doc.doctorId)}` }).catch(() => {});
+      },
+    });
     if (doc.phone) actions.push({ label: 'Call', onPress: () => Linking.openURL(toTelUri(doc.phone!)) });
     actions.push({ label: 'Remove from clinic', destructive: true, onPress: () => remove(doc) });
     setMenu({ title: doctorName(doc.fullName), actions });
@@ -137,7 +146,7 @@ export default function ClinicDoctors() {
             doctors.map((doc) => (
               <View key={doc.doctorId} style={styles.card}>
                 <View style={styles.headRow}>
-                  <DoctorHead doc={doc} />
+                  <DoctorHead doc={doc} live />
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="More"
@@ -151,7 +160,7 @@ export default function ClinicDoctors() {
                 <View style={styles.strip}>
                   <Figure label="Fee" value={rupees(doc.consultationFee)} />
                   <Figure label="Bookings" value={String(doc.bookingCount || 0)} />
-                  <Figure label="Revenue" value={rupees(doc.revenue)} />
+                  <Figure label="Fees" value={rupees(doc.revenue)} />
                 </View>
               </View>
             ))
@@ -168,7 +177,8 @@ export default function ClinicDoctors() {
   );
 }
 
-function DoctorHead({ doc }: { doc: ClinicDoctorStat }) {
+/** `live`: also show In cabin / Stepped out / Away (doctors at the clinic). */
+function DoctorHead({ doc, live = false }: { doc: ClinicDoctorStat; live?: boolean }) {
   const degrees = formatDoctorDegrees(doc.qualifications);
   const meta = [degrees, doc.experienceYears ? `${doc.experienceYears} yrs` : ''].filter(Boolean).join(' · ');
   return (
@@ -186,6 +196,11 @@ function DoctorHead({ doc }: { doc: ClinicDoctorStat }) {
             {meta}
           </Text>
         ) : null}
+        {live && doc.cabinStatus ? (
+          <View style={styles.live}>
+            <CabinBadge status={doc.cabinStatus} expectedReturnTime={doc.expectedReturnTime} />
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -194,10 +209,10 @@ function DoctorHead({ doc }: { doc: ClinicDoctorStat }) {
 function Figure({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.figure}>
-      <Text style={type.footnote}>{label}</Text>
       <Text style={styles.figureValue} numberOfLines={1}>
         {value}
       </Text>
+      <Text style={type.footnote}>{label}</Text>
     </View>
   );
 }
@@ -301,7 +316,7 @@ function InviteSheet({ visible, onClose, onDone }: { visible: boolean; onClose: 
                     </Text>
                   </View>
                   {done ? (
-                    <Chip label={s} />
+                    <Chip label={s} tone={s === 'Added' ? 'success' : 'neutral'} />
                   ) : (
                     <Pressable
                       accessibilityRole="button"
@@ -338,6 +353,7 @@ const styles = StyleSheet.create({
   round: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center' },
   strip: { flexDirection: 'row', backgroundColor: colors.canvas, borderRadius: radius.tile, paddingVertical: space.md },
   figure: { flex: 1, alignItems: 'center', gap: 2 },
+  live: { flexDirection: 'row', marginTop: 4 },
   figureValue: { fontSize: 16, fontWeight: '600', color: colors.ink },
   add: { height: 32, paddingHorizontal: 16, borderRadius: radius.pill, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   addText: { fontSize: 14, fontWeight: '600', color: colors.white },

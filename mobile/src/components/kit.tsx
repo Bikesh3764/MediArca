@@ -1,8 +1,9 @@
 // More building blocks in the Apple look: avatars, chips, search, sheets, empty states, bottom bar.
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Animated,
+  Easing,
   Image,
   Modal,
   Platform,
@@ -17,13 +18,46 @@ import { Text, TextInput } from '@/components/AppText';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { getFileUrl } from '@mediarca/shared/api/config';
+import { tidyTimes } from '@mediarca/shared/api';
 import { tap } from '@/lib/haptics';
-import { usePressScale } from '@/lib/motion';
+import { nativeDriver, usePressScale } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name'];
+
+/** Apple-style on/off switch that looks the same on every phone (Android's own one fades into white cards). */
+export function Toggle({
+  value,
+  onValueChange,
+  disabled = false,
+  accessibilityLabel,
+}: {
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
+  const [v] = useState(() => new Animated.Value(value ? 1 : 0));
+  useEffect(() => {
+    Animated.timing(v, { toValue: value ? 1 : 0, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
+  }, [value, v]);
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value, disabled }}
+      accessibilityLabel={accessibilityLabel}
+      disabled={disabled}
+      hitSlop={8}
+      onPress={() => onValueChange(!value)}
+      style={[styles.toggle, disabled && { opacity: 0.5 }]}
+    >
+      <Animated.View style={[StyleSheet.absoluteFill, styles.toggleOn, { opacity: v }]} />
+      <Animated.View style={[styles.toggleThumb, { transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [2, 22] }) }] }]} />
+    </Pressable>
+  );
+}
 
 const initialOf = (name?: string | null) =>
   (name || '').replace(/^Dr\.?\s*/i, '').trim().charAt(0).toUpperCase() || '?';
@@ -95,7 +129,7 @@ export function Chip({ label, tone = 'neutral', dot = false }: { label: string; 
 export function CabinBadge({ status, expectedReturnTime }: { status?: string | null; expectedReturnTime?: string | null }) {
   const s = (status || 'IN_CABIN').toUpperCase();
   if (s === 'STEPPED_OUT') {
-    const back = expectedReturnTime ? expectedReturnTime.replace(/^~\s*/, '').trim() : '';
+    const back = expectedReturnTime ? tidyTimes(expectedReturnTime.replace(/^~\s*/, '').trim()) : '';
     return <Chip dot tone="warning" label={back ? `Stepped out · Back ${back}` : 'Stepped out'} />;
   }
   if (s === 'NOT_IN_CABIN') return <Chip dot label="Not in cabin" />;
@@ -291,12 +325,15 @@ export function Sheet({
   onClose,
   children,
   doneLabel = 'Done',
+  footer,
 }: {
   visible: boolean;
   title: string;
   onClose: () => void;
   children: React.ReactNode;
   doneLabel?: string;
+  /** Stays at the bottom while the content scrolls (e.g. "Show 3 doctors"). */
+  footer?: React.ReactNode;
 }) {
   return (
     <Modal
@@ -316,6 +353,7 @@ export function Sheet({
         <ScrollView contentContainerStyle={styles.sheetBody} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
+        {footer ? <View style={styles.sheetFooter}>{footer}</View> : null}
       </SafeAreaView>
     </Modal>
   );
@@ -465,6 +503,9 @@ export const kitStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  toggle: { width: 51, height: 31, borderRadius: 16, backgroundColor: colors.hairline, justifyContent: 'center', overflow: 'hidden' },
+  toggleOn: { backgroundColor: colors.primary, borderRadius: 16 },
+  toggleThumb: { width: 27, height: 27, borderRadius: 14, backgroundColor: colors.white, boxShadow: '0px 2px 4px rgba(0,0,0,0.18)' },
   pressed: { opacity: 0.7, transform: [{ scale: 0.98 }] },
   avatar: { backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarRing: { borderWidth: 4, borderColor: colors.white },
@@ -499,6 +540,7 @@ const styles = StyleSheet.create({
   sheetSide: { width: 64 },
   sheetDone: { color: colors.primary, fontSize: 17, fontWeight: '600' },
   sheetBody: { padding: space.lg, paddingBottom: space.xxl, gap: space.md },
+  sheetFooter: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md, backgroundColor: colors.canvas },
   group: { backgroundColor: colors.card, borderRadius: radius.card, overflow: 'hidden', ...shadow.card },
   groupRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 52, paddingHorizontal: space.lg },
   groupRowTall: { gap: space.md, paddingVertical: space.md - 2 },

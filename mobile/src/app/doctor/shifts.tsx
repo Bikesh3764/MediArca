@@ -3,7 +3,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import {
   ALL_WEEKDAYS,
@@ -15,13 +15,16 @@ import {
   format12Hour,
   timeToMinutes,
 } from '@mediarca/shared/api';
-import { EmptyState, PillButton, PlaceholderCard, SectionTitle } from '@/components/kit';
+import { EmptyState, PillButton, PlaceholderCard, SectionTitle, Toggle } from '@/components/kit';
 import { LeaveList, LeaveSheet, leaveDates, upcomingLeaves, WeekdayDiscs } from '@/components/LeaveTools';
 import { Button, Card, Field, Notice, Screen, SelectField, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { confirmAction } from '@/lib/confirm';
 import { success, tap } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
+
+/** "Morning Shift" → "Morning shift" (same style as the rest of the app). */
+const sentenceCase = (name: string) => name.replace(/\s+Shift\b/g, ' shift');
 
 const TIMES = Array.from({ length: 96 }, (_, i) => {
   const value = `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
@@ -149,7 +152,7 @@ export default function DoctorShifts() {
       const label = s.name || `Shift ${i + 1}`;
       if (timeToMinutes(s.endTime) <= timeToMinutes(s.startTime)) return setMessage({ tone: 'error', text: `End time must be after start time (${label}).` });
       if (!(Number(s.maxPatients) >= 1)) return setMessage({ tone: 'error', text: `Max patients must be at least 1 (${label}).` });
-      if (!(Number(s.avgConsultationMinutes) >= 1)) return setMessage({ tone: 'error', text: `Mins per patient must be at least 1 (${label}).` });
+      if (!(Number(s.avgConsultationMinutes) >= 1)) return setMessage({ tone: 'error', text: `Minutes per patient must be at least 1 (${label}).` });
     }
     for (let i = 0; i < slots.length; i++) {
       for (let j = i + 1; j < slots.length; j++) {
@@ -261,7 +264,7 @@ export default function DoctorShifts() {
             <Text style={type.headline}>On leave today</Text>
             <Text style={type.footnote}>{todayLeave ? 'Patients can’t book today.' : 'Available'}</Text>
           </View>
-          <Switch value={Boolean(todayLeave)} onValueChange={toggleToday} disabled={leaveBusy} trackColor={{ true: colors.primary, false: undefined }} />
+          <Toggle accessibilityLabel="On leave today" value={Boolean(todayLeave)} onValueChange={toggleToday} disabled={leaveBusy} />
         </View>
       </View>
       {upcoming.length > 0 ? <LeaveList leaves={upcoming} onRemove={cancelLeave} /> : null}
@@ -286,7 +289,7 @@ export default function DoctorShifts() {
               >
                 <View style={styles.flex}>
                   <Text style={type.headline} numberOfLines={1}>
-                    {s.name.trim() || 'Shift'}
+                    {sentenceCase(s.name.trim()) || 'Shift'}
                   </Text>
                   <Text style={type.footnote}>
                     {timeLabel(s.startTime)} – {timeLabel(s.endTime)} · {s.maxPatients || 0} patients
@@ -311,7 +314,7 @@ export default function DoctorShifts() {
                     </View>
                     <View style={styles.flex}>
                       <Field
-                        label="Mins per patient"
+                        label="Minutes per patient"
                         value={s.avgConsultationMinutes}
                         onChangeText={(t) => setSlot(i, { avgConsultationMinutes: t.replace(/\D/g, '').slice(0, 3) })}
                         keyboardType="number-pad"

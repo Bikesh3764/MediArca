@@ -3,16 +3,18 @@
 // Same checks as frontend/src/pages/Receptionist/desk (WalkinTab, state.tsx) and Doctor/dashboard/WalkinModal.tsx.
 import { Ionicons } from '@expo/vector-icons';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
-import { type QueuePreview, formatDisplayDate, getLocalDateString, shiftLabel, slotTimeLabel } from '@mediarca/shared/api';
+import { type QueuePreview, formatDisplayDate, getLocalDateString, shiftLabel, tidyTimes } from '@mediarca/shared/api';
 import { api } from '@mediarca/shared/api';
 import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
 import { DayPills } from '@/components/DayPills';
 import { DoctorBar } from '@/components/DoctorBar';
-import { OptionList, PillButton } from '@/components/kit';
+import { ShiftList } from '@/components/booking';
+import { PillButton } from '@/components/kit';
 import { Button, Card, Field, Notice, Segmented } from '@/components/ui';
-import { doctorName } from '@/lib/booking';
+import { doctorName, workingDaysOf } from '@/lib/booking';
+import { trackUrl } from '@/lib/site';
 import { success } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
 
@@ -170,19 +172,10 @@ export function WalkinForm({
         </ScrollView>
       ) : null}
 
-      <DayPills value={date} onChange={(d) => setDate(d)} days={7} />
+      <DayPills value={date} onChange={(d) => setDate(d)} days={7} workingDays={workingDaysOf(preview)} />
 
-      {shifts.length > 1 ? (
-        <OptionList
-          options={shifts.map((s, i) => ({
-            value: s.slot.id,
-            label: slotTimeLabel(s.slot),
-            badge: s.isPassed ? 'Ended' : s.isFull ? 'Full' : undefined,
-          }))}
-          value={slotId || chosen?.slot.id || ''}
-          onChange={setSlotId}
-        />
-      ) : null}
+      {/* Same shift cards as booking (sun / moon, Available / Ended / Full) */}
+      {shifts.length > 0 && !closed ? <ShiftList items={shifts} selectedId={slotId || chosen?.slot.id || null} onSelect={setSlotId} /> : null}
 
       <View style={[styles.preview, Boolean(closed) && !(loadingPreview && !preview) && styles.previewClosed]}>
         {loadingPreview && !preview ? (
@@ -200,7 +193,7 @@ export function WalkinForm({
             </View>
             <View style={styles.previewCell}>
               <Text style={type.footnote}>Est. time</Text>
-              <Text style={styles.previewValue}>{ended ? 'Ended' : full ? 'Full' : chosen.estimatedTime || preview?.estimatedTime || '–'}</Text>
+              <Text style={styles.previewValue}>{ended ? 'Ended' : full ? 'Full' : tidyTimes(chosen.estimatedTime || preview?.estimatedTime) || '–'}</Text>
             </View>
             <View style={styles.previewCell}>
               <Text style={type.footnote}>Ahead</Text>
@@ -223,23 +216,17 @@ export function WalkinForm({
           maxLength={10}
           placeholder="10-digit number"
         />
-        <View style={styles.row}>
-          <View style={styles.ageBox}>
-            <Field label="Age (optional)" value={age} onChangeText={(t) => setAge(t.replace(/\D/g, '').slice(0, 3))} keyboardType="number-pad" placeholder="Years" />
-          </View>
-          <View style={styles.flex}>
-            <Text style={styles.label}>Gender</Text>
-            <Segmented
-              options={[
-                { value: 'Male', label: 'M' },
-                { value: 'Female', label: 'F' },
-                { value: 'Other', label: 'Other' },
-              ]}
-              value={gender as 'Male' | 'Female' | 'Other'}
-              onChange={(g) => setGender(g === gender ? 'Not Specified' : g)}
-            />
-          </View>
-        </View>
+        <Field label="Age (optional)" value={age} onChangeText={(t) => setAge(t.replace(/\D/g, '').slice(0, 3))} keyboardType="number-pad" placeholder="e.g. 24" />
+        <Text style={type.label}>Gender</Text>
+        <Segmented
+          options={[
+            { value: 'Male', label: 'Male' },
+            { value: 'Female', label: 'Female' },
+            { value: 'Other', label: 'Other' },
+          ]}
+          value={gender as 'Male' | 'Female' | 'Other'}
+          onChange={(g) => setGender(g === gender ? 'Not Specified' : g)}
+        />
         <Notice tone="error" message={error} />
         <Button label="Add to queue" icon="add" onPress={add} loading={saving} />
       </Card>
@@ -256,7 +243,7 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
         <View style={styles.passRow}>
           <View style={styles.passCell}>
             <Text style={styles.passSmall}>Est. time</Text>
-            <Text style={styles.passValue}>{token.estimatedTime || '–'}</Text>
+            <Text style={styles.passValue}>{tidyTimes(token.estimatedTime) || '–'}</Text>
           </View>
           <View style={styles.passWide}>
             <Text style={styles.passSmall}>Shift</Text>
@@ -271,6 +258,16 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
           <Text style={type.footnote}>Tracking code</Text>
           <Text style={styles.code}>{token.walkInCode}</Text>
           <Text style={type.footnote}>Track walk-in · with the mobile number</Text>
+          {token.patientPhone ? (
+            <View style={styles.sendRow}>
+              <View style={styles.flex}>
+                <Button label="WhatsApp" icon="logo-whatsapp" variant="secondary" onPress={() => sendCode(token, 'whatsapp')} />
+              </View>
+              <View style={styles.flex}>
+                <Button label="SMS" icon="chatbubble" variant="secondary" onPress={() => sendCode(token, 'sms')} />
+              </View>
+            </View>
+          ) : null}
         </Card>
       ) : null}
       <Card>
@@ -282,6 +279,18 @@ function TokenIssued({ token, onDone }: { token: IssuedToken; onDone: () => void
       <Button label="Done" onPress={onDone} />
     </>
   );
+}
+
+/** Opens WhatsApp or the SMS app with the token and code filled in; the desk taps Send. */
+function sendCode(token: IssuedToken, via: 'whatsapp' | 'sms') {
+  const digits = sanitizeIndianPhone(token.patientPhone);
+  if (digits.length !== 10) return;
+  const text =
+    `MediArca: Token #${token.queueNumber} with ${doctorName(token.doctorName)}, ${formatDisplayDate(token.appointmentDate)}` +
+    `${token.estimatedTime && /\d/.test(token.estimatedTime) ? `, about ${tidyTimes(token.estimatedTime)}` : ''}.` +
+    ` Track your turn at ${trackUrl} with code ${token.walkInCode} and this mobile number.`;
+  const url = via === 'whatsapp' ? `https://wa.me/91${digits}?text=${encodeURIComponent(text)}` : `sms:+91${digits}?body=${encodeURIComponent(text)}`;
+  Linking.openURL(url).catch(() => {});
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
@@ -305,10 +314,8 @@ const styles = StyleSheet.create({
   previewCell: { flex: 1, gap: 2 },
   previewBig: { fontSize: 24, fontWeight: '600', color: colors.primary },
   previewValue: { fontSize: 17, fontWeight: '600', color: colors.ink },
-  row: { flexDirection: 'row', gap: space.md, alignItems: 'flex-start' },
-  ageBox: { width: 96 },
-  label: { fontSize: 13, color: colors.ink, marginBottom: 6, marginLeft: 4 },
   center: { alignItems: 'center', gap: 4 },
+  sendRow: { flexDirection: 'row', gap: space.sm, alignSelf: 'stretch', marginTop: space.sm },
   code: { fontSize: 32, fontWeight: '600', letterSpacing: 6, color: colors.ink },
   pass: { backgroundColor: colors.primary, borderRadius: radius.card, padding: space.xl, gap: space.sm, ...shadow.raised },
   passLabel: { fontSize: 15, color: 'rgba(255,255,255,0.85)' },

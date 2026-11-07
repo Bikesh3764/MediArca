@@ -10,7 +10,7 @@ import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { DoctorCard } from '@/components/booking';
 import { EmptyState, IconButton, SectionTitle, goBack } from '@/components/kit';
-import { Button, Loading } from '@/components/ui';
+import { Button, PagePlaceholder } from '@/components/ui';
 import { colors, space, type } from '@/theme';
 
 export default function ClinicPage() {
@@ -42,7 +42,7 @@ export default function ClinicPage() {
     };
   }, [id, attempt]);
 
-  if (state === 'loading') return <Loading />;
+  if (state === 'loading') return <PagePlaceholder />;
 
   if (!clinic) {
     return (

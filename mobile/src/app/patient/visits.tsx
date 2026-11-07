@@ -1,6 +1,6 @@
 // Your bookings. Same data and rules as frontend/src/pages/Patient/MyAppointments.tsx.
 // Background refresh is silent: the list stays on screen and updates in place.
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
@@ -64,11 +64,20 @@ export default function Visits() {
     }
   }, []);
 
+  // Right after a booking the link asks for Upcoming (`at` makes each request new).
+  // Applied once per request, so Past still works afterwards.
+  const { tab: askedTab, at } = useLocalSearchParams<{ tab?: string; at?: string }>();
+  const handledAsk = useRef<string | undefined>(undefined);
+
   // Refresh each time the tab is opened (quietly, keeping what's on screen)
   useFocusEffect(
     useCallback(() => {
+      if (askedTab === 'upcoming' && at !== handledAsk.current) {
+        handledAsk.current = at;
+        setTab('upcoming');
+      }
       loadActive();
-    }, [loadActive])
+    }, [loadActive, askedTab, at])
   );
 
   const today = getLocalDateString();
@@ -144,7 +153,19 @@ export default function Visits() {
       <FlatList
         data={data}
         keyExtractor={(a) => a.id}
-        renderItem={({ item }) => <AppointmentCard appt={item} />}
+        renderItem={({ item, index }) => {
+          // Past visits: a month heading whenever the month changes ("October 2026")
+          const month = !isUpcomingTab ? monthOf(item.appointmentDate) : '';
+          const newMonth = month && (index === 0 || monthOf(data[index - 1]?.appointmentDate) !== month);
+          return newMonth ? (
+            <View style={styles.monthBlock}>
+              <Text style={styles.month}>{month}</Text>
+              <AppointmentCard appt={item} />
+            </View>
+          ) : (
+            <AppointmentCard appt={item} />
+          );
+        }}
         ItemSeparatorComponent={Gap}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
@@ -179,6 +200,13 @@ export default function Visits() {
 
 const Gap = () => <View style={{ height: space.md }} />;
 
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+/** "2026-10-14" → "October 2026". */
+const monthOf = (ymd?: string | null) => {
+  const [y, m] = String(ymd || '').split('-').map(Number);
+  return y && m ? `${MONTHS[m - 1]} ${y}` : '';
+};
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.canvas },
   list: { paddingHorizontal: space.lg + 4, paddingTop: space.sm, paddingBottom: space.xxl * 2 },
@@ -186,4 +214,6 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   placeholders: { gap: space.md },
   more: { marginTop: space.lg },
+  monthBlock: { gap: space.sm },
+  month: { ...type.headline, marginLeft: 4, marginTop: space.sm },
 });

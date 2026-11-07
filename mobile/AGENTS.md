@@ -6,7 +6,7 @@ The MediArca app for Patient, Doctor, Clinic and Receptionist (Admin is website-
 - `src/lib/platform.ts` is the only place that configures the shared code for the phone.
 - Text: import `Text` and `TextInput` from `@/components/AppText` (Inter font), never from `react-native`.
 - Tokens: `src/theme`; building blocks: `src/components/ui.tsx` (buttons, fields, cards) and `src/components/kit.tsx` (avatar, chips, search, sheet, empty state, bottom bar). Reuse these instead of styling from scratch.
-- Look: large titles, white rounded cards with soft shadows (`shadow` in `src/theme`, no borders), filled fields, 52pt pill buttons, soft blue tints, haptic tap on choices (`src/lib/haptics.ts`). Short copy, same words as the website.
+- Look: large titles, white rounded cards with soft shadows (`shadow` in `src/theme`, no borders), filled fields, 52pt pill buttons, soft blue tints, no vibration (`src/lib/haptics.ts` is a no-op by the owner's choice); on/off settings use `Toggle` from `kit.tsx`, never React Native's `Switch`. Short copy, same words as the website.
 - Errors and "saved" messages go next to the button that caused them (or in the bottom bar), never off-screen.
 - Queue tickets use `components/QueuePass.tsx`; check-in is camera only (`app/scan.tsx`).
 - Push alerts: `src/lib/push.ts`; Google sign-in: `src/lib/google.ts` + `components/GoogleButton.tsx`. Both only run in our own build (`src/lib/nativeBuild.ts`), never in Expo Go or the browser, and load their native module lazily. Android Google sign-in needs no config plugin (no Firebase mode); don't add `@react-native-google-signin/google-signin` to `app.json` plugins without its options.

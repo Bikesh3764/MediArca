@@ -7,6 +7,7 @@ import { verifyReceptionistDoctorAccess, isDoctorEligibleForClinicalPractice } f
 import { createNotification, formatVisitDate, withDr } from '../../services/notificationService';
 import { invalidateDoctorQueueCache } from '../../utils/queueStateCache';
 import { LIMITS } from '../../utils/inputLimits';
+import { estimateNextToken } from '../appointment/helpers';
 
 /**
  * Get all pending booking requests awaiting payment and receptionist verification
@@ -149,16 +150,19 @@ export const getPendingAppointments = async (req: AuthRequest, res: Response): P
     // Preserve today's pending appointments so receptionists can review, confirm, or reschedule them at desk
     const unexpiredAppointments = eligibleAppointments;
 
-    const enriched = unexpiredAppointments.map((appt) => {
+    const enriched = await Promise.all(unexpiredAppointments.map(async (appt) => {
       const cd = appt.clinicId
         ? (appt.doctor as any)?.clinics?.find((c: any) => c.clinicId === appt.clinicId)
         : null;
       const fee = cd?.consultationFee ?? appt.doctor.consultationFee;
+      // Token this request gets if it is paid now (same rule as approval)
+      const estimatedQueueNumber = await estimateNextToken(appt.doctorId, appt.appointmentDate, appt.clinicId, appt.slotId, appt.checkingWindow);
       return {
         ...appt,
         consultationFee: fee,
+        estimatedQueueNumber,
       };
-    });
+    }));
 
     res.json({ success: true, count: enriched.length, data: enriched });
   } catch (error: any) {

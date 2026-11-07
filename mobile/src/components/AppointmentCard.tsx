@@ -8,7 +8,7 @@ import { type Appointment, formatDisplayDate, getLocalDateString, shiftLabel } f
 import { toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, Chip } from '@/components/kit';
 import { Button } from '@/components/ui';
-import { doctorName } from '@/lib/booking';
+import { deskName, doctorName } from '@/lib/booking';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 /** "Today", "Tomorrow" or "20 Oct" (fits the small tile). */
@@ -49,13 +49,15 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
   const pending = appt.status === 'PENDING_APPROVAL';
   const active = pending || appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION';
   const deskPhone = appt.receptionistPhone || appt.clinic?.phone || null;
-  const deskName = appt.receptionistName || 'Front desk';
+  const deskLabel = deskName(appt.receptionistName) || 'Front desk';
   const token = pending
     ? Math.max(1, appt.estimatedQueueNumber || live?.estimatedQueueNumber || (appt.queueNumber > 0 ? appt.queueNumber : 1))
     : appt.queueNumber;
   const showLive = isToday && live && (appt.status === 'WAITING' || appt.status === 'IN_CONSULTATION');
   const canCheckIn = isToday && appt.status === 'WAITING' && !appt.isCheckedIn && !live?.isShiftPassed;
   const forName = appt.isForOther ? appt.patientName : null;
+  // Older visits may have no clinic saved; a doctor with one clinic can only mean that one
+  const clinicName = appt.clinic?.clinicName || (appt.doctor?.clinics?.length === 1 ? appt.doctor.clinics[0].clinic?.clinicName : undefined);
   const open = () => router.push({ pathname: '/visit/[id]', params: { id: appt.id } });
 
   return (
@@ -67,8 +69,8 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
           <Text style={type.headline} numberOfLines={1}>
             {doctorName(appt.doctor?.user?.fullName)}
           </Text>
-          <Text style={type.footnote} numberOfLines={1}>
-            {[appt.doctor?.specialty, appt.clinic?.clinicName].filter(Boolean).join(' · ')}
+          <Text style={type.footnote} numberOfLines={2}>
+            {[appt.doctor?.specialty, clinicName].filter(Boolean).join(' · ')}
           </Text>
           <View style={styles.status}>
             {statusChip(appt, isToday)}
@@ -85,7 +87,6 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
         <Ionicons name="calendar-outline" size={15} color={colors.muted} />
         <Text style={styles.whenText} numberOfLines={1}>
           {shortDate(appt.appointmentDate)} · {shiftLabel(appt)}
-          {appt.status === 'WAITING' && (live?.liveEstimatedTime || appt.estimatedTime) ? ` · ${live?.liveEstimatedTime || appt.estimatedTime}` : ''}
         </Text>
       </View>
 
@@ -115,7 +116,7 @@ export function AppointmentCard({ appt }: { appt: Appointment }) {
       {pending && deskPhone ? (
         <>
           <Text style={type.caption}>Pay the receptionist to confirm your token.</Text>
-          <Button icon="call" label={`Call ${deskName}`} onPress={() => Linking.openURL(toTelUri(deskPhone))} />
+          <Button icon="call" label={`Call ${deskLabel}`} onPress={() => Linking.openURL(toTelUri(deskPhone))} />
         </>
       ) : null}
     </View>

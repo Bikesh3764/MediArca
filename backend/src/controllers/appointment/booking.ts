@@ -12,7 +12,7 @@ import { resolveReceptionistContact, estimateNextToken } from './helpers';
 import { pickWalkinAccount, isSameWalkinName } from '../../utils/walkinMatch';
 import { pickFreeWalkinCode } from '../../utils/walkinCode';
 import { findTooLong, LIMITS } from '../../utils/inputLimits';
-import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE, getDayOfWeekCode } from '../../utils/scheduleUtils';
+import { isWithinBookingWindow, BOOKING_WINDOW_MESSAGE, getDayOfWeekCode, format12Hour } from '../../utils/scheduleUtils';
 import { activeShiftSets, clashWithEarlierClinic } from '../../utils/shiftClash';
 
 /** Active bookings (self plus family) one patient account may hold on a single date. */
@@ -694,7 +694,11 @@ export const bookAppointment = async (req: AuthRequest, res: Response): Promise<
 
     const cleanDocName = withDr(doctor.user?.fullName);
     const isPendingBooking = newAppointment.status === 'PENDING_APPROVAL';
-    const visitWhen = `${formatVisitDate(appointmentDate)} (${chosenSlot.name})`;
+    // "Sat, 7 Nov, 9:00 AM – 11:00 AM": the time patients see everywhere, not the shift's name
+    const hhmm = (t: string) => format12Hour(t).replace(/^0/, '');
+    const visitWhen = chosenSlot.startTime && chosenSlot.endTime
+      ? `${formatVisitDate(appointmentDate)}, ${hhmm(chosenSlot.startTime)} – ${hhmm(chosenSlot.endTime)}`
+      : formatVisitDate(appointmentDate);
 
     // The doctor sees new bookings live on the dashboard, so only the patient and the desk are told.
     if (req.user?.role === 'DOCTOR') {

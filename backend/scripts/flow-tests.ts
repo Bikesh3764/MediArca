@@ -224,6 +224,52 @@ async function bugHuntChecks() {
   await wait(300);
   check(walk.status === 201 && (await prisma.notification.count({ where: { userId: D.du.id } })) === before, 'FIX-052: desk walk-in sends the doctor no notification', walk.status);
 
+  // FIX-080: a walk-in in a running shift is never estimated before now
+  const walkTime = String(walk.json?.data?.estimatedTime ?? walk.json?.estimatedTime ?? '');
+  const wt = walkTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  const walkMins = wt ? ((Number(wt[1]) % 12) + (wt[3].toUpperCase() === 'PM' ? 12 : 0)) * 60 + Number(wt[2]) : -1;
+  check(walkMins >= now - 1, 'FIX-080: desk walk-in time is not before now in a running shift', [walkTime, now]);
+
+  // FIX-081: desk Upcoming lists confirmed visits from today on, by date
+  const walkTomorrow = await call('POST', '/api/receptionist/book-walkin', A.deskToken, { doctorId: D.doctor.id, patientName: `WalkT ${RUN}`, patientPhone: '9811100005', slotId: live.id, appointmentDate: tomorrow });
+  const ahead = await call('GET', `/api/receptionists/doctors/${D.doctor.id}/queue?scope=all-upcoming`, A.deskToken);
+  const aheadList: any[] = ahead.json?.data?.appointments || [];
+  const aheadDates = aheadList.map((a) => a.appointmentDate);
+  check(
+    walkTomorrow.status === 201 && ahead.status === 200 && aheadDates.includes(today) && aheadDates.includes(tomorrow) &&
+      aheadDates.every((d, i) => d >= today && (i === 0 || aheadDates[i - 1] <= d)) &&
+      aheadList.every((a) => a.status === 'WAITING' || a.status === 'IN_CONSULTATION'),
+    'FIX-081: desk Upcoming shows confirmed visits from today on, in date order',
+    [walkTomorrow.status, ahead.status, aheadDates]
+  );
+
+  // FIX-083: clinic edits its receptionist and sets a new temporary password; other clinics can't
+  const S = await clinicWithDesk('S');
+  const edited = await call('PUT', `/api/clinics/receptionists/${S.rec.id}`, S.clinicToken, { fullName: `Desk Edited ${RUN}`, phone: '9811100009' });
+  const editedUser = await prisma.user.findUnique({ where: { id: S.ru.id } });
+  const editedRec = await prisma.receptionistProfile.findUnique({ where: { id: S.rec.id } });
+  check(
+    edited.status === 200 && editedUser?.fullName === `Desk Edited ${RUN}` && editedUser?.phone === '+91 9811100009' && editedRec?.phone === '+91 9811100009',
+    'FIX-083: clinic edits its receptionist name and mobile (+91)',
+    [edited.status, editedUser?.fullName, editedUser?.phone, editedRec?.phone]
+  );
+  const badPhone = await call('PUT', `/api/clinics/receptionists/${S.rec.id}`, S.clinicToken, { fullName: 'X', phone: '12345' });
+  const otherClinicEdit = await call('PUT', `/api/clinics/receptionists/${S.rec.id}`, A.clinicToken, { fullName: 'Hijack' });
+  const otherClinicReset = await call('POST', `/api/clinics/receptionists/${S.rec.id}/reset-password`, A.clinicToken, { password: 'Another-Pass-1' });
+  check(badPhone.status === 400 && otherClinicEdit.status === 404 && otherClinicReset.status === 404, 'FIX-083: bad mobile refused; another clinic cannot edit or reset this receptionist', [badPhone.status, otherClinicEdit.status, otherClinicReset.status]);
+  const shortReset = await call('POST', `/api/clinics/receptionists/${S.rec.id}/reset-password`, S.clinicToken, { password: 'short' });
+  await wait(1100); // sessions end by the second: the old token must be from an earlier second
+  const reset = await call('POST', `/api/clinics/receptionists/${S.rec.id}/reset-password`, S.clinicToken, { password: 'Fresh-Temp-123' });
+  const resetUser = await prisma.user.findUnique({ where: { id: S.ru.id } });
+  const newPasswordWorks = Boolean(resetUser?.passwordHash) && (await bcrypt.compare('Fresh-Temp-123', resetUser!.passwordHash));
+  const oldSession = await call('GET', '/api/auth/me', S.deskToken);
+  check(
+    shortReset.status === 400 && reset.status === 200 && resetUser?.mustChangePassword === true && Boolean(resetUser?.passwordChangedAt) &&
+      newPasswordWorks && oldSession.status === 401,
+    'FIX-083: reset password works, forces a new password at sign-in and signs out old sessions',
+    [shortReset.status, reset.status, resetUser?.mustChangePassword, newPasswordWorks, oldSession.status]
+  );
+
   // Doctor-made walk-in: "token booked" goes to the patient record, not the doctor
   const docBook = await call('POST', '/api/appointments/book', D.token, { clinicId: A.clinic.id, appointmentDate: today, slotId: live.id, patientName: `DocWalk ${RUN}`, patientPhone: '9811100002' });
   await wait(300);

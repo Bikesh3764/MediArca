@@ -54,7 +54,9 @@ export default function Welcome() {
                 onPress={() => router.push(`/login?role=${s.role}`)}
                 style={({ pressed }) => [styles.staffChip, pressed && styles.pressed]}
               >
-                <Ionicons name={s.icon} size={20} color={colors.primary} />
+                <View style={styles.staffIcon}>
+                  <Ionicons name={s.icon} size={20} color={colors.primary} />
+                </View>
                 <Text style={styles.staffLink} numberOfLines={1} adjustsFontSizeToFit>
                   {s.label}
                 </Text>
@@ -78,10 +80,11 @@ const styles = StyleSheet.create({
   quick: { width: 132, alignItems: 'center', gap: space.sm, paddingVertical: space.lg, borderRadius: radius.card, backgroundColor: colors.card, ...shadow.card },
   quickIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   quickText: { fontSize: 15, color: colors.ink },
-  actions: { paddingHorizontal: space.xl, paddingBottom: space.lg, gap: space.md },
+  actions: { paddingHorizontal: space.xl, paddingBottom: space.xl + space.sm, gap: space.md },
   staff: { alignSelf: 'stretch', alignItems: 'center', gap: space.sm, marginTop: space.md },
   staffRow: { alignSelf: 'stretch', flexDirection: 'row', gap: space.sm },
-  staffChip: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: space.md, borderRadius: radius.tile + 2, backgroundColor: colors.card, ...shadow.card },
+  staffChip: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: space.md, borderRadius: radius.tile + 2, backgroundColor: colors.card, ...shadow.card },
+  staffIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' },
   staffLink: { fontSize: 14, color: colors.ink },
   pressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
 });

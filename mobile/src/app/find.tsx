@@ -10,7 +10,7 @@ export default function Find() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <NavBar fallback="/welcome" />
-      <Discover header={<Text style={type.largeTitle}>Find a doctor</Text>} />
+      <Discover header={(section) => <Text style={type.largeTitle}>{section === 'clinics' ? 'Find a clinic' : 'Find a doctor'}</Text>} />
     </SafeAreaView>
   );
 }

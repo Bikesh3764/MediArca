@@ -1,11 +1,13 @@
-// Clinic account: clinic details (edit), password, sign out.
+// Clinic account: clinic details (edit), report, password, sign out (same order as doctor and desk).
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
+import { formatClinicAddress } from '@mediarca/shared/utils/address';
 import { formatDisplayPhone } from '@mediarca/shared/utils/phoneUtils';
 import { AccountActions } from '@/components/AccountSettings';
 import { ClinicDetailsSheet } from '@/components/ClinicDetailsSheet';
-import { Chip, ClinicImage, InfoRow, ListRow, SectionTitle } from '@/components/kit';
+import { Chip, ClinicImage, InfoRow, ListGroup, ListRow, SectionTitle } from '@/components/kit';
+import { ReportSheet } from '@/components/ReportSheet';
 import { PhotoPicker } from '@/components/PhotoPicker';
 import { Notice, Screen, Title } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
@@ -16,6 +18,7 @@ export default function ClinicAccount() {
   const { user } = useAuth();
   const { data, reload } = useClinic();
   const [editing, setEditing] = useState(false);
+  const [report, setReport] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const clinic = data?.clinic;
   const verified = clinic?.verificationStatus === 'VERIFIED' || clinic?.isVerified;
@@ -45,13 +48,17 @@ export default function ClinicAccount() {
 
       <SectionTitle title="Clinic details" />
       <View style={styles.group}>
-        <InfoRow first label="Address" value={clinic?.address || '—'} />
-        <InfoRow label="City" value={clinic?.city || '—'} />
-        <InfoRow label="State" value={clinic?.state || '—'} />
+        {/* One address line (city and state only when the address doesn't already say them) */}
+        <InfoRow first label="Address" value={formatClinicAddress(clinic) || '—'} />
         <InfoRow label="Phone" value={phone ? formatDisplayPhone(phone) : '—'} />
       </View>
 
-      <AccountActions rows={[<ListRow key="edit" icon="create" label="Edit details" onPress={() => setEditing(true)} disabled={!clinic} />]} />
+      <ListGroup>
+        <ListRow icon="create" label="Edit details" onPress={() => setEditing(true)} disabled={!clinic} />
+      </ListGroup>
+
+      <AccountActions rows={[<ListRow key="report" icon="document-text" label="Report" onPress={() => setReport(true)} />]} />
+      <ReportSheet role="CLINIC" visible={report} onClose={() => setReport(false)} />
       <ClinicDetailsSheet clinic={clinic} visible={editing} onClose={() => setEditing(false)} onSaved={reload} />
     </Screen>
   );

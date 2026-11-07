@@ -38,10 +38,13 @@ export async function handleResponse<T>(res: Response): Promise<T> {
   }
 
   if (!res.ok || (data && typeof data === 'object' && data.success === false)) {
+    const serverMessage = data?.message || data?.error;
+    // Crash and outage texts ("Internal server error during login") are not for people
+    const technical =
+      res.status >= 500 &&
+      (data?.code === 'SECURITY_STORE_UNAVAILABLE' || /internal server error/i.test(String(serverMessage || '')));
     const error: any = new Error(
-      data?.message ||
-        data?.error ||
-        friendlyHttpError(res.status)
+      technical ? 'Something went wrong. Try again.' : serverMessage || friendlyHttpError(res.status)
     );
     error.status = res.status;
     if (typeof data?.code === 'string') error.code = data.code;

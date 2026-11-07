@@ -11,6 +11,8 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
   try {
     const doctorId = String(req.params.doctorId);
     const appointmentDate = String(req.query.date || getLocalDateString());
+    // scope=all-upcoming: every confirmed visit from today on (same as the doctor's Upcoming tab)
+    const allUpcoming = req.query.scope === 'all-upcoming';
 
     if (req.query.date && !isValidAppointmentDate(String(req.query.date))) {
       res.status(400).json({
@@ -76,7 +78,9 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
     const appointments = await prisma.appointment.findMany({
       where: {
         doctorId: doctorId,
-        appointmentDate: appointmentDate,
+        ...(allUpcoming
+          ? { appointmentDate: { gte: getLocalDateString() }, status: { in: ['WAITING', 'IN_CONSULTATION'] } }
+          : { appointmentDate }),
         queueNumber: { gt: 0 },
         ...(receptionist?.clinicId ? { clinicId: receptionist.clinicId } : {}),
       },
@@ -134,6 +138,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
 
     // Chronologically order appointments by slot window start time, then queueNumber (Finding 4 / ARCH-006 / FUNC-009)
     appointments.sort((a, b) => {
+      if (a.appointmentDate !== b.appointmentDate) return a.appointmentDate < b.appointmentDate ? -1 : 1;
       const aSlotMins = getApptStartMins(a);
       const bSlotMins = getApptStartMins(b);
       if (aSlotMins !== bSlotMins) {
@@ -177,6 +182,7 @@ export const getDoctorQueue = async (req: AuthRequest, res: Response): Promise<v
                 other.status === 'WAITING' &&
                 other.queueNumber > 0 &&
                 other.queueNumber < a.queueNumber &&
+                other.appointmentDate === a.appointmentDate &&
                 (a.slotId ? other.slotId === a.slotId : true)
               ).length;
 

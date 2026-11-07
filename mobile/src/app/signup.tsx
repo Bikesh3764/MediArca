@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { StyleSheet } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
+import { Text } from '@/components/AppText';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ALL_SPECIALTIES } from '@mediarca/shared/api';
 import { formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
@@ -7,12 +10,17 @@ import { GoogleButton } from '@/components/GoogleButton';
 import { Button, Card, Field, LinkText, Notice, Screen, Segmented, SelectField, Title } from '@/components/ui';
 import { homeFor, useAuth } from '@/context/AuthContext';
 import { parseRole } from '@/lib/roles';
+import { privacyUrl, termsUrl } from '@/lib/site';
+import { colors, type } from '@/theme';
 
 type SignupRole = 'PATIENT' | 'DOCTOR' | 'CLINIC';
 const SPECIALTY_OPTIONS = [...ALL_SPECIALTIES, 'Other'];
 
 export default function Signup() {
-  const params = useLocalSearchParams<{ role?: string }>();
+  // `next`: the booking a patient started before signing up
+  const params = useLocalSearchParams<{ role?: string; next?: string; why?: string }>();
+  const next = params.next?.startsWith('/') ? params.next : undefined;
+  const why = next && params.why ? String(params.why).slice(0, 80) : undefined;
   const initial = parseRole(params.role);
   const [role, setRole] = useState<SignupRole>(initial === 'DOCTOR' || initial === 'CLINIC' ? initial : 'PATIENT');
   const { register } = useAuth();
@@ -91,10 +99,13 @@ export default function Signup() {
     try {
       const res = await register(payload);
       if (res.requiresVerification && res.email) {
-        router.push({ pathname: '/verify', params: { email: res.email, role } });
+        router.push({
+          pathname: '/verify',
+          params: { email: res.email, role, ...(role === 'PATIENT' && next ? { next } : {}) },
+        });
         return;
       }
-      if (res.user) router.replace(homeFor(res.user));
+      if (res.user) router.replace(res.user.role === 'PATIENT' && next ? (next as never) : homeFor(res.user));
     } catch (err: any) {
       setError(err?.message || 'Couldn’t create the account. Try again.');
     } finally {
@@ -104,7 +115,7 @@ export default function Signup() {
 
   return (
     <Screen back="/welcome">
-      <Title>Create account</Title>
+      <Title subtitle={why && role === 'PATIENT' ? `Create an account ${why}.` : undefined}>Create account</Title>
       <Segmented
         options={[
           { value: 'PATIENT', label: 'Patient' },
@@ -195,9 +206,28 @@ export default function Signup() {
         />
         <Notice tone="error" message={error} />
         <Button label="Create account" onPress={submit} loading={submitting} />
-        <GoogleButton role={role} onError={setError} />
+        <GoogleButton role={role} next={role === 'PATIENT' ? next : undefined} onError={setError} />
+        <Text style={styles.legal}>
+          By creating an account you agree to the{' '}
+          <Text style={styles.legalLink} onPress={() => WebBrowser.openBrowserAsync(termsUrl)}>
+            Terms
+          </Text>{' '}
+          and{' '}
+          <Text style={styles.legalLink} onPress={() => WebBrowser.openBrowserAsync(privacyUrl)}>
+            Privacy Policy
+          </Text>
+          .
+        </Text>
       </Card>
-      <LinkText label="I have an account" onPress={() => router.replace(`/login?role=${role}`)} />
+      <LinkText
+        label="I have an account"
+        onPress={() => router.replace({ pathname: '/login', params: { role, ...(next ? { next } : {}), ...(why ? { why } : {}) } })}
+      />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  legal: { ...type.footnote, textAlign: 'center', lineHeight: 18 },
+  legalLink: { color: colors.primary },
+});

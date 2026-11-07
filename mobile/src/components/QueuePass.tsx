@@ -2,13 +2,15 @@
 // Used for booked visits (visit/[id]) and walk-ins (track). Wording follows
 // frontend/src/components/queue/LiveQueueTicket.tsx and TrackWalkin.tsx.
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { Animated, Easing, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
-import { type Appointment, formatDisplayDate, getLocalDateString, shiftLabel } from '@mediarca/shared/api';
+import { type Appointment, formatDisplayDate, getLocalDateString, shiftLabel, tidyTimes } from '@mediarca/shared/api';
 import { formatDisplayPhone, toTelUri } from '@mediarca/shared/utils/phoneUtils';
 import { Avatar, type IconName } from '@/components/kit';
 import { doctorName } from '@/lib/booking';
+import { yourTurn } from '@/lib/haptics';
+import { nativeDriver } from '@/lib/motion';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 export type PassLive = {
@@ -73,6 +75,21 @@ export const waitLabel = (min: number) => {
   return `${min} min`;
 };
 
+/** "~10 min", or "Now" (never "~Now"). */
+export const aboutWait = (min: number) => (min <= 0 ? 'Now' : `~${waitLabel(min)}`);
+
+/** One short line about where you are in the queue. Home and the pass use the same words. */
+export const queueLine = (a: Appointment): string => {
+  const pass = passFromAppointment(a);
+  const live = pass.live;
+  if (a.status === 'PENDING_APPROVAL') return 'Awaiting payment';
+  if (a.status === 'IN_CONSULTATION') return 'With the doctor';
+  if (live && (live.isYourTurn || (live.currentServingQueueNumber === pass.token && pass.token > 0))) return 'Your turn · Please go in';
+  if (!live) return 'Confirmed';
+  if (live.patientsAway === 0) return 'You’re next';
+  return `${live.patientsAway} ahead${live.estimatedWaitMinutes > 0 && !live.isShiftPassed ? ` · ${aboutWait(live.estimatedWaitMinutes)}` : ''}`;
+};
+
 const statusLabel = (p: PassData): string => {
   switch (p.status) {
     case 'PENDING_APPROVAL':
@@ -104,7 +121,7 @@ const banner = (p: PassData): { icon: IconName; text: string; tone: 'go' | 'wait
   }
   if (p.live.isShiftPassed) return { icon: 'time', text: `Shift time is over · Token #${p.token} is still valid`, tone: 'wait' };
   if (p.doctor.cabinStatus === 'STEPPED_OUT') {
-    return { icon: 'cafe', text: `Doctor stepped out. Back ${p.doctor.expectedReturnTime ? `around ${p.doctor.expectedReturnTime}` : 'soon'}.`, tone: 'wait' };
+    return { icon: 'cafe', text: `Doctor stepped out. Back ${p.doctor.expectedReturnTime ? `around ${tidyTimes(p.doctor.expectedReturnTime)}` : 'soon'}.`, tone: 'wait' };
   }
   if (p.doctor.cabinStatus === 'NOT_IN_CABIN' || p.live.delayReason === 'DOCTOR_NOT_IN') return { icon: 'time', text: 'Doctor hasn’t arrived yet.', tone: 'wait' };
   if (p.live.delayReason === 'BEFORE_SHIFT') return { icon: 'time', text: 'Shift not started', tone: 'info' };
@@ -116,7 +133,17 @@ export function QueuePass({ pass }: { pass: PassData }) {
   const showLive = pass.isToday && ACTIVE.has(pass.status) && Boolean(live);
   const inactive = !ACTIVE.has(pass.status) && pass.status !== 'PENDING_APPROVAL';
   const note = banner(pass);
-  const time = ACTIVE.has(pass.status) || pass.status === 'PENDING_APPROVAL' ? live?.liveEstimatedTime || pass.estimatedTime : null;
+  const rawTime = ACTIVE.has(pass.status) || pass.status === 'PENDING_APPROVAL' ? live?.liveEstimatedTime || pass.estimatedTime : null;
+  // Only a clock time ("6:15 PM"); words like "Shift Ended" are already said in the banner below.
+  // "09:58 AM" → "9:58 AM" (same as shift times, and shorter)
+  const time = rawTime && /\d/.test(rawTime) && !live?.isShiftPassed ? tidyTimes(rawTime) : null;
+  const myTurn = showLive && pass.status === 'WAITING' && Boolean(live && (live.isYourTurn || (live.currentServingQueueNumber === pass.token && pass.token > 0)));
+  const tokenPop = usePop(myTurn);
+
+  // Strong buzz the moment it becomes your turn (and once when the pass opens on your turn).
+  useEffect(() => {
+    if (myTurn) yourTurn();
+  }, [myTurn]);
 
   return (
     <View style={[styles.pass, inactive && styles.passInactive]}>
@@ -128,7 +155,7 @@ export function QueuePass({ pass }: { pass: PassData }) {
             <Text style={styles.doctor} numberOfLines={1}>
               {doctorName(pass.doctor.name)}
             </Text>
-            <Text style={styles.topSub} numberOfLines={1}>
+            <Text style={styles.topSub} numberOfLines={2}>
               {[pass.doctor.specialty, pass.clinic?.name].filter(Boolean).join(' · ')}
             </Text>
           </View>
@@ -137,17 +164,19 @@ export function QueuePass({ pass }: { pass: PassData }) {
         <View style={styles.tokenRow}>
           <View>
             <Text style={styles.topLabel}>{pass.estimated ? 'Est. token' : 'Token'}</Text>
-            <Text style={styles.token}>#{pass.token}</Text>
+            <Animated.View style={tokenPop}>
+              <Text style={styles.token}>#{pass.token}</Text>
+            </Animated.View>
           </View>
-          <View style={styles.statusPill}>
-            <Text style={styles.statusText}>{statusLabel(pass)}</Text>
+          <View style={[styles.statusPill, myTurn && styles.statusPillTurn]}>
+            <Text style={[styles.statusText, myTurn && { color: colors.primary }]}>{statusLabel(pass)}</Text>
           </View>
         </View>
 
         <View style={styles.metaRow}>
           <Meta label="Date" value={formatDisplayDate(pass.date)} />
           <Meta label="Shift" value={pass.slot || 'Shift'} wide />
-          <Meta label="Time" value={time || '—'} />
+          {time ? <Meta label="Time" value={time} fit /> : null}
         </View>
         {pass.forName ? <Text style={styles.forName}>For {pass.forName}</Text> : null}
       </View>
@@ -172,9 +201,13 @@ export function QueuePass({ pass }: { pass: PassData }) {
               <View style={styles.statDivider} />
               <Stat label="Ahead" value={pass.status === 'IN_CONSULTATION' ? '0' : String(live.patientsAway)} />
               <View style={styles.statDivider} />
-              <Stat label="Wait" value={pass.status === 'IN_CONSULTATION' || live.isYourTurn ? 'Now' : live.isShiftPassed ? '—' : `~${waitLabel(live.estimatedWaitMinutes)}`} />
+              <Stat label="Wait" value={pass.status === 'IN_CONSULTATION' || live.isYourTurn ? 'Now' : live.isShiftPassed ? '—' : aboutWait(live.estimatedWaitMinutes)} />
             </View>
-            <Progress token={pass.token} serving={live.currentServingQueueNumber} />
+            <Progress
+              token={pass.token}
+              serving={live.currentServingQueueNumber}
+              ahead={pass.status === 'IN_CONSULTATION' || myTurn ? 0 : live.patientsAway}
+            />
           </>
         ) : (
           <Text style={styles.quiet}>
@@ -190,19 +223,20 @@ export function QueuePass({ pass }: { pass: PassData }) {
           </Text>
         )}
         {note ? (
-          <View style={[styles.banner, note.tone === 'go' ? styles.bannerGo : note.tone === 'wait' ? styles.bannerWait : styles.bannerInfo]}>
+          <Breathe on={note.tone === 'go'} style={[styles.banner, note.tone === 'go' ? styles.bannerGo : note.tone === 'wait' ? styles.bannerWait : styles.bannerInfo]}>
             <Ionicons name={note.icon} size={18} color={note.tone === 'go' ? colors.success : note.tone === 'wait' ? colors.warning : colors.primary} />
             <Text style={[styles.bannerText, { color: note.tone === 'go' ? colors.success : note.tone === 'wait' ? colors.warning : colors.ink }]}>{note.text}</Text>
-          </View>
+          </Breathe>
         ) : null}
       </View>
     </View>
   );
 }
 
-function Meta({ label, value, wide = false }: { label: string; value: string; wide?: boolean }) {
+/** `fit`: always shown in full (the time); the others shrink to make room. */
+function Meta({ label, value, wide = false, fit = false }: { label: string; value: string; wide?: boolean; fit?: boolean }) {
   return (
-    <View style={[styles.meta, wide && { flex: 2.2 }]}>
+    <View style={[styles.meta, wide && { flex: 2.2 }, fit && styles.metaFit]}>
       <Text style={styles.topLabel}>{label}</Text>
       <Text style={styles.metaValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
         {value}
@@ -212,21 +246,59 @@ function Meta({ label, value, wide = false }: { label: string; value: string; wi
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const pop = usePop(value);
   return (
     <View style={styles.stat}>
-      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
+      <Animated.View style={[styles.statPop, pop]}>
+        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+      </Animated.View>
       <Text style={type.footnote}>{label}</Text>
     </View>
   );
+}
+
+/** A quick spring "pop" each time `value` changes (not on first show), so live numbers feel alive. */
+function usePop(value: unknown) {
+  const [scale] = useState(() => new Animated.Value(1));
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    scale.setValue(1.18);
+    Animated.spring(scale, { toValue: 1, speed: 14, bounciness: 12, useNativeDriver: nativeDriver }).start();
+  }, [value, scale]);
+  return { transform: [{ scale }] };
+}
+
+/** Slow gentle glow for the "Please go in" line, so it catches the eye. */
+function Breathe({ on, style, children }: { on: boolean; style: React.ComponentProps<typeof View>['style']; children: React.ReactNode }) {
+  const [v] = useState(() => new Animated.Value(1));
+  useEffect(() => {
+    if (!on) {
+      v.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 0.7, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: nativeDriver }),
+        Animated.timing(v, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: nativeDriver }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [on, v]);
+  return <Animated.View style={[style, { opacity: v }]}>{children}</Animated.View>;
 }
 
 /** Green dot with a soft ring that keeps pulsing while the queue is live. */
 function LiveDot() {
   const [pulse] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: Platform.OS !== 'web' }));
+    const loop = Animated.loop(Animated.timing(pulse, { toValue: 1, duration: 1600, easing: Easing.out(Easing.ease), useNativeDriver: nativeDriver }));
     loop.start();
     return () => loop.stop();
   }, [pulse]);
@@ -242,12 +314,17 @@ function LiveDot() {
   );
 }
 
-/** How far the queue has come towards your token. */
-function Progress({ token, serving }: { token: number; serving: number }) {
-  const pct = token > 0 ? Math.min(1, Math.max(0.04, serving / token)) : 0;
+/** How far the queue has come towards your token: full when nobody is ahead. */
+function Progress({ token, serving, ahead }: { token: number; serving: number; ahead: number }) {
+  const pct = token > 0 ? Math.min(1, Math.max(0.04, 1 - Math.max(0, ahead) / token)) : 0;
+  const [width] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    // Width can't run on the native thread, so this one stays in JS.
+    Animated.timing(width, { toValue: pct, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [pct, width]);
   return (
     <View style={styles.track} accessibilityLabel={`Serving ${serving} of ${token}`}>
-      <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+      <Animated.View style={[styles.fill, { width: width.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]} />
     </View>
   );
 }
@@ -261,7 +338,9 @@ export function DeskCard({ name, phone, prominent = false }: { name?: string | n
         <Ionicons name="person" size={20} color={colors.primary} />
       </View>
       <View style={styles.flex}>
-        <Text style={type.footnote}>{name || 'Front desk'}</Text>
+        <Text style={type.footnote} numberOfLines={1}>
+          {(name || '').replace(/\s*\(.*\)\s*$/, '') || 'Front desk'}
+        </Text>
         <Text style={styles.deskPhone}>{formatDisplayPhone(phone)}</Text>
       </View>
       <Pressable
@@ -292,9 +371,11 @@ const styles = StyleSheet.create({
   topLabel: { fontSize: 12, color: 'rgba(255,255,255,0.75)' },
   token: { fontSize: 64, lineHeight: 70, fontWeight: '600', color: colors.white, letterSpacing: -2 },
   statusPill: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: radius.pill, paddingHorizontal: 12, height: 28, justifyContent: 'center', marginBottom: 12 },
+  statusPillTurn: { backgroundColor: colors.white },
   statusText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   metaRow: { flexDirection: 'row', gap: space.sm },
   meta: { flex: 1, minWidth: 0, gap: 2 },
+  metaFit: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   metaValue: { fontSize: 15, fontWeight: '600', color: colors.white },
   forName: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
   notchRow: { height: 24, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card },
@@ -310,6 +391,7 @@ const styles = StyleSheet.create({
   liveTitle: { fontSize: 13, fontWeight: '600', color: colors.success },
   stats: { flexDirection: 'row', alignItems: 'center' },
   stat: { flex: 1, alignItems: 'center', gap: 2 },
+  statPop: { alignSelf: 'stretch', alignItems: 'center' },
   statValue: { fontSize: 24, fontWeight: '600', color: colors.ink, letterSpacing: -0.5 },
   statDivider: { width: StyleSheet.hairlineWidth, height: 36, backgroundColor: colors.border },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.fill, overflow: 'hidden' },

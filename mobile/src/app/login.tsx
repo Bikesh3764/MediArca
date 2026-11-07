@@ -18,7 +18,9 @@ const DEMO: { role: Role; label: string; email: string; password: string }[] = [
 
 export default function Login() {
   // `next`: where to return after a patient signs in (e.g. the booking they started)
-  const params = useLocalSearchParams<{ role?: string; email?: string; notice?: string; next?: string }>();
+  // `why`: what signing in is for ("to book Dr. Sarah Jenkins"), shown under the title
+  const params = useLocalSearchParams<{ role?: string; email?: string; notice?: string; next?: string; why?: string }>();
+  const why = params.why && params.next ? String(params.why).slice(0, 80) : undefined;
   const [role, setRole] = useState<Role>(parseRole(params.role));
   const [email, setEmail] = useState(params.email ?? '');
   const [password, setPassword] = useState('');
@@ -55,7 +57,12 @@ export default function Login() {
       if (err?.requiresVerification) {
         router.push({
           pathname: '/verify',
-          params: { email: err.email || email, role, cooldown: String(err.cooldownSeconds ?? '') },
+          params: {
+            email: err.email || email,
+            role,
+            cooldown: String(err.cooldownSeconds ?? ''),
+            ...(params.next ? { next: params.next } : {}),
+          },
         });
         return;
       }
@@ -70,7 +77,7 @@ export default function Login() {
 
   return (
     <Screen back="/welcome">
-      <Title subtitle={isPatientOrDoctor ? undefined : ROLE_LABEL[role]}>Sign in</Title>
+      <Title subtitle={isPatientOrDoctor ? (why && role === 'PATIENT' ? `Sign in ${why}.` : undefined) : ROLE_LABEL[role]}>Sign in</Title>
       {isPatientOrDoctor ? (
         <Segmented
           options={[
@@ -137,7 +144,10 @@ export default function Login() {
         </View>
       ) : null}
       {SIGNUP_ROLES.includes(role) ? (
-        <LinkText label="Create account" onPress={() => router.push(`/signup?role=${role}`)} />
+        <LinkText
+          label="Create account"
+          onPress={() => router.push({ pathname: '/signup', params: { role, ...(params.next ? { next: params.next } : {}), ...(why ? { why } : {}) } })}
+        />
       ) : null}
     </Screen>
   );

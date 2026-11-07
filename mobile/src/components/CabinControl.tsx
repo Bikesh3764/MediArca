@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
-import { api } from '@mediarca/shared/api';
+import { api, tidyTimes } from '@mediarca/shared/api';
 import { ActionMenu } from '@/components/ActionMenu';
 import { type DoctorOption } from '@/components/DoctorBar';
 import { Avatar } from '@/components/kit';
@@ -86,7 +86,8 @@ export function CabinControl({
   const doctor = doctors?.find((d) => d.id === doctorId) || doctors?.[0];
 
   return (
-    <View style={styles.card}>
+    // The doctor's own slider sits on the page like the other switches; the desk's has the doctor on top, so it gets a card
+    <View style={doctor ? styles.card : styles.bare}>
       {doctor ? (
         <Pressable
           accessibilityRole={onDoctorChange ? 'button' : undefined}
@@ -139,7 +140,7 @@ export function CabinControl({
             <View style={styles.flex}>
               <Text style={type.footnote}>Back by</Text>
               <Text style={styles.awayTime} numberOfLines={1}>
-                {back ? back.replace(/^0(\d)/, '$1') : '—'}
+                {back ? tidyTimes(back) : '—'}
               </Text>
             </View>
           </View>
@@ -182,6 +183,7 @@ export function CabinControl({
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.card, borderRadius: radius.card, paddingVertical: space.lg, paddingHorizontal: space.md, gap: space.md, ...shadow.card },
+  bare: { gap: space.md },
   away: { backgroundColor: colors.warningSoft, borderRadius: radius.tile, padding: space.md, gap: space.md },
   awayHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   awayIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },

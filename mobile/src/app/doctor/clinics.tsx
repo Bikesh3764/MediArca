@@ -127,7 +127,7 @@ export default function DoctorClinics() {
                 {sent.map((c, i) => (
                   <View key={c.affiliationId} style={[styles.row, i > 0 && styles.divider]}>
                     <View style={styles.flex}>
-                      <Text style={type.headline} numberOfLines={1}>
+                      <Text style={type.headline} numberOfLines={2}>
                         {c.clinicName}
                       </Text>
                       <MoreText style={type.footnote}>{place(c)}</MoreText>
@@ -184,7 +184,7 @@ function ClinicHead({ c }: { c: DoctorAffiliationClinic }) {
     <View style={styles.headRow}>
       <ClinicImage size={44} />
       <View style={styles.flex}>
-        <Text style={type.headline} numberOfLines={1}>
+        <Text style={type.headline} numberOfLines={2}>
           {c.clinicName}
         </Text>
         <MoreText style={type.footnote}>{place(c)}</MoreText>
@@ -272,7 +272,7 @@ function JoinSheet({ visible, aff, onClose, onJoined }: { visible: boolean; aff:
               <View key={c.id} style={[styles.row, i > 0 && styles.divider]}>
                 <ClinicImage uri={c.avatarUrl} size={40} />
                 <View style={styles.flex}>
-                  <Text style={type.headline} numberOfLines={1}>
+                  <Text style={type.headline} numberOfLines={2}>
                     {c.clinicName}
                   </Text>
                   <MoreText style={type.footnote}>{place(c)}</MoreText>

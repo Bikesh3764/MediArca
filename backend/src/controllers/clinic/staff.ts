@@ -3,6 +3,9 @@ import { hashPassword } from '../../utils/passwords';
 import prisma from '../../config/database';
 import { AuthRequest } from '../../middleware/authMiddleware';
 import { isValidIndianPhone, formatIndianPhone, sanitizeIndianPhone, findExistingAccountByPhone } from '../../utils/phoneUtils';
+import { markPasswordChanged } from '../../utils/sessionRevocation';
+import { DEMO_LOCKED_MESSAGE, isDemoAccountEmail, isDemoLockEnabled } from '../../utils/demoAccounts';
+import { LIMITS } from '../../utils/inputLimits';
 
 /**
  * Provision / Create a Receptionist account for this Clinic
@@ -419,5 +422,98 @@ export const removeClinicReceptionist = async (req: AuthRequest, res: Response):
       message: 'Failed to remove receptionist',
       ...(process.env.NODE_ENV !== 'production' ? { error: error.message } : {}),
     });
+  }
+};
+
+/** The clinic's own receptionist (with login), or null. */
+const findOwnReceptionist = async (clinicUserId: string, receptionistId: string) => {
+  const clinic = await prisma.clinicProfile.findUnique({ where: { userId: clinicUserId } });
+  if (!clinic) return null;
+  return prisma.receptionistProfile.findFirst({
+    where: { id: receptionistId, clinicId: clinic.id },
+    include: { user: { select: { id: true, email: true } } },
+  });
+};
+
+/**
+ * Edit a receptionist's name and mobile (FIX-083). Mobile uses the Indian +91 format.
+ */
+export const updateClinicReceptionist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+    const receptionist = await findOwnReceptionist(req.user.id, String(req.params.receptionistId));
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist not found at this clinic' });
+      return;
+    }
+    if (isDemoLockEnabled() && isDemoAccountEmail(receptionist.user?.email)) {
+      res.status(403).json({ success: false, code: 'DEMO_ACCOUNT_LOCKED', message: DEMO_LOCKED_MESSAGE });
+      return;
+    }
+
+    const { fullName, phone } = req.body || {};
+    const name = typeof fullName === 'string' ? fullName.trim() : '';
+    if (!name || name.length > LIMITS.name) {
+      res.status(400).json({ success: false, message: 'Enter the receptionist’s name.' });
+      return;
+    }
+    let formattedPhone: string | null = null;
+    if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
+      if (!isValidIndianPhone(String(phone))) {
+        res.status(400).json({ success: false, message: 'Enter a valid 10-digit mobile number.' });
+        return;
+      }
+      formattedPhone = formatIndianPhone(String(phone));
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: receptionist.userId }, data: { fullName: name, phone: formattedPhone } }),
+      prisma.receptionistProfile.update({ where: { id: receptionist.id }, data: { phone: formattedPhone } }),
+    ]);
+    res.json({ success: true, message: 'Saved.' });
+  } catch (error: any) {
+    console.error('updateClinicReceptionist error:', error);
+    res.status(500).json({ success: false, message: 'Couldn’t save. Try again.' });
+  }
+};
+
+/**
+ * Give a receptionist a new temporary password (FIX-083). They must change it at next sign-in,
+ * and every device they were signed in on is signed out.
+ */
+export const resetClinicReceptionistPassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'CLINIC') {
+      res.status(403).json({ success: false, message: 'Access denied: clinic role required' });
+      return;
+    }
+    const receptionist = await findOwnReceptionist(req.user.id, String(req.params.receptionistId));
+    if (!receptionist) {
+      res.status(404).json({ success: false, message: 'Receptionist not found at this clinic' });
+      return;
+    }
+    if (isDemoLockEnabled() && isDemoAccountEmail(receptionist.user?.email)) {
+      res.status(403).json({ success: false, code: 'DEMO_ACCOUNT_LOCKED', message: DEMO_LOCKED_MESSAGE });
+      return;
+    }
+    const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    if (password.trim().length < 8 || password.length > 128) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
+      return;
+    }
+
+    const passwordChangedAt = new Date();
+    await prisma.user.update({
+      where: { id: receptionist.userId },
+      data: { passwordHash: await hashPassword(password, 10), mustChangePassword: true, passwordChangedAt },
+    });
+    markPasswordChanged(receptionist.userId, passwordChangedAt);
+    res.json({ success: true, message: 'New password set. They’ll choose their own at sign-in.' });
+  } catch (error: any) {
+    console.error('resetClinicReceptionistPassword error:', error);
+    res.status(500).json({ success: false, message: 'Couldn’t reset the password. Try again.' });
   }
 };

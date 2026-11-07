@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Doctor, type QueuePreview, api, formatDisplayDate, formatDoctorDegrees, getLocalDateString } from '@mediarca/shared/api';
 import { ClinicChoice, DateStrip, ShiftList, TokenTile } from '@/components/booking';
 import { Avatar, BottomBar, CabinBadge, EmptyState, IconButton, SectionTitle, goBack } from '@/components/kit';
-import { Button, Loading, Notice } from '@/components/ui';
+import { Button, Notice, PagePlaceholder } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { bookableDates, bookingBlock, doctorName, feeFor, slotsFor, sortClinics, workingDaysOf } from '@/lib/booking';
 import { colors, radius, shadow, space, type } from '@/theme';
@@ -75,7 +75,7 @@ export default function DoctorProfile() {
     };
   }, [id, doctor, date, slotId, clinicId]);
 
-  if (loadState === 'loading') return <Loading />;
+  if (loadState === 'loading') return <PagePlaceholder />;
 
   if (!doctor) {
     return (
@@ -120,7 +120,7 @@ export default function DoctorProfile() {
       .join('&');
     const target = `/book/${encodeURIComponent(doctor.id)}?${query}`;
     if (!user) {
-      router.push({ pathname: '/login', params: { role: 'PATIENT', next: target } });
+      router.push({ pathname: '/login', params: { role: 'PATIENT', next: target, why: `to book ${doctorName(doctor.user?.fullName)}` } });
       return;
     }
     if (user.role !== 'PATIENT') {

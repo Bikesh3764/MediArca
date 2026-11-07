@@ -1,52 +1,29 @@
 // Patient profile. Same fields and checks as frontend/src/pages/Patient/PatientProfile.tsx.
+// Same layout as the doctor and desk Account: details on top, Edit profile opens a sheet.
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '@/components/AppText';
 import { api } from '@mediarca/shared/api';
-import { formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
+import { formatDisplayPhone, formatIndianPhone, isValidIndianPhone, sanitizeIndianPhone } from '@mediarca/shared/utils/phoneUtils';
 import { AccountActions } from '@/components/AccountSettings';
-import { Avatar, Chip } from '@/components/kit';
+import { Avatar, Chip, ListGroup, ListRow, Sheet } from '@/components/kit';
 import { Button, Card, Field, Notice, Screen, Segmented } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { success, tap } from '@/lib/haptics';
 import { colors, radius, shadow, space, type } from '@/theme';
 
 export default function PatientProfile() {
-  const { user, updateUser } = useAuth();
-  const profile = user?.patientProfile;
-  const [fullName, setFullName] = useState(user?.fullName || '');
-  const [phone, setPhone] = useState(sanitizeIndianPhone(user?.phone));
-  const [gender, setGender] = useState(profile?.gender || '');
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
-
-  const save = async () => {
-    setMessage(null);
-    if (!fullName.trim()) return setMessage({ tone: 'error', text: 'Full name is required.' });
-    if (!isValidIndianPhone(phone)) return setMessage({ tone: 'error', text: 'Please enter a valid 10-digit Indian mobile number.' });
-    setSaving(true);
-    try {
-      const updated = await api.updateUserProfile({
-        fullName: fullName.trim(),
-        phone: formatIndianPhone(phone),
-        gender,
-      });
-      updateUser(updated);
-      success();
-      setMessage({ tone: 'success', text: 'Profile saved.' });
-    } catch (err: any) {
-      setMessage({ tone: 'error', text: err?.message || 'Couldn’t update profile. Try again.' });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { user } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const gender = user?.patientProfile?.gender;
 
   return (
     <Screen edges={['top']}>
       <Text style={[type.largeTitle, styles.title]}>Profile</Text>
 
       <View style={styles.header}>
-        <Avatar uri={user?.avatarUrl} name={user?.fullName} size={68} />
+        <Avatar uri={user?.avatarUrl} name={user?.fullName} size={64} />
         <View style={styles.flex}>
           <Text style={type.heading} numberOfLines={1}>
             {user?.fullName || 'Patient'}
@@ -54,14 +31,72 @@ export default function PatientProfile() {
           <Text style={type.caption} numberOfLines={1}>
             {user?.email}
           </Text>
-          <View style={styles.chip}>
+          {user?.phone ? <Text style={type.caption}>{formatDisplayPhone(user.phone)}</Text> : null}
+          <View style={styles.chips}>
             <Chip tone="primary" label="Patient" />
+            {gender && gender !== 'Not Specified' ? <Chip label={gender} /> : null}
           </View>
         </View>
       </View>
+      <Notice tone="success" message={saved} />
 
+      <ListGroup>
+        <ListRow icon="create" label="Edit profile" onPress={() => setEditing(true)} />
+      </ListGroup>
+
+      <AccountActions />
+      <ProfileSheet visible={editing} onClose={() => setEditing(false)} onSaved={() => setSaved('Profile saved.')} />
+    </Screen>
+  );
+}
+
+/** Name, mobile and gender. Save stays off until something changes. */
+function ProfileSheet({ visible, onClose, onSaved }: { visible: boolean; onClose: () => void; onSaved: () => void }) {
+  const { user, updateUser } = useAuth();
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Start from the saved values each time the sheet opens
+  const [wasOpen, setWasOpen] = useState(false);
+  if (visible !== wasOpen) {
+    setWasOpen(visible);
+    if (visible) {
+      setFullName(user?.fullName || '');
+      setPhone(sanitizeIndianPhone(user?.phone));
+      setGender(user?.patientProfile?.gender || '');
+      setError(null);
+    }
+  }
+
+  const changed =
+    fullName.trim() !== (user?.fullName || '') ||
+    phone !== sanitizeIndianPhone(user?.phone) ||
+    gender !== (user?.patientProfile?.gender || '');
+
+  const save = async () => {
+    setError(null);
+    if (!fullName.trim()) return setError('Full name is required.');
+    if (!isValidIndianPhone(phone)) return setError('Please enter a valid 10-digit Indian mobile number.');
+    setSaving(true);
+    try {
+      const updated = await api.updateUserProfile({ fullName: fullName.trim(), phone: formatIndianPhone(phone), gender });
+      updateUser(updated);
+      success();
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || 'Couldn’t update profile. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Sheet visible={visible} title="Edit profile" doneLabel="Close" onClose={() => !saving && onClose()}>
       <Card>
-        <Text style={type.headline}>Personal</Text>
         <Field label="Full name" value={fullName} onChangeText={setFullName} autoComplete="name" autoCapitalize="words" />
         <Field
           label="Mobile"
@@ -73,16 +108,7 @@ export default function PatientProfile() {
           maxLength={10}
           autoComplete="tel"
         />
-        <View style={styles.readOnly}>
-          <Text style={type.caption}>Email</Text>
-          <Text style={type.body} numberOfLines={1}>
-            {user?.email}
-          </Text>
-        </View>
-      </Card>
-
-      <Card>
-        <Text style={type.headline}>Gender</Text>
+        <Text style={type.label}>Gender</Text>
         <Segmented
           options={[
             { value: 'Male', label: 'Male' },
@@ -95,20 +121,16 @@ export default function PatientProfile() {
             setGender(g);
           }}
         />
+        <Notice tone="error" message={error} />
+        <Button label="Save" onPress={save} loading={saving} disabled={!changed} />
       </Card>
-
-      <Notice tone={message?.tone || 'info'} message={message?.text} stamp={message} />
-      <Button label="Save" onPress={save} loading={saving} />
-
-      <AccountActions />
-    </Screen>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, minWidth: 0 },
+  flex: { flex: 1, minWidth: 0, gap: 2 },
   title: { marginTop: space.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.lg, backgroundColor: colors.card, borderRadius: radius.card, padding: space.lg, ...shadow.card },
-  chip: { marginTop: space.sm },
-  readOnly: { gap: 4, paddingVertical: space.xs },
+  chips: { flexDirection: 'row', gap: space.sm, marginTop: space.sm, flexWrap: 'wrap' },
 });

@@ -50,9 +50,13 @@ export const receptionistApi = {
     cancelledCount: number;
     appointments: ReceptionistQueueItem[];
   }> {
-    const url = date
-      ? `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue?date=${date}`
-      : `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue`;
+    // date 'upcoming': every confirmed visit from today on
+    const url =
+      date === 'upcoming'
+        ? `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue?scope=all-upcoming`
+        : date
+          ? `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue?date=${date}`
+          : `${API_BASE_URL}/receptionists/doctors/${doctorId}/queue`;
     const res = await safeFetch(url, { headers: getHeaders() });
     return handleResponse(res);
   },

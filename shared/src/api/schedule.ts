@@ -115,12 +115,16 @@ export const minutesTo12Hour = (totalMinutes: number): string => {
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   hours = hours ? hours : 12;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  return `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 };
 
+/** Server texts still say "09:58 AM"; show "9:58 AM" like everywhere else. */
+export const tidyTimes = (text?: string | null): string =>
+  String(text ?? '').replace(/\b0(\d:\d{2}\s?[AP]M)/gi, '$1');
+
 export const format12Hour = (time24: string): string => {
-  if (!time24) return '09:00 AM';
-  if (time24.includes('AM') || time24.includes('PM')) return time24;
+  if (!time24) return '9:00 AM';
+  if (time24.includes('AM') || time24.includes('PM')) return tidyTimes(time24);
   return minutesTo12Hour(timeToMinutes(time24));
 };
 
@@ -296,17 +300,15 @@ export const formatDoctorDegrees = (qualifications?: string | null): string => {
   return 'Certified Specialist';
 };
 
+// India is always UTC+5:30 (no daylight saving), so IST dates and times are plain arithmetic.
+// Intl formatters were built on every call and made the phone app slow (FIX-079).
+const IST_OFFSET_MS = 330 * 60 * 1000;
+
 export const getLocalDateString = (d: Date = new Date()): string => {
-  try {
-    return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
-  } catch {
-    const istMs = d.getTime() + 330 * 60 * 1000;
-    const istDate = new Date(istMs);
-    const year = istDate.getUTCFullYear();
-    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(istDate.getUTCDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+  const ist = new Date(d.getTime() + IST_OFFSET_MS);
+  const month = String(ist.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(ist.getUTCDate()).padStart(2, '0');
+  return `${ist.getUTCFullYear()}-${month}-${day}`;
 };
 
 /** Bookings open up to this many days ahead (matches the server). */
@@ -317,27 +319,17 @@ export const getMaxBookingDateString = (now: Date = new Date()): string =>
   getLocalDateString(new Date(now.getTime() + MAX_BOOKING_DAYS_AHEAD * 24 * 60 * 60 * 1000));
 
 export const getIndianTimeMinutes = (d: Date = new Date()): number => {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Kolkata',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: false,
-    }).formatToParts(d);
-    let hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-    if (hour === 24) hour = 0;
-    const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-    return hour * 60 + minute;
-  } catch {
-    const utcMinutes = d.getUTCHours() * 60 + d.getUTCMinutes();
-    return (utcMinutes + 330) % (24 * 60);
-  }
+  const ist = new Date(d.getTime() + IST_OFFSET_MS);
+  return ist.getUTCHours() * 60 + ist.getUTCMinutes();
 };
 
 export const getTomorrowDateString = (d: Date = new Date()): string => {
   const tomorrow = new Date(d.getTime() + 24 * 60 * 60 * 1000);
   return getLocalDateString(tomorrow);
 };
+
+const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "2026-10-27" → "Today", "Tomorrow" or "Tue, 27 Oct" (adds the year only when it isn't this year). */
 export const formatDisplayDate = (dateStr?: string | null): string => {
@@ -349,13 +341,8 @@ export const formatDisplayDate = (dateStr?: string | null): string => {
   if (match[0] === getTomorrowDateString()) return 'Tomorrow';
   const d = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
   const sameYear = match[1] === today.slice(0, 4);
-  return d.toLocaleDateString('en-IN', {
-    timeZone: 'UTC',
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    ...(sameYear ? {} : { year: 'numeric' }),
-  });
+  const text = `${SHORT_DAYS[d.getUTCDay()]}, ${d.getUTCDate()} ${SHORT_MONTHS[d.getUTCMonth()]}`;
+  return sameYear ? text : `${text}, ${d.getUTCFullYear()}`;
 };
 
 export const getDayOfWeekCode = (dateStr?: string): WeekdayCode => {

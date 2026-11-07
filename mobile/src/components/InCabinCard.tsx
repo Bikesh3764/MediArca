@@ -14,6 +14,7 @@ export function InCabinCard({
   onHold,
   completing = false,
   holding = false,
+  next,
 }: {
   token?: number | null;
   name?: string | null;
@@ -23,7 +24,30 @@ export function InCabinCard({
   onHold?: () => void;
   completing?: boolean;
   holding?: boolean;
+  /** Cabin empty: the first arrived patient, shown big with one Start button. */
+  next?: { token: number; name: string; tag?: string | null; onStart?: () => void; starting?: boolean; away?: boolean } | null;
 }) {
+  if (!token && next) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.top}>
+          <View style={styles.flex}>
+            <Text style={styles.label}>Next</Text>
+            <Text style={type.heading} numberOfLines={1}>
+              {next.name}
+            </Text>
+            {next.tag ? <Text style={type.footnote}>{next.tag}</Text> : null}
+          </View>
+          <Text style={styles.token}>#{next.token}</Text>
+        </View>
+        {next.away ? (
+          <Text style={type.caption}>Switch to In cabin to start.</Text>
+        ) : next.onStart ? (
+          <Button label="Start consultation" icon="play" onPress={next.onStart} loading={next.starting} />
+        ) : null}
+      </View>
+    );
+  }
   if (!token) {
     return (
       <View style={[styles.card, styles.empty]}>
@@ -32,7 +56,7 @@ export function InCabinCard({
         </View>
         <View style={styles.flex}>
           <Text style={type.headline}>No one in cabin</Text>
-          <Text style={type.caption}>Tap Start consultation on an arrived patient.</Text>
+          <Text style={type.caption}>Mark a patient as arrived to start.</Text>
         </View>
       </View>
     );

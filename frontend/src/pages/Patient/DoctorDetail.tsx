@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Check,
 } from 'lucide-react';
+import { PagePlaceholder } from '../../components/common/PagePlaceholder';
 
 
 
@@ -107,12 +108,7 @@ export const DoctorDetail: React.FC = () => {
   }, [id, selectedDate, selectedSlotId, selectedClinicId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f5f5f7] flex flex-col items-center justify-center py-24">
-        <div className="w-8 h-8 rounded-full border-2 border-[#0066cc] border-t-transparent animate-spin mb-3"></div>
-        <p className="text-xs text-[#86868b]">Loading…</p>
-      </div>
-    );
+    return <PagePlaceholder />;
   }
 
   if (!doctor) {
